@@ -1,41 +1,34 @@
 import sys
 import serial
-
-# test.txt: works
-# test2.txt: wrong hash
-# comms.h : wrong hash
-# test.py: hangs
-# CMakeLists.txt: wrong hash, then hangs
+from base64 import b64encode, b64decode
+from hashlib import sha256
 
 def main(ser, file):
 
-  fd = open(file, "rb")
-  b = bytearray(fd.read())
+  with open(file, "rb") as fd:
+    raw = fd.read()
+    b = b64encode(raw)
+    h = sha256(raw).hexdigest()
 
-  print("[H] sending 'h'")
-  ser.write(str.encode('h'))
+    print("[H] sending 'h'")
+    ser.write(str.encode('h'))
 
-  print("[H] sending size")
-  ser.write(len(b).to_bytes(4, byteorder='little'))
-  resp = ser.readline().decode("utf-8")[:-1]#.strip("\n")
-  print("[D] " + resp)
-  resp = ser.readline().decode("utf-8")[:-1]#.strip("\n")
-  print("[D] " + resp)
+    print("[H] sending data: %d bytes -> %d bytes" % (len(raw), len(b)))
+    ser.write(bytearray(b) + b"\n")
+    resp = ser.readline().decode("utf-8")[:-1]#.strip("\n")
+    print("[D] " + resp)
 
-  print("[H] sending data")
-  ser.write(b)
-  resp = ser.readline().decode("utf-8")[:-1]#.strip("\n")
-  print("[D] " + resp)
-
-  print("[H] reading hash")
-  resp = ser.readline().decode("utf-8") # read(n)
-  print("[D] " + resp)
-
-  ser.flushInput()
-  ser.flushOutput()
-
+    print("[H] reading hash")
+    resp = b64decode(ser.readline()).hex() #encode("utf-8") #.hex() # read(n)
+    print("[D] " + resp)
+    print("[H] " + h)
+    assert resp == h
 
 if __name__ == "__main__":
   ser = serial.Serial("/dev/ttyACM0", 115200)
-  main(ser, sys.argv[1])
+  assert len(sys.argv) == 2
+  try:
+    main(ser, sys.argv[1])
+  except Exception as e:
+    print(e)
   ser.close()

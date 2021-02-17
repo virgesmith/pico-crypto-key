@@ -1,13 +1,25 @@
 #pragma once
 
+#include "pico/stdlib.h"
+
 #include <string>
-#include <unistd.h>
+
+// can't get binary to work
+
+inline std::string recv()
+{
+  std::string s;
+  for(;;)
+  {
+    char c = getchar();
+    if (c == '\n') break;
+    s.push_back(c);
+  }
+  return s;
+}
 
 inline bool send(const std::string& s)
 {
-  char null = 0;
-  ssize_t res = write(STDIN_FILENO, s.data(), s.size());
-  write(STDIN_FILENO, &null, 1);
-  return res != -1;
+  printf(s.c_str());
+  return true;
 }
-

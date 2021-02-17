@@ -1,0 +1,579 @@
+#pragma once
+
+#include <string>
+#include <vector>
+
+typedef uint8_t byte;
+typedef std::vector<byte> bytes;
+
+namespace base64 {
+
+std::string encode(const bytes& b);
+
+bytes decode(const std::string& s);
+
+}
+
+
+#pragma once
+
+#include "pico/stdlib.h"
+
+#include <string>
+
+// can't get binary to work
+
+inline std::string recv()
+{
+  std::string s;
+  for(;;)
+  {
+    char c = getchar();
+    if (c == '\n') break;
+    s.push_back(c);
+  }
+  return s;
+}
+
+inline bool send(const std::string& s)
+{
+  printf(s.c_str());
+  return true;
+}
+/*********************************************************************
+* Filename:   sha256.h
+* Author:     Brad Conte (brad AT bradconte.com)
+* Copyright:
+* Disclaimer: This code is presented "as is" without any guarantees.
+* Details:    Defines the API for the corresponding SHA1 implementation.
+*********************************************************************/
+
+// From https://github.com/B-Con/crypto-algorithms
+
+#ifndef SHA256_H
+#define SHA256_H
+
+
+/*************************** HEADER FILES ***************************/
+#include <stddef.h>
+
+/****************************** MACROS ******************************/
+#define SHA256_BLOCK_SIZE 32            // SHA256 outputs a 32 byte digest
+
+/**************************** DATA TYPES ****************************/
+typedef unsigned char BYTE;             // 8-bit byte
+typedef unsigned int  WORD;             // 32-bit word, change to "long" for 16-bit machines
+
+#ifdef __cplusplus__
+extern "C"
+{
+#endif
+
+typedef struct {
+	BYTE data[64];
+	WORD datalen;
+	unsigned long long bitlen;
+	WORD state[8];
+} SHA256_CTX;
+
+/*********************** FUNCTION DECLARATIONS **********************/
+void sha256_init(SHA256_CTX *ctx);
+void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
+void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
+
+#ifdef __cplusplus__
+}
+#endif
+
+#endif   // SHA256_H
+
+#include "base64.h"
+
+namespace {
+  const char base64Digits[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  const byte INVALID = 255;
+
+  bytes base64Lookup()
+  {
+    byte idx = 255; // this signifies invalid
+    bytes lookup(256, idx);
+    for (size_t i = 0; i < sizeof(base64Digits); ++i)
+    {
+      lookup[base64Digits[i]] = ++idx;
+    }
+    return lookup;
+  }
+}
+
+/* Base 64 de/encoding translated from java implementation here https://en.wikipedia.org/wiki/Base64 */
+
+bytes base64::decode(const std::string& input)
+{
+  static const bytes lookup = base64Lookup();
+
+  if (input.size() % 4 != 0)
+  {
+    return bytes(); //throw std::runtime_error("Invalid base64 input");
+  }
+  //byte decoded[] = new byte[((input.length() * 3) / 4) - (input.indexOf('=') > 0 ? (input.length() - input.indexOf('=')) : 0)];
+  size_t eqpos = input.find('=', input.size() - 2) == std::string::npos ? input.size() : input.find('=', input.size() - 2);
+  size_t nequals = input.size() - eqpos;
+  bytes decoded(input.length() * 3 / 4 - nequals, 0);
+  size_t j = 0;
+  byte b[4];
+  for (size_t i = 0; i < input.size(); i += 4)
+  {
+    b[0] = lookup[input[i]];
+    b[1] = lookup[input[i + 1]];
+    b[2] = lookup[input[i + 2]];
+    b[3] = lookup[input[i + 3]];
+    if (b[0] == INVALID || b[1] == INVALID  || b[2] == INVALID  || b[3] == INVALID)
+    {
+      return bytes(); //throw std::runtime_error("invalid digit in base64 string");
+    }
+    decoded[j++] = ((b[0] << 2) | (b[1] >> 4));
+    if (b[2] < 64)
+    {
+      decoded[j++] = ((b[1] << 4) | (b[2] >> 2));
+      if (b[3] < 64)
+      {
+        decoded[j++] = ((b[2] << 6) | b[3]);
+      }
+    }
+  }
+  return decoded;
+}
+
+std::string base64::encode(const bytes& in)
+{
+  std::string out;
+  out.reserve(in.size() * 4 / 3);
+
+  byte b;
+  for (size_t i = 0; i < in.size(); i += 3)
+  {
+    b = (in[i] & 0xFC) >> 2;
+    out.push_back(base64Digits[b]);
+    b = (in[i] & 0x03) << 4;
+    if ((i + 1) < in.size())
+    {
+      b |= (in[i + 1] & 0xF0) >> 4;
+      out.push_back(base64Digits[b]);
+      b = (in[i + 1] & 0x0F) << 2;
+      if ((i + 2) < in.size())
+      {
+        b |= (in[i + 2] & 0xC0) >> 6;
+        out.push_back(base64Digits[b]);
+        b = in[i + 2] & 0x3F;
+        out.push_back(base64Digits[b]);
+      }
+      else
+      {
+        out.push_back(base64Digits[b]);
+        out.push_back('=');
+      }
+    }
+    else
+    {
+      out.push_back(base64Digits[b]);
+      out.push_back('=');
+      out.push_back('=');
+    }
+  }
+  return out;
+}
+
+
+
+
+
+
+
+#include "base64.h"
+#include "sha256.h"
+#include "comms.h"
+
+#include "pico/stdlib.h"
+#include "pico/unique_id.h"
+#include "pico/binary_info.h"
+
+#include <vector>
+#include <string>
+
+//#include <cstdio>
+//#include <stdio.h>
+#include <unistd.h>
+
+const uint LED_PIN = 25;
+
+void flash(int times, int ms)
+{
+  for (int i = 0; i < times; ++i)
+  {
+    gpio_put(LED_PIN, 1);
+    sleep_ms(ms);
+    gpio_put(LED_PIN, 0);
+    sleep_ms(ms);
+  }
+}
+
+template<typename T>
+std::string operator%(std::string&& str, T value)
+{
+  size_t s = str.find("%%");
+  if (s != std::string::npos)
+  {
+    str.replace(s, 2, std::to_string(value));
+  }
+  return std::move(str);
+}
+
+using namespace std::string_literals;
+
+int main()
+{
+  bi_decl(bi_program_description("Crypto key"));
+  bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
+
+  stdio_init_all();
+  //setmode(STDOUT_FILENO, O_BINARY);
+  //freopen(NULL, "wb", stdout);
+  gpio_init(LED_PIN);
+  gpio_set_dir(LED_PIN, GPIO_OUT);
+
+  SHA256_CTX ctx;
+
+  char cmd;
+  for (;;)
+  {
+    cmd = std::getchar();
+    if (cmd == 'h')
+    {
+      std::string b64 = recv();
+      bytes s = base64::decode(b64);
+      send("got %% bytes -> %% bytes\n"s % b64.size() % s.size());
+
+      sha256_init(&ctx);
+      sha256_update(&ctx, (byte*)&*s.cbegin(), s.size());
+      bytes h(SHA256_BLOCK_SIZE);
+      sha256_final(&ctx, h.data());
+
+      std::string msg = base64::encode(h) + "\n";
+      send(msg);
+      flash(1, 500);
+      stdio_flush();
+    }
+    sleep_ms(250);
+  }
+}/*********************************************************************
+* Filename:   sha256.c
+* Author:     Brad Conte (brad AT bradconte.com)
+* Copyright:
+* Disclaimer: This code is presented "as is" without any guarantees.
+* Details:    Implementation of the SHA-256 hashing algorithm.
+              SHA-256 is one of the three algorithms in the SHA2
+              specification. The others, SHA-384 and SHA-512, are not
+              offered in this implementation.
+              Algorithm specification can be found here:
+               * http://csrc.nist.gov/publications/fips/fips180-2/fips180-2withchangenotice.pdf
+              This implementation uses little endian byte order.
+*********************************************************************/
+
+/*************************** HEADER FILES ***************************/
+#include <stdlib.h>
+#include <memory.h>
+#include "sha256.h"
+
+/****************************** MACROS ******************************/
+#define ROTLEFT(a,b) (((a) << (b)) | ((a) >> (32-(b))))
+#define ROTRIGHT(a,b) (((a) >> (b)) | ((a) << (32-(b))))
+
+#define CH(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
+#define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define EP0(x) (ROTRIGHT(x,2) ^ ROTRIGHT(x,13) ^ ROTRIGHT(x,22))
+#define EP1(x) (ROTRIGHT(x,6) ^ ROTRIGHT(x,11) ^ ROTRIGHT(x,25))
+#define SIG0(x) (ROTRIGHT(x,7) ^ ROTRIGHT(x,18) ^ ((x) >> 3))
+#define SIG1(x) (ROTRIGHT(x,17) ^ ROTRIGHT(x,19) ^ ((x) >> 10))
+
+/**************************** VARIABLES *****************************/
+static const WORD k[64] = {
+	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+	0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+	0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+	0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+	0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+	0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+	0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+	0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+};
+
+
+/*********************** FUNCTION DEFINITIONS ***********************/
+void sha256_transform(SHA256_CTX *ctx, const BYTE data[])
+{
+	WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
+
+	for (i = 0, j = 0; i < 16; ++i, j += 4)
+		m[i] = (data[j] << 24) | (data[j + 1] << 16) | (data[j + 2] << 8) | (data[j + 3]);
+	for ( ; i < 64; ++i)
+		m[i] = SIG1(m[i - 2]) + m[i - 7] + SIG0(m[i - 15]) + m[i - 16];
+
+	a = ctx->state[0];
+	b = ctx->state[1];
+	c = ctx->state[2];
+	d = ctx->state[3];
+	e = ctx->state[4];
+	f = ctx->state[5];
+	g = ctx->state[6];
+	h = ctx->state[7];
+
+	for (i = 0; i < 64; ++i) {
+		t1 = h + EP1(e) + CH(e,f,g) + k[i] + m[i];
+		t2 = EP0(a) + MAJ(a,b,c);
+		h = g;
+		g = f;
+		f = e;
+		e = d + t1;
+		d = c;
+		c = b;
+		b = a;
+		a = t1 + t2;
+	}
+
+	ctx->state[0] += a;
+	ctx->state[1] += b;
+	ctx->state[2] += c;
+	ctx->state[3] += d;
+	ctx->state[4] += e;
+	ctx->state[5] += f;
+	ctx->state[6] += g;
+	ctx->state[7] += h;
+}
+
+void sha256_init(SHA256_CTX *ctx)
+{
+	ctx->datalen = 0;
+	ctx->bitlen = 0;
+	ctx->state[0] = 0x6a09e667;
+	ctx->state[1] = 0xbb67ae85;
+	ctx->state[2] = 0x3c6ef372;
+	ctx->state[3] = 0xa54ff53a;
+	ctx->state[4] = 0x510e527f;
+	ctx->state[5] = 0x9b05688c;
+	ctx->state[6] = 0x1f83d9ab;
+	ctx->state[7] = 0x5be0cd19;
+}
+
+void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len)
+{
+	WORD i;
+
+	for (i = 0; i < len; ++i) {
+		ctx->data[ctx->datalen] = data[i];
+		ctx->datalen++;
+		if (ctx->datalen == 64) {
+			sha256_transform(ctx, ctx->data);
+			ctx->bitlen += 512;
+			ctx->datalen = 0;
+		}
+	}
+}
+
+void sha256_final(SHA256_CTX *ctx, BYTE hash[])
+{
+	WORD i;
+
+	i = ctx->datalen;
+
+	// Pad whatever data is left in the buffer.
+	if (ctx->datalen < 56) {
+		ctx->data[i++] = 0x80;
+		while (i < 56)
+			ctx->data[i++] = 0x00;
+	}
+	else {
+		ctx->data[i++] = 0x80;
+		while (i < 64)
+			ctx->data[i++] = 0x00;
+		sha256_transform(ctx, ctx->data);
+		memset(ctx->data, 0, 56);
+	}
+
+	// Append to the padding the total message's length in bits and transform.
+	ctx->bitlen += ctx->datalen * 8;
+	ctx->data[63] = ctx->bitlen;
+	ctx->data[62] = ctx->bitlen >> 8;
+	ctx->data[61] = ctx->bitlen >> 16;
+	ctx->data[60] = ctx->bitlen >> 24;
+	ctx->data[59] = ctx->bitlen >> 32;
+	ctx->data[58] = ctx->bitlen >> 40;
+	ctx->data[57] = ctx->bitlen >> 48;
+	ctx->data[56] = ctx->bitlen >> 56;
+	sha256_transform(ctx, ctx->data);
+
+	// Since this implementation uses little endian byte ordering and SHA uses big endian,
+	// reverse all the bytes when copying the final state to the output hash.
+	for (i = 0; i < 4; ++i) {
+		hash[i]      = (ctx->state[0] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 4]  = (ctx->state[1] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 8]  = (ctx->state[2] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 12] = (ctx->state[3] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 16] = (ctx->state[4] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 20] = (ctx->state[5] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 24] = (ctx->state[6] >> (24 - i * 8)) & 0x000000ff;
+		hash[i + 28] = (ctx->state[7] >> (24 - i * 8)) & 0x000000ff;
+	}
+}
+// Based on code from https://blog.mbedded.ninja/programming/operating-systems/linux/linux-serial-ports-using-c-cpp/#basic-setup-in-c
+
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+
+// C library headers
+//#include <cstdio>
+#include <cstring>
+
+// Linux headers
+#include <fcntl.h> // Contains file controls like O_RDWR
+#include <termios.h> // Contains POSIX terminal control definitions
+#include <unistd.h> // write(), read(), close()
+
+
+class USBSerial
+{
+public:
+  USBSerial(const std::string& device)
+  {
+    // Open the serial port. Change device path as needed (currently set to an standard FTDI USB-UART cable type device)
+    serial_port = open(device.c_str(), O_RDWR);
+
+    // Read in existing settings, and handle any error
+    if(tcgetattr(serial_port, &tty) != 0)
+    {
+      throw std::runtime_error("Error %i from tcgetattr: %s\n"); //, errno, strerror(errno));
+    }
+
+    tty.c_cflag &= ~PARENB; // Clear parity bit, disabling parity (most common)
+    tty.c_cflag &= ~CSTOPB; // Clear stop field, only one stop bit used in communication (most common)
+    tty.c_cflag &= ~CSIZE; // Clear all bits that set the data size
+    tty.c_cflag |= CS8; // 8 bits per byte (most common)
+    tty.c_cflag &= ~CRTSCTS; // Disable RTS/CTS hardware flow control (most common)
+    tty.c_cflag |= CREAD | CLOCAL; // Turn on READ & ignore ctrl lines (CLOCAL = 1)
+
+    tty.c_lflag &= ~ICANON;
+    tty.c_lflag &= ~ECHO; // Disable echo
+    tty.c_lflag &= ~ECHOE; // Disable erasure
+    tty.c_lflag &= ~ECHONL; // Disable new-line echo
+    tty.c_lflag &= ~ISIG; // Disable interpretation of INTR, QUIT and SUSP
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // Turn off s/w flow ctrl
+    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL); // Disable any special handling of received bytes
+
+    tty.c_oflag &= ~OPOST; // Prevent special interpretation of output bytes (e.g. newline chars)
+    tty.c_oflag &= ~ONLCR; // Prevent conversion of newline to carriage return/line feed
+    // tty.c_oflag &= ~OXTABS; // Prevent conversion of tabs to spaces (NOT PRESENT ON LINUX)
+    // tty.c_oflag &= ~ONOEOT; // Prevent removal of C-d chars (0x004) in output (NOT PRESENT ON LINUX)
+
+    tty.c_cc[VTIME] = 10;    // Wait for up to 1s (10 deciseconds), returning as soon as any data is received.
+    tty.c_cc[VMIN] = 0;
+
+    // Set in/out baud rate
+    cfsetispeed(&tty, B115200);
+    cfsetospeed(&tty, B115200);
+
+    // Save tty settings, also checking for error
+    if (tcsetattr(serial_port, TCSANOW, &tty) != 0)
+    {
+      throw std::runtime_error("Error %i from tcsetattr: %s\n"); //, errno, strerror(errno));
+    }
+  }
+
+  bool read(std::string& buf)
+  {
+    // Read bytes. The behaviour of read() (e.g. does it block?,
+    // how long does it block for?) depends on the configuration
+    // settings above, specifically VMIN and VTIME
+    return ::read(serial_port, buf.data(), buf.size()) >= 0;
+  }
+
+  void write_buf(const std::vector<uint8_t> bytes)
+  {
+    ssize_t ret = ::write(serial_port, bytes.data(), bytes.size());
+    if (ret < 0)
+      throw std::runtime_error("write buf failure");
+  }
+
+  // only meant for POD types
+  template<typename T>
+  bool write(T val)
+  {
+    return ::write(serial_port, &val, sizeof(T)) >= 0;
+  }
+
+  ~USBSerial()
+  {
+    close(serial_port);
+  }
+
+private:
+  int serial_port;
+  termios tty;
+};
+
+
+int main()
+{
+  try {
+    USBSerial pico("/dev/ttyACM0");
+    std::string read_buf(256, 0);
+
+    std::cout << "[H] send 'h'" << std::endl;
+    pico.write('h');
+
+    std::ifstream file("test2.txt", std::ios::in | std::ios::binary);
+    std::vector<uint8_t> data{std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()};
+
+    std::cout << "[H] send size: " << data.size() << std::endl;
+    pico.write(data.size());
+
+    pico.read(read_buf);
+    printf("[D] %s\n", read_buf.c_str());
+
+    pico.read(read_buf);
+    printf("[D] %s\n", read_buf.c_str());
+
+    std::cout << "[H] sending bytes " << data.size() << std::endl;
+    pico.write_buf(data);
+
+    pico.read(read_buf);
+    printf("[D] %s\n", read_buf.c_str());
+
+  }
+  catch(std::exception& e)
+  {
+    std::cout << e.what() << std::endl;
+    return 1;
+  }
+  catch(...)
+  {
+    return 2;
+  }
+}
+#include <unistd.h>
+
+int main()
+{
+  int serial_port = open("/dev/ttyUSB0", O_RDWR);
+
+  uint32_t size = 0;
+
+  tx << 'h';
+  tx << size;
+  std::string s;
+  std::getline(rx, s);
+  std::cout << s << std::endl;
+  std::getline(rx, s);
+  std::cout << s << std::endl;
+}

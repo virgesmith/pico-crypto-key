@@ -1,3 +1,4 @@
+#include "base64.h"
 #include "sha256.h"
 #include "comms.h"
 
@@ -8,7 +9,8 @@
 #include <vector>
 #include <string>
 
-#include <cstdio>
+//#include <cstdio>
+//#include <stdio.h>
 #include <unistd.h>
 
 const uint LED_PIN = 25;
@@ -35,18 +37,6 @@ std::string operator%(std::string&& str, T value)
   return std::move(str);
 }
 
-std::string toHex(const std::vector<uint8_t>& a)
-{
-  static const char hex[] = "0123456789abcdef";
-  std::string s;
-  for (uint8_t i: a)
-  {
-    s.push_back(hex[i >> 4]);
-    s.push_back(hex[i & 15]);
-  }
-  return s;
-}
-
 using namespace std::string_literals;
 
 int main()
@@ -55,45 +45,33 @@ int main()
   bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
 
   stdio_init_all();
+  //setmode(STDOUT_FILENO, O_BINARY);
+  //freopen(NULL, "wb", stdout);
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
 
   SHA256_CTX ctx;
 
-  uint32_t size;
-  char* sbuf = reinterpret_cast<char*>(&size);
   char cmd;
   for (;;)
   {
-    read(STDIN_FILENO, &cmd, 1);
+    cmd = std::getchar();
     if (cmd == 'h')
     {
-      ssize_t bytes_read = read(STDIN_FILENO, sbuf, sizeof(uint32_t));
+      std::string b64 = recv();
+      bytes s = base64::decode(b64);
+      send("got %% bytes -> %% bytes\n"s % b64.size() % s.size());
 
-      std::string msg = "read %% bytes\n"s % bytes_read;
-      // write(STDIN_FILENO, msg.data(), msg.size());
-      std::printf(msg.c_str());
-      //send(msg);
+      sha256_init(&ctx);
+      sha256_update(&ctx, (byte*)&*s.cbegin(), s.size());
+      bytes h(SHA256_BLOCK_SIZE);
+      sha256_final(&ctx, h.data());
 
-      msg = "waiting for %% bytes...\n"s % size;
-      std::printf(msg.c_str());
-      if (size)
-      {
-        std::vector<BYTE> f(size);
-        bytes_read = read(STDIN_FILENO, &*f.begin(), size);
-        std::printf("got %d bytes\n", bytes_read);
-
-        // TODO check bytes_read==size
-        sha256_init(&ctx);
-        sha256_update(&ctx, &*f.cbegin(), bytes_read);
-        std::vector<BYTE> h(SHA256_BLOCK_SIZE);
-        sha256_final(&ctx, h.data());
-
-        msg = toHex(h) + "\n";
-        std::printf(msg.c_str());
-      }
+      std::string msg = base64::encode(h) + "\n";
+      send(msg);
       flash(1, 500);
-      //sleep_ms(250);
+      stdio_flush();
     }
+    sleep_ms(250);
   }
 }
