@@ -4,17 +4,30 @@
 
 #include <string>
 
+const uint LED_PIN = 25;
+
+inline void flash(int times, int ms)
+{
+  for (int i = 0; i < times; ++i)
+  {
+    gpio_put(LED_PIN, 1);
+    sleep_ms(ms);
+    gpio_put(LED_PIN, 0);
+    sleep_ms(ms);
+  }
+}
+
 // can't get binary to work
 
 inline std::string recv()
 {
   std::string s;
-  for(;;)
+  gpio_put(LED_PIN, 1);
+  for(char c = getchar(); c != '\n'; c = getchar())
   {
-    char c = getchar();
-    if (c == '\n') break;
     s.push_back(c);
   }
+  gpio_put(LED_PIN, 0);
   return s;
 }
 
