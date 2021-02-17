@@ -1,13 +1,15 @@
 
 import serial
-from test import main
+import test_hash
+import test_encryption
 
 ser = serial.Serial("/dev/ttyACM0", 115200)
 
-main(ser, "./test.txt")
-main(ser, "./test2.txt")
-main(ser, "./test3.txt")
-main(ser, "./test4.bin")
+test_files = ["./test.txt", "./test2.txt", "./test3.txt", "./test4.bin"]
+
+for file in test_files:
+  test_hash.main(ser, file)
+  test_encryption.main(ser, file)
 
 ser.close()
 

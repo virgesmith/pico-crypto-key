@@ -1,6 +1,7 @@
 #include "base64.h"
 #include "sha256.h"
-#include "comms.h"
+#include "aes.h"
+#include "serial.h"
 
 #include "pico/stdlib.h"
 #include "pico/unique_id.h"
@@ -23,11 +24,11 @@ std::string operator%(std::string&& str, T value)
 using namespace std::string_literals;
 
 
-std::string hash()
+void hash()
 {
   SHA256_CTX ctx;
   sha256_init(&ctx);
-  for(std::string chunk = recv(); !chunk.empty(); chunk = recv())
+  for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
   {
     bytes s = base64::decode(chunk);
     sha256_update(&ctx, (byte*)&*s.cbegin(), s.size());
@@ -35,7 +36,29 @@ std::string hash()
   bytes h(SHA256_BLOCK_SIZE);
   sha256_final(&ctx, h.data());
 
-  return base64::encode(h);
+  serial::send(base64::encode(h) + "\n");
+}
+
+void decrypt()
+{
+  for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
+  {
+    bytes s = base64::decode(chunk);
+    for(auto& c: s)
+      --c;
+    serial::send(base64::encode(s) + "\n");
+  }
+}
+
+void encrypt()
+{
+  for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
+  {
+    bytes s = base64::decode(chunk);
+    for(auto& c: s)
+      ++c;
+    serial::send(base64::encode(s) + "\n");
+  }
 }
 
 int main()
@@ -47,14 +70,30 @@ int main()
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
 
-  char cmd;
-  for (;;)
+  for (char cmd = std::getchar(); true; cmd = std::getchar())
   {
-    cmd = std::getchar();
-    if (cmd == 'h')
+    switch (cmd)
     {
-      send(hash() + "\n");
-      //stdio_flush();
+      case 'h':
+      {
+        hash();
+        break;
+      }
+      case 'd':
+      {
+        decrypt();
+        break;
+      }
+      case 'e':
+      {
+        encrypt();
+        break;
+      }
+      case 's':
+      default:
+      {
+        serial::send("%% not a valid command"s % cmd);
+      }
     }
     sleep_ms(250);
   }

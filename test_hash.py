@@ -8,7 +8,7 @@ CHUNK_SIZE = 16384
 def main(ser, file):
 
   with open(file, "rb") as fd:
-    print("[H] sending 'h'")
+    print("[H] 'h' %s" % file)
     ser.write(str.encode('h'))
 
     hasher = sha256()
@@ -18,7 +18,7 @@ def main(ser, file):
       b = b64encode(raw)
       hasher.update(raw)
 
-      print("[H] sending data: %d bytes -> %d bytes" % (len(raw), len(b)))
+      print("[H] %d bytes -> %d bytes" % (len(raw), len(b)))
       ser.write(bytearray(b) + b"\n")
       # resp = ser.readline().decode("utf-8")[:-1]#.strip("\n")
       # print("[D] " + resp)

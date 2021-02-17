@@ -6,6 +6,7 @@ add_executable(crypto
   main.cpp
   base64.cpp
   sha256.cpp
+  aes.cpp
 )
 pico_enable_stdio_usb(crypto 1)
 pico_enable_stdio_uart(crypto 0)
