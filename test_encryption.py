@@ -45,7 +45,14 @@ def decrypt(ser, file):
     with open(file + ".dec", "wb") as ofd:
       ofd.write(e)
 
+# def key(ser):
+#   ser.write(str.encode('k'))
+#   resp = b64decode(ser.readline()).hex()
+#   print(resp)
+
+
 def main(ser, file):
+  #key(ser)
   encrypt(ser, file)
   decrypt(ser, file + ".enc")
   assert filecmp.cmp(file, file + ".enc.dec")

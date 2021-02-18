@@ -13,13 +13,14 @@
 
 /*************************** HEADER FILES ***************************/
 #include <stddef.h>
+#include <stdint.h>
 
 /****************************** MACROS ******************************/
 #define AES_BLOCK_SIZE 16               // AES operates on 16 bytes at a time
 
 /**************************** DATA TYPES ****************************/
 typedef unsigned char BYTE;            // 8-bit byte
-typedef unsigned int WORD;             // 32-bit word, change to "long" for 16-bit machines
+typedef uint32_t WORD;             // 32-bit word, change to "long" for 16-bit machines
 
 /*********************** FUNCTION DECLARATIONS **********************/
 ///////////////////

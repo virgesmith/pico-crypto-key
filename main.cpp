@@ -10,6 +10,16 @@
 #include <vector>
 #include <string>
 
+namespace std
+{
+// prevents char being casted to int
+std::string to_string(char c)
+{
+  return std::string(1, c);
+}
+
+}
+
 template<typename T>
 std::string operator%(std::string&& str, T value)
 {
@@ -39,26 +49,64 @@ void hash()
   serial::send(base64::encode(h) + "\n");
 }
 
-void decrypt()
+void decrypt(const std::vector<uint32_t>& key)
 {
+  bytes iv(16, 0);
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
   {
-    bytes s = base64::decode(chunk);
-    for(auto& c: s)
-      --c;
-    serial::send(base64::encode(s) + "\n");
+    bytes c = base64::decode(chunk);
+    bytes p(c.size());
+
+    aes_decrypt_ctr(c.data(), c.size(), p.data(), key.data(), 256, iv.data());
+
+    // size_t blocks = c.size() / AES_BLOCK_SIZE;
+    // for (size_t i = 0; i < blocks; ++i)
+    // {
+    //   aes_decrypt(&*c.cbegin()+i*AES_BLOCK_SIZE, &*p.begin()+i*AES_BLOCK_SIZE, key.data(), 256);
+    // }
+    serial::send(base64::encode(p) + "\n");
   }
 }
 
-void encrypt()
+void encrypt(const std::vector<uint32_t>& key)
 {
+  bytes iv(16, 0);
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
   {
-    bytes s = base64::decode(chunk);
-    for(auto& c: s)
-      ++c;
-    serial::send(base64::encode(s) + "\n");
+    bytes p = base64::decode(chunk);
+    bytes c(p.size());
+
+    aes_encrypt_ctr(p.data(), p.size(), c.data(), key.data(), 256, iv.data());
+    // size_t blocks = p.size() / AES_BLOCK_SIZE;
+    // for (size_t i = 0; i < blocks; ++i)
+    // {
+    //   aes_encrypt(&*p.cbegin()+i*AES_BLOCK_SIZE, &*c.begin()+i*AES_BLOCK_SIZE, key.data(), 256);
+    //   break;
+    // }
+
+    serial::send(base64::encode(c) + "\n");
   }
+}
+
+std::vector<uint32_t> genkey()
+{
+  // 8 byte salt + 8 byte board id -> sha256
+  pico_unique_board_id_t id;
+  pico_get_unique_board_id(&id);
+  bytes raw{ 0xaa, 0xfe, 0xc0, 0xff, 0x00, 0x00, 0x00, 0x00 };
+  raw.insert(raw.end(), id.id, id.id + PICO_UNIQUE_BOARD_ID_SIZE_BYTES);
+
+  SHA256_CTX ctx;
+  sha256_init(&ctx);
+  sha256_update(&ctx, raw.data(), raw.size());
+  bytes key(SHA256_BLOCK_SIZE);
+  sha256_final(&ctx, key.data());
+
+  std::vector<uint32_t> key_schedule(60);
+
+  aes_key_setup(key.data(), key_schedule.data(), SHA256_BLOCK_SIZE*8);
+
+  return key_schedule;
 }
 
 int main()
@@ -70,10 +118,17 @@ int main()
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
 
+  const std::vector<uint32_t>& key = genkey();
+
   for (char cmd = std::getchar(); true; cmd = std::getchar())
   {
     switch (cmd)
     {
+      // case 'k':
+      // {
+      //   serial::send(base64::encode(key()) + "\n");
+      //   break;
+      // }
       case 'h':
       {
         hash();
@@ -81,12 +136,12 @@ int main()
       }
       case 'd':
       {
-        decrypt();
+        decrypt(key);
         break;
       }
       case 'e':
       {
-        encrypt();
+        encrypt(key);
         break;
       }
       case 's':
