@@ -11,6 +11,10 @@
 #ifndef AES_H
 #define AES_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*************************** HEADER FILES ***************************/
 #include <stddef.h>
 #include <stdint.h>
@@ -122,5 +126,10 @@ int aes_ecb_test();
 int aes_cbc_test();
 int aes_ctr_test();
 int aes_ccm_test();
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
+
 
 #endif   // AES_H

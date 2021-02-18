@@ -51,38 +51,29 @@ void hash()
 
 void decrypt(const std::vector<uint32_t>& key)
 {
-  bytes iv(16, 0);
+  bytes iv{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
   {
     bytes c = base64::decode(chunk);
     bytes p(c.size());
 
     aes_decrypt_ctr(c.data(), c.size(), p.data(), key.data(), 256, iv.data());
+    // TODO call increment_iv?
 
-    // size_t blocks = c.size() / AES_BLOCK_SIZE;
-    // for (size_t i = 0; i < blocks; ++i)
-    // {
-    //   aes_decrypt(&*c.cbegin()+i*AES_BLOCK_SIZE, &*p.begin()+i*AES_BLOCK_SIZE, key.data(), 256);
-    // }
     serial::send(base64::encode(p) + "\n");
   }
 }
 
 void encrypt(const std::vector<uint32_t>& key)
 {
-  bytes iv(16, 0);
+  bytes iv{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
   {
     bytes p = base64::decode(chunk);
     bytes c(p.size());
 
     aes_encrypt_ctr(p.data(), p.size(), c.data(), key.data(), 256, iv.data());
-    // size_t blocks = p.size() / AES_BLOCK_SIZE;
-    // for (size_t i = 0; i < blocks; ++i)
-    // {
-    //   aes_encrypt(&*p.cbegin()+i*AES_BLOCK_SIZE, &*c.begin()+i*AES_BLOCK_SIZE, key.data(), 256);
-    //   break;
-    // }
+    // TODO call increment_iv?
 
     serial::send(base64::encode(c) + "\n");
   }
