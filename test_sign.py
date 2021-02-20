@@ -8,30 +8,31 @@ CHUNK_SIZE = 16384
 def main(ser, file):
   print("[H] 'k'")
   ser.write(str.encode('k'))
-
-  resp = b64decode(ser.readline()).hex()
-  print("[D] pubkey:" + resp)
+  pubkey = b64decode(ser.readline()).hex()
+  #pubkey = ser.readline().decode("utf-8")[:-1]
+  print("[D] pubkey: %s" % pubkey)
 
   with open(file, "rb") as fd:
     print("[H] 's' %s" % file)
     ser.write(str.encode('s'))
 
-    hasher = sha256()
     while True:
       raw = fd.read(CHUNK_SIZE)
       if not raw: break
       b = b64encode(raw)
-      hasher.update(raw)
-
-      print("[H] %d bytes -> %d bytes" % (len(raw), len(b)))
       ser.write(bytearray(b) + b"\n")
-      # resp = ser.readline().decode("utf-8")[:-1]#.strip("\n")
-      # print("[D] " + resp)
     ser.write(b"\n")
+    hash = b64decode(ser.readline()).hex()
+    print("[D] hash: " + hash)
     print("[H] reading sig")
-    resp = b64decode(ser.readline()).hex()
-    #resp = ser.readline()
-    print("[D] %s" % resp)
+    sig = b64decode(ser.readline())#.hex()
+    print("[D] sig: %s" % sig.hex())
+
+    # # verify
+    # ser.write(str.encode('v'))
+    # ser.write(hash + b"\n")
+    # ser.write(sig + b"\n")
+    # ser.write(pubkey + b"\n")
 
 
 

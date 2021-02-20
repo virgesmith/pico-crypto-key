@@ -104,18 +104,18 @@ void hash()
 void sign(const mbedtls_ecp_keypair& key)
 {
   bytes h = hash_impl();
-
-  bytes sig(MBEDTLS_ECDSA_MAX_LEN); // TODO is this large enough?
+  serial::send(base64::encode(h) + "\n");
 
   mbedtls_mpi r, s;
   mbedtls_mpi_init(&r);
   mbedtls_mpi_init(&s);
 
   int ret = mbedtls_ecdsa_sign_det_ext(const_cast<mbedtls_ecp_group*>(&key.grp) /* ? */, &r, &s, &key.d,
-                              sig.data(), sig.size(), MBEDTLS_MD_SHA256,
+                              h.data(), h.size(), MBEDTLS_MD_SHA256,
                               minstd_rand, NULL);
 
   // not in header see ecdsa.cpp
+  bytes sig(MBEDTLS_ECDSA_MAX_LEN);
   size_t sz = 0;
   ecdsa_signature_to_asn1(&r, &s, sig.data(), &sz);
   // trim
@@ -123,6 +123,13 @@ void sign(const mbedtls_ecp_keypair& key)
 
   // TODO sort out pubkey mismatch
   serial::send(base64::encode(sig) + "\n");
+}
+
+void verify()
+{
+  bytes hash = base64::decode(serial::recv());
+  bytes sig = base64::decode(serial::recv());
+  bytes pubkey = base64::decode(serial::recv());
 }
 
 void decrypt(const std::vector<uint32_t>& key)
@@ -175,9 +182,16 @@ bytes genkey()
 void pubkey(const mbedtls_ecp_keypair& ec_key)
 {
   bytes pubkey(33);
-  size_t outlen; // should be 33?
-  // TODO sort out pubkey mismatch (w.r.t. signature)
-  int ret = mbedtls_ecp_point_write_binary(&ec_key.grp,
+  size_t outlen;
+
+  int ret = mbedtls_ecp_check_pub_priv(&ec_key, &ec_key);
+  if (ret != 0)
+  {
+    serial::send("ERROR in mbedtls_ecp_check_pub_priv: %%\n"s % ret);
+    return;
+  }
+
+  ret = mbedtls_ecp_point_write_binary(&ec_key.grp,
                                  &ec_key.Q,
                                  MBEDTLS_ECP_PF_COMPRESSED,
                                  &outlen,
@@ -202,26 +216,13 @@ int main()
 
   mbedtls_ecdsa_context ec_ctx;
   mbedtls_ecdsa_init(&ec_ctx);
-  mbedtls_ecp_group ec_grp;
-  mbedtls_ecp_group_init(&ec_grp);
-  mbedtls_ecp_group_load(&ec_grp, MBEDTLS_ECP_DP_SECP256K1);
+  mbedtls_ecp_point q;
+  mbedtls_ecp_point_init(&q);
   mbedtls_ecp_keypair ec_key;
   mbedtls_ecp_keypair_init(&ec_key);
   int ret = mbedtls_ecp_read_key(MBEDTLS_ECP_DP_SECP256K1, &ec_key, key.data(), key.size());
 
-  ret = mbedtls_ecp_mul(&ec_grp, &ec_key.Q, &ec_key.d, &ec_grp.G, NULL, NULL);
-
-  // BN_CTX* ctx = BN_CTX_new();
-  // BN_CTX_start(ctx);
-  // const EC_GROUP* group = EC_KEY_get0_group(ecKey);
-  // EC_POINT* pub = EC_POINT_new(group);
-  // EC_POINT_mul(group, pub, priv, NULL, NULL, ctx);
-  // EC_KEY_set_public_key(ecKey, pub);
-
-  // EC_POINT_free(pub);
-  // BN_CTX_end(ctx);
-  // BN_CTX_free(ctx);
-
+  ret = mbedtls_ecp_mul(&ec_key.grp, &ec_key.Q, &ec_key.d, &ec_key.grp.G, NULL, NULL);
 
   std::vector<uint32_t> key_schedule(60);
   aes_key_setup(key.data(), key_schedule.data(), SHA256_BLOCK_SIZE*8);
@@ -233,7 +234,7 @@ int main()
       case 'D':
       {
         serial::send("DBG: key=" + base64::encode(key) + "\n");
-        serial::send("DBG: ok=%%\n"s % mbedtls_ecp_check_pubkey(&ec_key.grp, &ec_key.Q));
+        serial::send("DBG: ok=%%\n"s % mbedtls_ecp_check_pub_priv(&ec_key, &ec_key));
         // returns -4c80 invalid
         // perhaps theres pk functionality defined elsewhere?
         break;
@@ -261,6 +262,11 @@ int main()
       case 's':
       {
         sign(ec_key);
+        break;
+      }
+      case 'v':
+      {
+        verify();
         break;
       }
       default:
