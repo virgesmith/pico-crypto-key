@@ -1,3 +1,4 @@
+import os
 import serial
 from base64 import b64encode, b64decode
 
@@ -6,10 +7,14 @@ CHUNK_SIZE = 4096
 class Device:
 
   def __init__(self, dev = "/dev/ttyACM0"):
+    if not os.path.exists(dev):
+      raise FileNotFoundError("usb device not found")
     self.device = serial.Serial(dev, 115200)
 
   def __del__(self):
-    self.device.close()
+    if hasattr(self, "device"):
+      print("closing serial connection")
+      self.device.close()
 
   def __hash(self, file):
     with open(file, "rb") as fd:
