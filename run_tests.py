@@ -8,11 +8,14 @@ import test_sign
 
 test_files = ["./test.txt", "./test2.txt", "./test3.txt", "./test4.bin"]
 
-device = Device("/dev/ttyACM0")
+try:
+  device = Device("/dev/ttyACM0")
 
-for file in test_files:
-  test_hash.main(device, file)
-  test_encryption.main(device, file)
-  test_sign.main(device, file)
+  for file in test_files:
+    test_hash.main(device, file)
+    test_encryption.main(device, file)
+    test_sign.main(device, file)
 
+except Exception as e:
+  print(e)
 
