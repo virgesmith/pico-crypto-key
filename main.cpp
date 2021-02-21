@@ -114,22 +114,39 @@ void sign(const mbedtls_ecp_keypair& key)
                               h.data(), h.size(), MBEDTLS_MD_SHA256,
                               minstd_rand, NULL);
 
-  // not in header see ecdsa.cpp
   bytes sig(MBEDTLS_ECDSA_MAX_LEN);
   size_t sz = 0;
   ecdsa_signature_to_asn1(&r, &s, sig.data(), &sz);
   // trim
   sig.resize(sz);
 
-  // TODO sort out pubkey mismatch
   serial::send(base64::encode(sig) + "\n");
 }
+
 
 void verify()
 {
   bytes hash = base64::decode(serial::recv());
   bytes sig = base64::decode(serial::recv());
   bytes pubkey = base64::decode(serial::recv());
+
+  mbedtls_ecdsa_context ec_key; // context is keypair typedef. needs to be initialised with group and pubkey
+  mbedtls_ecdsa_init(&ec_key);
+  int ret = mbedtls_ecp_group_load(&ec_key.grp, MBEDTLS_ECP_DP_SECP256K1);
+  if (ret)
+  {
+    serial::send("mbedtls_ecp_group_load error %%\n"s % ret);
+    return;
+  }
+  ret = mbedtls_ecp_point_read_binary(&ec_key.grp, &ec_key.Q, pubkey.data(), pubkey.size());
+  if (ret)
+  {
+    serial::send("mbedtls_ecp_point_read_binary error %%\n"s % ret);
+    return;
+  }
+
+  ret = mbedtls_ecdsa_read_signature(&ec_key, hash.data(), hash.size(), sig.data(), sig.size());
+  serial::send("%%\n"s % ret);
 }
 
 void decrypt(const std::vector<uint32_t>& key)
@@ -168,7 +185,7 @@ bytes genkey()
   // 8 byte salt + 8 byte board id -> sha256
   pico_unique_board_id_t id;
   pico_get_unique_board_id(&id);
-  bytes raw{ 0xaa, 0xfe, 0xc0, 0xff, 0x00, 0x00, 0x00, 0x00 };
+  bytes raw{ 0xaa, 0xfe, 0xc0, 0xff, 0xba, 0xda, 0x55, 0x55 };
   raw.insert(raw.end(), id.id, id.id + PICO_UNIQUE_BOARD_ID_SIZE_BYTES);
 
   SHA256_CTX ctx;
@@ -179,9 +196,10 @@ bytes genkey()
   return key;
 }
 
+// verify (specifically mbedtls_ecp_point_read_binary) only supports uncompressed keys
 void pubkey(const mbedtls_ecp_keypair& ec_key)
 {
-  bytes pubkey(33);
+  bytes pubkey(65);
   size_t outlen;
 
   int ret = mbedtls_ecp_check_pub_priv(&ec_key, &ec_key);
@@ -193,7 +211,7 @@ void pubkey(const mbedtls_ecp_keypair& ec_key)
 
   ret = mbedtls_ecp_point_write_binary(&ec_key.grp,
                                  &ec_key.Q,
-                                 MBEDTLS_ECP_PF_COMPRESSED,
+                                 MBEDTLS_ECP_PF_UNCOMPRESSED,
                                  &outlen,
                                  pubkey.data(),
                                  pubkey.size());
@@ -216,12 +234,9 @@ int main()
 
   mbedtls_ecdsa_context ec_ctx;
   mbedtls_ecdsa_init(&ec_ctx);
-  mbedtls_ecp_point q;
-  mbedtls_ecp_point_init(&q);
   mbedtls_ecp_keypair ec_key;
   mbedtls_ecp_keypair_init(&ec_key);
   int ret = mbedtls_ecp_read_key(MBEDTLS_ECP_DP_SECP256K1, &ec_key, key.data(), key.size());
-
   ret = mbedtls_ecp_mul(&ec_key.grp, &ec_key.Q, &ec_key.d, &ec_key.grp.G, NULL, NULL);
 
   std::vector<uint32_t> key_schedule(60);
@@ -233,10 +248,14 @@ int main()
     {
       case 'D':
       {
+        serial::send("DBG: mbedtls_ecp_mul ret=%%\n"s % ret);
         serial::send("DBG: key=" + base64::encode(key) + "\n");
-        serial::send("DBG: ok=%%\n"s % mbedtls_ecp_check_pub_priv(&ec_key, &ec_key));
-        // returns -4c80 invalid
-        // perhaps theres pk functionality defined elsewhere?
+        serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
+        break;
+      }
+      case 'H':
+      {
+        serial::send("help: TODO"s);
         break;
       }
       case 'k':
