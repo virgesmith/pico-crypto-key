@@ -1,40 +1,24 @@
 import sys
 import serial
-from base64 import b64encode, b64decode
 from hashlib import sha256
+from crypto_device import Device, b64_to_hex_str
 
-CHUNK_SIZE = 16384
+def main(device, file):
 
-def main(ser, file):
+    print("[H] hash %s" % file)
+    hash = b64_to_hex_str(device.hash(file))
+    print("[D] " + hash)
 
-  with open(file, "rb") as fd:
-    print("[H] 'h' %s" % file)
-    ser.write(str.encode('h'))
+    with open(file, "rb") as fd:
+      hash2 = sha256(fd.read()).hexdigest()
 
-    hasher = sha256()
-    while True:
-      raw = fd.read(CHUNK_SIZE)
-      if not raw: break
-      b = b64encode(raw)
-      hasher.update(raw)
-
-      print("[H] %d bytes -> %d bytes" % (len(raw), len(b)))
-      ser.write(bytearray(b) + b"\n")
-      # resp = ser.readline().decode("utf-8")[:-1]#.strip("\n")
-      # print("[D] " + resp)
-    ser.write(b"\n")
-    #ser.readline() # ignore "got 0 bytes" mesg
-    print("[H] reading hash")
-    resp = b64decode(ser.readline()).hex()
-    print("[D] " + resp)
-    assert resp == hasher.hexdigest()
-
+    # check hash matches haslib's sha256
+    assert hash == hash2
 
 if __name__ == "__main__":
-  ser = serial.Serial("/dev/ttyACM0", 115200)
+  device = Device("/dev/ttyACM0")
   assert len(sys.argv) == 2
   try:
-    main(ser, sys.argv[1])
+    main(device, sys.argv[1])
   except Exception as e:
     print(e)
-  ser.close()

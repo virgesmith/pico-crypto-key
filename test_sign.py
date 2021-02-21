@@ -1,7 +1,5 @@
 import sys
-import serial
-from base64 import b64encode, b64decode
-from hashlib import sha256
+from crypto_device import Device, b64_to_hex_str
 
 CHUNK_SIZE = 16384
 
@@ -10,71 +8,42 @@ wrong_sig = b'MEQCIFSHjtLevnv268DYt57j0zbXThO/RtpxBC6kaW6a1B2aAiBl71b4mEH5yUMGkP
 wrong_pubkey = b'BPqvnhfp83ao7n2oWpwIPBW2TBH6LylpG32Rab10n0qUXjzJ4cLdaZY2+n94KQ7PZsvx+iigW62xL/vru2D0Jn4='
 
 
-def main(ser, file):
-  print("[H] 'k'")
-  ser.write(str.encode('k'))
-  pubkey = ser.readline().rstrip()
-  print("[D] pubkey: %s" % b64decode(pubkey).hex())
+def main(device, file):
+  pubkey = device.pubkey()
+  print("[D] pubkey: %s" % b64_to_hex_str(pubkey))
 
-  with open(file, "rb") as fd:
-    print("[H] 's' %s" % file)
-    ser.write(str.encode('s'))
+  print("[H] sign %s" % file)
+  hash, sig = device.sign(file)
+  print("[D] hash: " + b64_to_hex_str(hash))
+  print("[D] sig: %s" % b64_to_hex_str(sig))
 
-    while True:
-      raw = fd.read(CHUNK_SIZE)
-      if not raw: break
-      b = b64encode(raw)
-      ser.write(bytearray(b) + b"\n")
-    ser.write(b"\n")
-    hash = ser.readline().rstrip()
-    print("[D] hash: " + b64decode(hash).hex())
-    print("[H] reading sig")
-    sig = ser.readline().rstrip()
-    print("[D] sig: %s" % b64decode(sig).hex())
+  ok, _ = device.verify(hash, sig, pubkey)
+  assert ok
+  print("[D] verify: %s" % ok)
 
-    # verify
-    ser.write(str.encode('v'))
-    ser.write(hash + b"\n")
-    ser.write(sig + b"\n")
-    ser.write(pubkey + b"\n")
-    ok = int(ser.readline().rstrip())
-    assert ok == 0
-    print("[D] verify: %s" % ok)
+  # wrong hash
+  ok, code = device.verify(wrong_hash, sig, pubkey)
+  assert not ok
+  assert code == -19968
+  print("[D] wrong hash verify: %s" % ok)
 
-    # wrong hash
-    ser.write(str.encode('v'))
-    ser.write(wrong_hash + b"\n")
-    ser.write(sig + b"\n")
-    ser.write(pubkey + b"\n")
-    ok = int(ser.readline().rstrip())
-    assert ok != 0
-    print("[D] verify: %s" % ok)
+  # wrong sig
+  ok, code = device.verify(hash, wrong_sig, pubkey)
+  assert not ok
+  assert code == -19968
+  print("[D] wrong sig verify: %s" % ok)
 
-    # wrong sig
-    ser.write(str.encode('v'))
-    ser.write(hash + b"\n")
-    ser.write(wrong_sig + b"\n")
-    ser.write(pubkey + b"\n")
-    ok = int(ser.readline().rstrip())
-    assert ok != 0
-    print("[D] verify: %s" % ok)
-
-    # wrong pubkey
-    ser.write(str.encode('v'))
-    ser.write(hash + b"\n")
-    ser.write(sig + b"\n")
-    ser.write(wrong_pubkey + b"\n")
-    ok = int(ser.readline().rstrip())
-    assert ok != 0
-    print("[D] verify: %s" % ok)
-
+  # wrong pubkey
+  ok, code = device.verify(hash, sig, wrong_pubkey)
+  assert not ok
+  assert code == -19968
+  print("[D] wrong pubkey verify: %s" % ok)
 
 if __name__ == "__main__":
-  ser = serial.Serial("/dev/ttyACM0", 115200)
+  device = Device("/dev/ttyACM0")
   assert len(sys.argv) == 2
   try:
-    main(ser, sys.argv[1])
+    main(device, sys.argv[1])
   except Exception as e:
     print(e)
-  ser.close()
 
