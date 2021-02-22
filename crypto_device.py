@@ -72,14 +72,12 @@ class Device:
     self.device.write(hash + b"\n")
     self.device.write(sig + b"\n")
     self.device.write(pubkey + b"\n")
-    result = int(self.device.readline().rstrip())
-    return (result == 0, result)
+    return int(self.device.readline().rstrip())
 
   def pubkey(self):
     self.device.write(str.encode('k'))
     pubkey = self.device.readline().rstrip()
-    return pubkey #b64decode(pubkey).hex()
-    #print("[D] pubkey: %s" % )
+    return pubkey
 
 def b64_to_hex_str(b64bytes):
   return b64decode(b64bytes).hex()

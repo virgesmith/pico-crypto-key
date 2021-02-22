@@ -6,6 +6,8 @@
 typedef uint8_t byte;
 typedef std::vector<byte> bytes;
 
+typedef std::vector<uint32_t> aes_key_t;
+
 // rng for mbedtls
 extern "C" int minstd_rand(void*, byte* p, size_t n);
 

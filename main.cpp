@@ -1,14 +1,8 @@
 #include "sha256.h"
 #include "aes.h"
+#include "ecdsa.h"
 #include "serial.h"
 #include "utils.h"
-
-#include "mbedtls/ecp.h"
-#include "mbedtls/ecdsa.h"
-#include "mbedtls/pk.h"
-
-#include "mbedtls/asn1write.h" // for local ecdsa_signature_to_asn1
-#include "mbedtls/error.h" // for local ecdsa_signature_to_asn1
 
 #include "pico/stdlib.h"
 #include "pico/unique_id.h"
@@ -17,88 +11,8 @@
 #include <vector>
 #include <string>
 
-#include <cstring> // for memcpy
 
-namespace {
-
-// copied from ecdsa.c (where its static)
-extern "C" int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
-                                    unsigned char *sig, size_t *slen )
-{
-    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
-    unsigned char buf[MBEDTLS_ECDSA_MAX_LEN];
-    unsigned char *p = buf + sizeof( buf );
-    size_t len = 0;
-
-    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_mpi( &p, buf, s ) );
-    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_mpi( &p, buf, r ) );
-
-    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &p, buf, len ) );
-    MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &p, buf,
-                                       MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) );
-
-    memcpy( sig, p, len );
-    *slen = len;
-
-    return( 0 );
-}
-
-}
-
-void hash()
-{
-  serial::send(base64::encode(sha256::hash()) + "\n");
-}
-
-void sign(const mbedtls_ecp_keypair& key)
-{
-  bytes h = sha256::hash();
-  serial::send(base64::encode(h) + "\n");
-
-  mbedtls_mpi r, s;
-  mbedtls_mpi_init(&r);
-  mbedtls_mpi_init(&s);
-
-  int ret = mbedtls_ecdsa_sign_det_ext(const_cast<mbedtls_ecp_group*>(&key.grp) /* ? */, &r, &s, &key.d,
-                              h.data(), h.size(), MBEDTLS_MD_SHA256,
-                              minstd_rand, NULL);
-
-  bytes sig(MBEDTLS_ECDSA_MAX_LEN);
-  size_t sz = 0;
-  ecdsa_signature_to_asn1(&r, &s, sig.data(), &sz);
-  // trim
-  sig.resize(sz);
-
-  serial::send(base64::encode(sig) + "\n");
-}
-
-
-void verify()
-{
-  bytes hash = base64::decode(serial::recv());
-  bytes sig = base64::decode(serial::recv());
-  bytes pubkey = base64::decode(serial::recv());
-
-  mbedtls_ecdsa_context ec_key; // context is keypair typedef. needs to be initialised with group and pubkey
-  mbedtls_ecdsa_init(&ec_key);
-  int ret = mbedtls_ecp_group_load(&ec_key.grp, MBEDTLS_ECP_DP_SECP256K1);
-  if (ret)
-  {
-    serial::send("mbedtls_ecp_group_load error %%\n"s % ret);
-    return;
-  }
-  ret = mbedtls_ecp_point_read_binary(&ec_key.grp, &ec_key.Q, pubkey.data(), pubkey.size());
-  if (ret)
-  {
-    serial::send("mbedtls_ecp_point_read_binary error %%\n"s % ret);
-    return;
-  }
-
-  ret = mbedtls_ecdsa_read_signature(&ec_key, hash.data(), hash.size(), sig.data(), sig.size());
-  serial::send("%%\n"s % ret);
-}
-
-void decrypt(const std::vector<uint32_t>& key)
+void decrypt(const aes_key_t& key)
 {
   bytes iv(16, 0);
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
@@ -112,7 +26,7 @@ void decrypt(const std::vector<uint32_t>& key)
   }
 }
 
-void encrypt(const std::vector<uint32_t>& key)
+void encrypt(const aes_key_t& key)
 {
   bytes iv(16, 0);
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
@@ -127,7 +41,7 @@ void encrypt(const std::vector<uint32_t>& key)
   }
 }
 
-// private key for AES and ECDSA
+// raw private key for AES and ECDSA
 bytes genkey()
 {
   // 8 byte salt + 8 byte board id -> sha256
@@ -136,38 +50,9 @@ bytes genkey()
   bytes raw{ 0xaa, 0xfe, 0xc0, 0xff, 0xba, 0xda, 0x55, 0x55 };
   raw.insert(raw.end(), id.id, id.id + PICO_UNIQUE_BOARD_ID_SIZE_BYTES);
 
-  SHA256_CTX ctx;
-  sha256_init(&ctx);
-  sha256_update(&ctx, raw.data(), raw.size());
-  bytes key(SHA256_BLOCK_SIZE);
-  sha256_final(&ctx, key.data());
-  return key;
+  return sha256::hash(raw);
 }
 
-// verify (specifically mbedtls_ecp_point_read_binary) only supports uncompressed keys
-void pubkey(const mbedtls_ecp_keypair& ec_key)
-{
-  bytes pubkey(65);
-  size_t outlen;
-
-  int ret = mbedtls_ecp_check_pub_priv(&ec_key, &ec_key);
-  if (ret != 0)
-  {
-    serial::send("ERROR in mbedtls_ecp_check_pub_priv: %%\n"s % ret);
-    return;
-  }
-
-  ret = mbedtls_ecp_point_write_binary(&ec_key.grp,
-                                 &ec_key.Q,
-                                 MBEDTLS_ECP_PF_UNCOMPRESSED,
-                                 &outlen,
-                                 pubkey.data(),
-                                 pubkey.size());
-  if (ret != 0)
-    serial::send("ERROR in mbedtls_ecp_point_write_binary\n");
-  else
-    serial::send(base64::encode(pubkey) + "\n");
-}
 
 int main()
 {
@@ -180,14 +65,9 @@ int main()
 
   const bytes& key = genkey();
 
-  mbedtls_ecdsa_context ec_ctx;
-  mbedtls_ecdsa_init(&ec_ctx);
-  mbedtls_ecp_keypair ec_key;
-  mbedtls_ecp_keypair_init(&ec_key);
-  int ret = mbedtls_ecp_read_key(MBEDTLS_ECP_DP_SECP256K1, &ec_key, key.data(), key.size());
-  ret = mbedtls_ecp_mul(&ec_key.grp, &ec_key.Q, &ec_key.d, &ec_key.grp.G, NULL, NULL);
+  const mbedtls_ecp_keypair& ec_key = ecdsa::key(key);
 
-  std::vector<uint32_t> key_schedule(60);
+  aes_key_t key_schedule(60);
   aes_key_setup(key.data(), key_schedule.data(), SHA256_BLOCK_SIZE*8);
 
   for (char cmd = std::getchar(); true; cmd = std::getchar())
@@ -208,12 +88,16 @@ int main()
       }
       case 'k':
       {
-        pubkey(ec_key);
+        const bytes& pubkey = ecdsa::pubkey(ec_key);
+        if (pubkey.empty())
+          serial::send("ERROR in ecdsa::pubkey\n");
+        else
+          serial::send(base64::encode(pubkey) + "\n");
         break;
       }
       case 'h':
       {
-        hash();
+        serial::send(base64::encode(sha256::hash_stdin()) + "\n");
         break;
       }
       case 'd':
@@ -228,12 +112,20 @@ int main()
       }
       case 's':
       {
-        sign(ec_key);
+        bytes h = sha256::hash_stdin();
+        serial::send(base64::encode(h) + "\n");
+        bytes sig = ecdsa::sign(ec_key, h);
+        if (sig.empty())
+          serial::send("ERROR in ecdsa::sign\n");
+        serial::send(base64::encode(sig) + "\n");
         break;
       }
       case 'v':
       {
-        verify();
+        bytes hash = base64::decode(serial::recv());
+        bytes sig = base64::decode(serial::recv());
+        bytes pubkey = base64::decode(serial::recv());
+        serial::send("%%\n"s % ecdsa::verify(hash, sig, pubkey));
         break;
       }
       default:
