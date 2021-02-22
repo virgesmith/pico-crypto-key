@@ -1,5 +1,5 @@
 
-#include "base64.h"
+#include "utils.h"
 
 namespace {
   const char base64Digits[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -15,6 +15,26 @@ namespace {
     }
     return lookup;
   }
+}
+
+//int (*f_rng_blind)(void *, unsigned char *, size_t)
+extern "C" int minstd_rand(void*, byte* p, size_t n)
+{
+  static uint32_t r = 1;
+  for (size_t i = 0; i < n; ++i)
+  {
+    r = r * 48271 % 2147483647;
+    p[i] = static_cast<byte>(r); // % 256;
+  }
+  return 0;
+}
+
+// string construction
+
+// prevents char being casted to int
+std::string std::to_string(char c)
+{
+  return std::string(1, c);
 }
 
 /* Base 64 de/encoding translated from java implementation here https://en.wikipedia.org/wiki/Base64 */

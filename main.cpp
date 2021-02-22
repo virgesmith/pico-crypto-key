@@ -1,7 +1,7 @@
-#include "base64.h"
 #include "sha256.h"
 #include "aes.h"
 #include "serial.h"
+#include "utils.h"
 
 #include "mbedtls/ecp.h"
 #include "mbedtls/ecdsa.h"
@@ -43,67 +43,16 @@ extern "C" int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi 
     return( 0 );
 }
 
-//int (*f_rng_blind)(void *, unsigned char *, size_t)
-extern "C" int minstd_rand(void*, byte* p, size_t n)
-{
-  static uint32_t r = 1;
-  for (size_t i = 0; i < n; ++i)
-  {
-    r = r * 48271 % 2147483647;
-    p[i] = static_cast<byte>(r); // % 256;
-  }
-  return 0;
-}
-
-}
-
-namespace std
-{
-
-// prevents char being casted to int
-std::string to_string(char c)
-{
-  return std::string(1, c);
-}
-
-}
-
-template<typename T>
-std::string operator%(std::string&& str, T value)
-{
-  size_t s = str.find("%%");
-  if (s != std::string::npos)
-  {
-    str.replace(s, 2, std::to_string(value));
-  }
-  return std::move(str);
-}
-
-using namespace std::string_literals;
-
-
-bytes hash_impl()
-{
-  SHA256_CTX ctx;
-  sha256_init(&ctx);
-  for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
-  {
-    bytes s = base64::decode(chunk);
-    sha256_update(&ctx, (byte*)&*s.cbegin(), s.size());
-  }
-  bytes h(SHA256_BLOCK_SIZE);
-  sha256_final(&ctx, h.data());
-  return h;
 }
 
 void hash()
 {
-  serial::send(base64::encode(hash_impl()) + "\n");
+  serial::send(base64::encode(sha256::hash()) + "\n");
 }
 
 void sign(const mbedtls_ecp_keypair& key)
 {
-  bytes h = hash_impl();
+  bytes h = sha256::hash();
   serial::send(base64::encode(h) + "\n");
 
   mbedtls_mpi r, s;

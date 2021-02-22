@@ -4,8 +4,10 @@ project(crypto)
 pico_sdk_init()
 add_executable(crypto
   main.cpp
-  base64.cpp
-  sha256.c
+  utils.cpp
+  sha256.cpp
+  ecdsa.cpp
+  sha256_bcon.c
   aes.c
 )
 add_subdirectory(mbedtls-2.25.0 EXCLUDE_FROM_ALL)
