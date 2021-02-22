@@ -151,29 +151,28 @@ void verify()
 
 void decrypt(const std::vector<uint32_t>& key)
 {
-  bytes iv{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  bytes iv(16, 0);
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
   {
     bytes c = base64::decode(chunk);
     bytes p(c.size());
 
     aes_decrypt_ctr(c.data(), c.size(), p.data(), key.data(), 256, iv.data());
-    // TODO call increment_iv?
-
+    increment_iv(iv.data(), iv.size());
     serial::send(base64::encode(p) + "\n");
   }
 }
 
 void encrypt(const std::vector<uint32_t>& key)
 {
-  bytes iv{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+  bytes iv(16, 0);
   for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
   {
     bytes p = base64::decode(chunk);
     bytes c(p.size());
 
     aes_encrypt_ctr(p.data(), p.size(), c.data(), key.data(), 256, iv.data());
-    // TODO call increment_iv?
+    increment_iv(iv.data(), iv.size());
 
     serial::send(base64::encode(c) + "\n");
   }
@@ -246,13 +245,13 @@ int main()
   {
     switch (cmd)
     {
-      case 'D':
-      {
-        serial::send("DBG: mbedtls_ecp_mul ret=%%\n"s % ret);
-        serial::send("DBG: key=" + base64::encode(key) + "\n");
-        serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
-        break;
-      }
+      // case 'D':
+      // {
+      //   serial::send("DBG: mbedtls_ecp_mul ret=%%\n"s % ret);
+      //   serial::send("DBG: key=" + base64::encode(key) + "\n");
+      //   serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
+      //   break;
+      // }
       case 'H':
       {
         serial::send("help: TODO"s);

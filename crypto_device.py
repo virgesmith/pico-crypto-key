@@ -1,4 +1,5 @@
 import os
+from io import BytesIO
 import serial
 from base64 import b64encode, b64decode
 
@@ -30,41 +31,35 @@ class Device:
     self.device.write(str.encode('h'))
     return self.__hash(file)
 
-  def encrypt(self, file):
+  def encrypt(self, data: BytesIO) -> bytearray:
 
-    with open(file, "rb") as fd:
-      self.device.write(str.encode('e'))
+    self.device.write(str.encode('e'))
+    data_enc = bytearray()
+    while True:
+      raw = data.read(CHUNK_SIZE)
+      if not raw: break
+      b = b64encode(raw)
+      self.device.write(bytearray(b) + b"\n")
+      resp = b64decode(self.device.readline())
+      data_enc.extend(resp)
+    self.device.write(b"\n")
+    return data_enc
+    # with open(file + ".enc", "wb") as ofd:
+    #   ofd.write(e)
 
-      e = bytearray()
-      while True:
-        raw = fd.read(CHUNK_SIZE)
-        if not raw: break
-        b = b64encode(raw)
-        self.device.write(bytearray(b) + b"\n")
-        resp = b64decode(self.device.readline())
-        e.extend(resp)
-      self.device.write(b"\n")
-      with open(file + ".enc", "wb") as ofd:
-        ofd.write(e)
+  def decrypt(self, data: BytesIO) -> bytearray:
 
-  def decrypt(self, file):
-
-    # TODO return bytes not file
-
-    with open(file, "rb") as fd:
-      self.device.write(str.encode('d'))
-
-      e = bytearray()
-      while True:
-        raw = fd.read(CHUNK_SIZE)
-        if not raw: break
-        b = b64encode(raw)
-        self.device.write(bytearray(b) + b"\n")
-        resp = b64decode(self.device.readline())
-        e.extend(resp)
-      self.device.write(b"\n")
-      with open(file + ".dec", "wb") as ofd:
-        ofd.write(e)
+    self.device.write(str.encode('d'))
+    data_dec = bytearray()
+    while True:
+      raw = data.read(CHUNK_SIZE)
+      if not raw: break
+      b = b64encode(raw)
+      self.device.write(bytearray(b) + b"\n")
+      resp = b64decode(self.device.readline())
+      data_dec.extend(resp)
+    self.device.write(b"\n")
+    return data_dec
 
   def sign(self, file):
     self.device.write(str.encode('s'))
