@@ -39,4 +39,39 @@ bytes decode(const std::string& s);
 
 }
 
+// RAII memory-safe wrapper for C structures with explicit init/free functions
+template<typename T>
+class wrap final
+{
+public:
+  typedef void (*f_init_t)(T*);
+  typedef void (*f_free_t)(T*);
+
+  wrap(f_init_t init, f_free_t free) : m_struct(), m_deleter(free)
+  {
+    init(&m_struct);
+  }
+
+  ~wrap()
+  {
+    m_deleter(&m_struct);
+  }
+
+  // disable any (shallow) copy or assignment)
+  wrap(const wrap&) = delete;
+  wrap& operator=(const wrap&) = delete;
+  wrap(wrap&&) = delete;
+  wrap& operator=(wrap&&) = delete;
+
+  T* operator &() { return &m_struct; }
+  const T* operator &() const { return &m_struct; }
+
+  // TODO can this be done better syntactically?
+  T& operator()() { return m_struct; }
+  const T& operator()() const { return m_struct; }
+
+private:
+  T m_struct;
+  f_free_t m_deleter;
+};
 

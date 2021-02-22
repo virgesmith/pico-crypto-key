@@ -39,8 +39,6 @@ int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
 
 mbedtls_ecp_keypair ecdsa::key(const bytes& rawkey)
 {
-  mbedtls_ecdsa_context ec_ctx;
-  mbedtls_ecdsa_init(&ec_ctx);
   mbedtls_ecp_keypair ec_key;
   mbedtls_ecp_keypair_init(&ec_key);
   int ret = mbedtls_ecp_read_key(MBEDTLS_ECP_DP_SECP256K1, &ec_key, rawkey.data(), rawkey.size());
@@ -70,9 +68,8 @@ bytes ecdsa::pubkey(const mbedtls_ecp_keypair& ec_key)
 
 bytes ecdsa::sign(const mbedtls_ecp_keypair& key, const bytes& hash)
 {
-  mbedtls_mpi r, s;
-  mbedtls_mpi_init(&r);
-  mbedtls_mpi_init(&s);
+  wrap<mbedtls_mpi> r(mbedtls_mpi_init, mbedtls_mpi_free);
+  wrap<mbedtls_mpi> s(mbedtls_mpi_init, mbedtls_mpi_free);
 
   int ret = mbedtls_ecdsa_sign_det_ext(const_cast<mbedtls_ecp_group*>(&key.grp) /*?*/, &r, &s, &key.d,
                                        hash.data(), hash.size(), MBEDTLS_MD_SHA256,
@@ -90,15 +87,17 @@ bytes ecdsa::sign(const mbedtls_ecp_keypair& key, const bytes& hash)
 
 int ecdsa::verify(const bytes& hash, const bytes& sig, const bytes& pubkey)
 {
-  mbedtls_ecdsa_context ec_key; // context is keypair typedef. needs to be initialised with group and pubkey
-  mbedtls_ecdsa_init(&ec_key);
-  int ret = mbedtls_ecp_group_load(&ec_key.grp, MBEDTLS_ECP_DP_SECP256K1);
+  // context is keypair typedef. needs to be initialised with group and pubkey
+  wrap<mbedtls_ecdsa_context> ec_key(mbedtls_ecdsa_init, mbedtls_ecdsa_free);
+  //mbedtls_ecdsa_init(&ec_key);
+  int ret = mbedtls_ecp_group_load(&ec_key().grp, MBEDTLS_ECP_DP_SECP256K1);
   if (ret)
     return ret;
-  ret = mbedtls_ecp_point_read_binary(&ec_key.grp, &ec_key.Q, pubkey.data(), pubkey.size());
+  ret = mbedtls_ecp_point_read_binary(&ec_key().grp, &ec_key().Q, pubkey.data(), pubkey.size());
   if (ret)
     return ret;
 
   ret = mbedtls_ecdsa_read_signature(&ec_key, hash.data(), hash.size(), sig.data(), sig.size());
   return ret;
+  mbedtls_ecdsa_free(&ec_key);
 }

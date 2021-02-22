@@ -65,22 +65,22 @@ int main()
 
   const bytes& key = genkey();
 
+  // not wrapped as persists
   const mbedtls_ecp_keypair& ec_key = ecdsa::key(key);
 
   aes_key_t key_schedule(60);
-  aes_key_setup(key.data(), key_schedule.data(), SHA256_BLOCK_SIZE*8);
+  aes_key_setup(key.data(), key_schedule.data(), sha256::LENGTH_BITS);
 
   for (char cmd = std::getchar(); true; cmd = std::getchar())
   {
     switch (cmd)
     {
-      // case 'D':
-      // {
-      //   serial::send("DBG: mbedtls_ecp_mul ret=%%\n"s % ret);
-      //   serial::send("DBG: key=" + base64::encode(key) + "\n");
-      //   serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
-      //   break;
-      // }
+      case 'D':
+      {
+        serial::send("DBG: key=" + base64::encode(key) + "\n");
+        serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
+        break;
+      }
       case 'H':
       {
         serial::send("help: TODO"s);

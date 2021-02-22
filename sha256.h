@@ -1,13 +1,16 @@
 
 #include "utils.h"
-#include "sha256_bcon.h"
+//#include "sha256_bcon.h"
 
 namespace sha256
 {
 
+const size_t LENGTH_BYTES = 32;
+const size_t LENGTH_BITS = 256;
+
 bytes hash(const bytes& data);
 
-// hashes stdin until a blank line is read
+// hashes base64-encoded stdin until a blank line is read
 bytes hash_stdin();
 
 }
