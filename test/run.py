@@ -6,7 +6,7 @@ import test_hash
 import test_encryption
 import test_sign
 
-test_files = ["./test.txt", "./test2.txt", "./test3.txt", "./test4.bin"]
+test_files = ["./test/test.txt", "./test/test2.txt", "./test/test3.txt", "./test/test4.bin"]
 
 try:
   device = Device("/dev/ttyACM0")

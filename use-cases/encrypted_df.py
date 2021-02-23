@@ -1,6 +1,7 @@
 # use case 1:
-# use device to decrypt an encrypted dataset and read into a panads dataframe
+# use device to decrypt an encrypted dataset and read into a pandas dataframe
 
+import os
 import pandas as pd
 from io import BytesIO
 from crypto_device import Device
@@ -30,15 +31,18 @@ def decrypt_csv(data_file):
   df = pd.read_csv(data)
   return df
 
-# plaintext = "dataframe.csv"
-# dataset = pd.read_csv(plaintext)
-# start = time.time()
-# encrypt_csv(dataset, "dataframe.csv.enc")
-# print("encryption took %.2fs" % (time.time() - start))
+ciphertext = "./use-cases/dataframe.csv.enc"
 
-ciphertext = "dataframe.csv.enc"
+# if the encrypted data isn't there create it from the plaintext
+if not os.path.isfile(ciphertext):
+  plaintext = "./use-cases/dataframe.csv"
+  dataset = pd.read_csv(plaintext)
+  start = time.time()
+  encrypt_csv(dataset, "./use-cases/dataframe.csv.enc")
+  print("encryption took %.2fs" % (time.time() - start))
+
+# now decrypt
 start = time.time()
 df = decrypt_csv(ciphertext)
 print("decryption took %.2fs" % (time.time() - start))
-print(df.head())
-print(len(df))
+print(df)

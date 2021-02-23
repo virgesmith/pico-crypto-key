@@ -68,6 +68,12 @@ class Device:
     return (hash, sig)
 
   def verify(self, hash, sig, pubkey):
+    """
+    return value:
+    0:      successfully verified
+    -19968: not verified
+    any other value means something else went wrong e.g. data formats are incorrect
+    """
     self.device.write(str.encode('v'))
     self.device.write(hash + b"\n")
     self.device.write(sig + b"\n")

@@ -49,5 +49,13 @@ make -j4
 ## test
 
 ```bash
-python run_tests.py
+PYTHONPATH=. python test/run.py
+```
+
+(`PYTHONPATH` is required whilst crypto_device is not packaged)
+
+### use-cases
+
+```bash
+PYTHONPATH=. python use-cases/run.py
 ```
