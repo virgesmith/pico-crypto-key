@@ -39,18 +39,18 @@ int main()
 
   // not wrapped as never freed
   const mbedtls_ecp_keypair& ec_key = ecdsa::key(key);
-  const aes::key_t key_schedule = aes::key(key);
+  const mbedtls_aes_context& aes_key = aes::key(key);
 
   for (char cmd = std::getchar(); true; cmd = std::getchar())
   {
     switch (cmd)
     {
-      case 'D':
-      {
-        serial::send("DBG: key=" + base64::encode(key) + "\n");
-        serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
-        break;
-      }
+      // case 'D':
+      // {
+      //   serial::send("DBG: key=" + base64::encode(key) + "\n");
+      //   serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
+      //   break;
+      // }
       case 'H':
       {
         serial::send("help: TODO"s);
@@ -72,12 +72,12 @@ int main()
       }
       case 'd':
       {
-        aes::decrypt_stdin(key_schedule);
+        aes::decrypt_stdin(aes_key);
         break;
       }
       case 'e':
       {
-        aes::encrypt_stdin(key_schedule);
+        aes::encrypt_stdin(aes_key);
         break;
       }
       case 's':
