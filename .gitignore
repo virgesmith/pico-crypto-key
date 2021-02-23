@@ -2,3 +2,5 @@
 .venv*
 build/
 mbedtls-*/
+*.enc
+node_modules/
