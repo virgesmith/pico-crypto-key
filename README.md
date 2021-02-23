@@ -36,7 +36,7 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## build
 
-Back in te project root,
+Ensure `PICO_SDK_PATH` is set correctly (see links above), then back in the project root,
 
 ```bash
 mkdir build && cd build && cmake ..
