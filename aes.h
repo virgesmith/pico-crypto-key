@@ -4,11 +4,20 @@
 
 #include <vector>
 #include <cstdint>
+
+#include "mbedtls/aes.h"
 //#include "aes_bcon.h"
+
+#define USE_MBEDTLS_AES
+
 
 namespace aes {
 
+#ifdef USE_MBEDTLS_AES
+typedef mbedtls_aes_context key_t;
+#else
 typedef std::vector<uint32_t> key_t;
+#endif
 
 key_t key(const bytes& raw);
 
