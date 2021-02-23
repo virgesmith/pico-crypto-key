@@ -35,6 +35,18 @@ int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
   return( 0 );
 }
 
+//int (*f_rng_blind)(void *, unsigned char *, size_t)
+extern "C" int minstd_rand(void*, byte* p, size_t n)
+{
+  static uint32_t r = 1;
+  for (size_t i = 0; i < n; ++i)
+  {
+    r = r * 48271 % 2147483647;
+    p[i] = static_cast<byte>(r); // % 256;
+  }
+  return 0;
+}
+
 }
 
 mbedtls_ecp_keypair ecdsa::key(const bytes& rawkey)

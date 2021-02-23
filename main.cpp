@@ -12,34 +12,6 @@
 #include <string>
 
 
-void decrypt(const aes_key_t& key)
-{
-  bytes iv(16, 0);
-  for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
-  {
-    bytes c = base64::decode(chunk);
-    bytes p(c.size());
-
-    aes_decrypt_ctr(c.data(), c.size(), p.data(), key.data(), 256, iv.data());
-    increment_iv(iv.data(), iv.size());
-    serial::send(base64::encode(p) + "\n");
-  }
-}
-
-void encrypt(const aes_key_t& key)
-{
-  bytes iv(16, 0);
-  for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
-  {
-    bytes p = base64::decode(chunk);
-    bytes c(p.size());
-
-    aes_encrypt_ctr(p.data(), p.size(), c.data(), key.data(), 256, iv.data());
-    increment_iv(iv.data(), iv.size());
-
-    serial::send(base64::encode(c) + "\n");
-  }
-}
 
 // raw private key for AES and ECDSA
 bytes genkey()
@@ -65,11 +37,9 @@ int main()
 
   const bytes& key = genkey();
 
-  // not wrapped as persists
+  // not wrapped as never freed
   const mbedtls_ecp_keypair& ec_key = ecdsa::key(key);
-
-  aes_key_t key_schedule(60);
-  aes_key_setup(key.data(), key_schedule.data(), sha256::LENGTH_BITS);
+  const aes::key_t key_schedule = aes::key(key);
 
   for (char cmd = std::getchar(); true; cmd = std::getchar())
   {
@@ -102,12 +72,12 @@ int main()
       }
       case 'd':
       {
-        decrypt(key_schedule);
+        aes::decrypt_stdin(key_schedule);
         break;
       }
       case 'e':
       {
-        encrypt(key_schedule);
+        aes::encrypt_stdin(key_schedule);
         break;
       }
       case 's':

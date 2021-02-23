@@ -7,7 +7,8 @@ add_executable(crypto
   utils.cpp
   sha256.cpp
   ecdsa.cpp
-  aes.c
+  aes.cpp
+  aes_bcon.c
 )
 add_subdirectory(mbedtls-2.25.0 EXCLUDE_FROM_ALL)
 pico_enable_stdio_usb(crypto 1)

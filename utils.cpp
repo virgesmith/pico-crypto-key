@@ -17,18 +17,6 @@ namespace {
   }
 }
 
-//int (*f_rng_blind)(void *, unsigned char *, size_t)
-extern "C" int minstd_rand(void*, byte* p, size_t n)
-{
-  static uint32_t r = 1;
-  for (size_t i = 0; i < n; ++i)
-  {
-    r = r * 48271 % 2147483647;
-    p[i] = static_cast<byte>(r); // % 256;
-  }
-  return 0;
-}
-
 // string construction
 
 // prevents char being casted to int
