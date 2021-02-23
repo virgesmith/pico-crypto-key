@@ -27,9 +27,12 @@ def decrypt_csv(data_file):
     encrypted = BytesIO(f.read())
 
   data = BytesIO(device.decrypt(encrypted))
-
-  df = pd.read_csv(data)
-  return df
+  # decryption with the wrong device will result in garbage bytes that con't be read as a dataframe
+  try:
+    df = pd.read_csv(data)
+    return df
+  except Exception as e:
+    print("invalid data: %s" % e)
 
 ciphertext = "./use-cases/dataframe.csv.enc"
 
