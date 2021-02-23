@@ -48,6 +48,7 @@ class Device:
     #   ofd.write(e)
 
   def decrypt(self, data: BytesIO) -> bytearray:
+    # This returns garbage if the device isn't the one that encrypted it
 
     self.device.write(str.encode('d'))
     data_dec = bytearray()
@@ -87,3 +88,6 @@ class Device:
 
 def b64_to_hex_str(b64bytes):
   return b64decode(b64bytes).hex()
+
+def hex_str_to_b64(hex_str):
+  return b64encode(bytes.fromhex(hex_str))
