@@ -11,6 +11,40 @@
 #include <vector>
 #include <string>
 
+const char* help_str = R"(Usage:
+commands:
+
+H displays this message
+
+h computes sha256 hash of data streamed to device
+  inputs: <data> <data> <data>... <>
+  returns: <hash>
+
+k get the public key
+  inputs: none
+  returns: <pubkey>
+
+d decrypts each chunk of streamed data
+  inputs: <data> <data>... <>
+  returns: <data> <data>...
+
+e encrypts each chunk of streamed data
+  inputs: <data> <data>... <>
+  returns: <data> <data>...
+
+s hashes and signs (the hash of) the streamed data
+  inputs: <data> <data>... <>
+  returns: <hash> <sig>
+
+v verifies a signature
+  inputs: <hash> <sig> <pubkey>
+  returns: stringified integer. 0 if verification was successful
+
+All commands are a single character (no newline).
+All data sent and received is base64 encoded and terminated with a newline,
+unless otherwise specified. Where a variable number of inputs is received,
+a blank line is used to indicate the end of the data.
+)";
 
 
 // raw private key for AES and ECDSA
@@ -53,7 +87,7 @@ int main()
       // }
       case 'H':
       {
-        serial::send("help: TODO"s);
+        serial::send(help_str);
         break;
       }
       case 'k':
