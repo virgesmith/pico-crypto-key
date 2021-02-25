@@ -3,11 +3,11 @@ include(pico_sdk_import.cmake)
 project(crypto)
 pico_sdk_init()
 add_executable(crypto
-  main.cpp
-  utils.cpp
-  sha256.cpp
-  ecdsa.cpp
-  aes.cpp
+  src/main.cpp
+  src/utils.cpp
+  src/sha256.cpp
+  src/ecdsa.cpp
+  src/aes.cpp
 )
 add_subdirectory(mbedtls-2.25.0 EXCLUDE_FROM_ALL)
 pico_enable_stdio_usb(crypto 1)
