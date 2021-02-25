@@ -52,10 +52,14 @@ Now copy `crypto.uf2` to your pico device (see pico documentation for more detai
 
 ## test
 
+The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper expects the pin to be set in the environment variable `PICO_CRYPTO_KEY_PIN`.
+
+NB the device can get out of sync quite easily. If so, turn it off and on again ;)
+
 Tests assume the device is located at `/dev/ttyACM0`, adjust the code as necessary.
 
 ```bash
-PYTHONPATH=. python test/run.py
+PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python test/run.py
 ```
 
 (`PYTHONPATH` is required whilst `crypto_device.py` is not packaged)
@@ -64,12 +68,20 @@ PYTHONPATH=. python test/run.py
 
 The use cases use a small (~100kB) csv file.
 
+### 0. get device help
+
+This just prints the device's help.
+
+```bash
+PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/device_help.py
+```
+
 ### 1. encrypt data
 
 This example will look for an encrypted version of the data. If not found it will encrypt the plaintext. Then it decrypts the ciphertext and loads the data into a pandas dataframe.
 
 ```bash
-PYTHONPATH=. python use-cases/encrypted_df.py
+PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/encrypted_df.py
 ```
 
 You should see something like this:
@@ -105,7 +117,7 @@ closing serial connection
 ### 2. sign data
 
 ```bash
-PYTHONPATH=. python use-cases/sign_data.py
+PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/sign_data.py
 ```
 gives you something like
 
@@ -125,7 +137,7 @@ closing serial connection
 The signature data above should be verifiable by any ECDSA validation algorithm, but you can use the device for this. First it verifies the supplied hash corresponds to the file, then it verifies the signature against the hash and the given public key.
 
 ```bash
-PYTHONPATH=. python use-cases/verify_data.py
+PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/verify_data.py
 ```
 
 ```text

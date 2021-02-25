@@ -11,39 +11,30 @@
 #include <vector>
 #include <string>
 
-const char* help_str = R"(Usage:
-commands:
-
+const char* help_str = R"(The device must first be supplied with a correct pin to enter the repl
+repl commands:
 H displays this message
-
 h computes sha256 hash of data streamed to device
   inputs: <data> <data> <data>... <>
   returns: <hash>
-
 k get the public key
   inputs: none
   returns: <pubkey>
-
 d decrypts each chunk of streamed data
   inputs: <data> <data>... <>
   returns: <data> <data>...
-
 e encrypts each chunk of streamed data
   inputs: <data> <data>... <>
   returns: <data> <data>...
-
 s hashes and signs (the hash of) the streamed data
   inputs: <data> <data>... <>
   returns: <hash> <sig>
-
 v verifies a signature
   inputs: <hash> <sig> <pubkey>
   returns: stringified integer. 0 if verification was successful
-
-r resets the device repl (pin needs to be reentered)
+r resets the device repl (i.e. pin will need to be reentered)
   inputs: none
   returns: nothing
-
 All commands are a single character (no newline).
 All data sent and received is base64 encoded and terminated with a newline,
 unless otherwise specified. Where a variable number of inputs is received,
