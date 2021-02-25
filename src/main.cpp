@@ -40,6 +40,10 @@ v verifies a signature
   inputs: <hash> <sig> <pubkey>
   returns: stringified integer. 0 if verification was successful
 
+r resets the device repl (pin needs to be reentered)
+  inputs: none
+  returns: nothing
+
 All commands are a single character (no newline).
 All data sent and received is base64 encoded and terminated with a newline,
 unless otherwise specified. Where a variable number of inputs is received,
@@ -59,30 +63,32 @@ bytes genkey()
   return sha256::hash(raw);
 }
 
-
-int main()
+bool check_pin()
 {
-  bi_decl(bi_program_description("Crypto key"));
-  bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
+  static const bytes expected{27, 122, 143, 3, 174, 184, 22, 106, 189, 29, 77, 163, 101, 226, 4, 61, 171,
+                  209, 237, 213, 208, 154, 177, 121, 108, 235, 5, 150, 29, 117, 204, 222};
+  static const bytes salt = { 0x19, 0x93, 0x76, 0x02, 0x45, 0x4a, 0xbc, 0xde };
+  const std::string& pinstr(serial::recv());
+  bytes pin{pinstr.begin(), pinstr.end()};
+  pin.insert(pin.end(), salt.begin(), salt.end());
+  bytes h = sha256::hash(pin);
 
-  stdio_init_all();
-  gpio_init(LED_PIN);
-  gpio_set_dir(LED_PIN, GPIO_OUT);
+  return h == expected;
+}
 
-  const bytes& key = genkey();
-
-  // not wrapped as never freed
-  const mbedtls_ecp_keypair& ec_key = ecdsa::key(key);
-  const mbedtls_aes_context& aes_key = aes::key(key);
-
-  for (char cmd = std::getchar(); true; cmd = std::getchar())
+void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
+{
+  // 'r' resets repl (pin needs to be reentered)
+  for (char cmd = std::getchar(); cmd != 'r'; cmd = std::getchar())
   {
     switch (cmd)
     {
       // case 'D':
       // {
-      //   serial::send("DBG: key=" + base64::encode(key) + "\n");
-      //   serial::send("DBG: ec ok=%%\n"s % (mbedtls_ecp_check_pub_priv(&ec_key, &ec_key) == 0));
+      //   if (check_pin())
+      //     serial::send("pin ok\n");
+      //   else
+      //     serial::send("pin error\n");
       //   break;
       // }
       case 'H':
@@ -137,6 +143,37 @@ int main()
         serial::send("%% not a valid command"s % cmd);
       }
     }
-    sleep_ms(250);
+    //sleep_ms(250);
+  }
+}
+
+
+int main()
+{
+  bi_decl(bi_program_description("Crypto key"));
+  bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
+
+  stdio_init_all();
+  gpio_init(LED_PIN);
+  gpio_set_dir(LED_PIN, GPIO_OUT);
+
+  for(;;)
+  {
+
+    while (!check_pin())
+    {
+      sleep_ms(3000);
+      serial::send("incorrect pin\n");
+    }
+    serial::send("pin ok\n");
+
+    const bytes& key = genkey();
+
+    // not wrapped as never freed
+    const mbedtls_ecp_keypair& ec_key = ecdsa::key(key);
+    const mbedtls_aes_context& aes_key = aes::key(key);
+
+    // accept comands until reset
+    repl(ec_key,aes_key);
   }
 }

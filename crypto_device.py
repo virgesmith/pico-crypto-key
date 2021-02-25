@@ -11,10 +11,22 @@ class Device:
     if not os.path.exists(dev):
       raise FileNotFoundError("usb device not found")
     self.device = serial.Serial(dev, 115200)
+    pin = os.environ.get("PICO_CRYPTO_KEY_PIN")
+    if not pin:
+      raise KeyError("PICO_CRYPTO_KEY_PIN not set")
+    print("[H] pin '%s'" % pin)
+    self.have_repl = False # tracks whether repl entered (i.e. pin was correct)
+    self.device.write(str.encode(pin) + b"\n")
+    resp = self.device.readline().rstrip()
+    if resp != b'pin ok':
+      raise ValueError("PICO_CRYPTO_KEY_PIN incorrect")
+    self.have_repl = True
+
 
   def __del__(self):
-    if hasattr(self, "device"):
-      print("closing serial connection")
+    # ony reset if we have repl
+    if hasattr(self, "device") and self.have_repl:
+      self.device.write(str.encode('r'))
       self.device.close()
 
   def __hash(self, file):

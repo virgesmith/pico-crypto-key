@@ -17,5 +17,5 @@ try:
     test_sign.main(device, file)
 
 except Exception as e:
-  print(e)
+  print("test error: %s" % e)
 
