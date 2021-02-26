@@ -9,7 +9,7 @@ extern "C" struct mbedtls_mpi;
 
 namespace ecdsa {
 
-mbedtls_ecp_keypair key(const bytes& rawkey);
+int key(const bytes& rawkey, mbedtls_ecp_keypair& ec_key);
 
 bytes pubkey(const mbedtls_ecp_keypair& ec_key);
 

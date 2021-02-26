@@ -9,7 +9,7 @@
 
 namespace aes {
 
-mbedtls_aes_context key(const bytes& raw);
+int key(const bytes& raw, mbedtls_aes_context& aes_key);
 
 // decrypt stdin and output to stdout
 void decrypt_stdin(const mbedtls_aes_context& key);

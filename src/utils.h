@@ -6,7 +6,6 @@
 typedef uint8_t byte;
 typedef std::vector<byte> bytes;
 
-
 namespace std
 {
 // prevents char being casted to int

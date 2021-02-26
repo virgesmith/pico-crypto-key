@@ -49,13 +49,13 @@ extern "C" int minstd_rand(void*, byte* p, size_t n)
 
 }
 
-mbedtls_ecp_keypair ecdsa::key(const bytes& rawkey)
+int ecdsa::key(const bytes& rawkey, mbedtls_ecp_keypair& ec_key)
 {
-  mbedtls_ecp_keypair ec_key;
-  mbedtls_ecp_keypair_init(&ec_key);
   int ret = mbedtls_ecp_read_key(MBEDTLS_ECP_DP_SECP256K1, &ec_key, rawkey.data(), rawkey.size());
+  if (ret)
+    return ret;
   ret = mbedtls_ecp_mul(&ec_key.grp, &ec_key.Q, &ec_key.d, &ec_key.grp.G, NULL, NULL);
-  return ec_key;
+  return ret;
 }
 
 bytes ecdsa::pubkey(const mbedtls_ecp_keypair& ec_key)
@@ -111,5 +111,4 @@ int ecdsa::verify(const bytes& hash, const bytes& sig, const bytes& pubkey)
 
   ret = mbedtls_ecdsa_read_signature(&ec_key, hash.data(), hash.size(), sig.data(), sig.size());
   return ret;
-  mbedtls_ecdsa_free(&ec_key);
 }

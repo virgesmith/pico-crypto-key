@@ -6,13 +6,10 @@
 
 #include <string>
 
-mbedtls_aes_context aes::key(const bytes& raw)
+int aes::key(const bytes& raw, mbedtls_aes_context& aes_key)
 {
-  mbedtls_aes_context aes_key;
-  mbedtls_aes_init(&aes_key);
   // according to doc, you use the "enc" function to create a key for both encryption and decryption
-  mbedtls_aes_setkey_enc(&aes_key, raw.data(), 256);
-  return aes_key;
+  return mbedtls_aes_setkey_enc(&aes_key, raw.data(), 256);
 }
 
 void aes::decrypt_stdin(const mbedtls_aes_context& key)

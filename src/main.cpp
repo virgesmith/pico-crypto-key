@@ -11,6 +11,8 @@
 #include <vector>
 #include <string>
 
+const uint LED_PIN = 25;
+
 const char* help_str = R"(The device must first be supplied with a correct pin to enter the repl
 repl commands:
 H displays this message
@@ -162,10 +164,12 @@ int main()
     const bytes& key = genkey();
 
     // not wrapped as never freed
-    const mbedtls_ecp_keypair& ec_key = ecdsa::key(key);
-    const mbedtls_aes_context& aes_key = aes::key(key);
+    wrap<mbedtls_ecp_keypair> ec_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
+    ecdsa::key(key, ec_key());
+    wrap<mbedtls_aes_context> aes_key(mbedtls_aes_init, mbedtls_aes_free);
+    aes::key(key, aes_key());
 
-    // accept comands until reset
-    repl(ec_key,aes_key);
+    // accept commands until reset
+    repl(ec_key(), aes_key());
   }
 }
