@@ -39,6 +39,7 @@ All commands are a single character (no newline).
 All data sent and received is base64 encoded and terminated with a newline,
 unless otherwise specified. Where a variable number of inputs is received,
 a blank line is used to indicate the end of the data.
+
 )";
 
 

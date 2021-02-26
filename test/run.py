@@ -16,6 +16,11 @@ try:
     test_encryption.main(device, file)
     test_sign.main(device, file)
 
+  del(device) # resets the device
+
+  device = Device("/dev/ttyACM0")
+  device.help()
+
 except Exception as e:
   print("test error: %s" % e)
 

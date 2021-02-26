@@ -8,13 +8,13 @@ CHUNK_SIZE = 4096
 class Device:
 
   def __init__(self, dev = "/dev/ttyACM0"):
+    self.have_repl = False # tracks whether repl entered (i.e. pin was correct)
     if not os.path.exists(dev):
       raise FileNotFoundError("usb device not found")
     self.__device = serial.Serial(dev, 115200)
     pin = os.environ.get("PICO_CRYPTO_KEY_PIN")
     if not pin:
       raise KeyError("PICO_CRYPTO_KEY_PIN not set")
-    self.have_repl = False # tracks whether repl entered (i.e. pin was correct)
     self.__device.write(str.encode(pin) + b"\n")
     resp = self.__device.readline().rstrip()
     if resp != b'pin ok':
@@ -22,7 +22,7 @@ class Device:
     self.have_repl = True
 
   def __del__(self):
-    if hasattr(self, "device"):
+    if self.have_repl and getattr(self, "_Device__device"):
       self.reset()
       self.__device.close()
 
@@ -103,6 +103,7 @@ class Device:
     # ony reset if we have repl
     if self.have_repl:
       self.__device.write(str.encode('r'))
+      self.have_repl = False
 
 def b64_to_hex_str(b64bytes):
   return b64decode(b64bytes).hex()
