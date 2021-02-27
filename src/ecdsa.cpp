@@ -101,11 +101,12 @@ int ecdsa::verify(const bytes& hash, const bytes& sig, const bytes& pubkey)
 {
   // context is keypair typedef. needs to be initialised with group and pubkey
   wrap<mbedtls_ecdsa_context> ec_key(mbedtls_ecdsa_init, mbedtls_ecdsa_free);
+
   //mbedtls_ecdsa_init(&ec_key);
-  int ret = mbedtls_ecp_group_load(&ec_key().grp, MBEDTLS_ECP_DP_SECP256K1);
+  int ret = mbedtls_ecp_group_load(&(*ec_key).grp, MBEDTLS_ECP_DP_SECP256K1);
   if (ret)
     return ret;
-  ret = mbedtls_ecp_point_read_binary(&ec_key().grp, &ec_key().Q, pubkey.data(), pubkey.size());
+  ret = mbedtls_ecp_point_read_binary(&(*ec_key).grp, &(*ec_key).Q, pubkey.data(), pubkey.size());
   if (ret)
     return ret;
 

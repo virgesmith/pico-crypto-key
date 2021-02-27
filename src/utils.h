@@ -34,11 +34,12 @@ bytes decode(const std::string& s);
 
 }
 
-// RAII memory-safe wrapper for C structures with explicit init/free functions
+// RAII memory-safe(r) wrapper for C structures with explicit init/free functions
 template<typename T>
 class wrap final
 {
 public:
+  typedef T value_type;
   typedef void (*f_init_t)(T*);
   typedef void (*f_free_t)(T*);
 
@@ -58,12 +59,12 @@ public:
   wrap(wrap&&) = delete;
   wrap& operator=(wrap&&) = delete;
 
-  T* operator &() { return &m_struct; }
-  const T* operator &() const { return &m_struct; }
+  value_type* operator &() { return &m_struct; }
+  const value_type* operator &() const { return &m_struct; }
 
-  // TODO can this be done better syntactically?
-  T& operator()() { return m_struct; }
-  const T& operator()() const { return m_struct; }
+  // can this be done better syntactically?
+  value_type& operator*() { return m_struct; }
+  const value_type& operator *() const { return m_struct; }
 
 private:
   T m_struct;

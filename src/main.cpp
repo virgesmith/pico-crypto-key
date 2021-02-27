@@ -142,6 +142,17 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 }
 
 
+void error_state()
+{
+  for (;;)
+  {
+    gpio_put(LED_PIN, 1);
+    sleep_ms(500);
+    gpio_put(LED_PIN, 0);
+    sleep_ms(500);
+  }
+}
+
 int main()
 {
   bi_decl(bi_program_description("Crypto key"));
@@ -150,10 +161,12 @@ int main()
   stdio_init_all();
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
+  gpio_put(LED_PIN, 1);
+  sleep_ms(100);
+  gpio_put(LED_PIN, 0);
 
   for(;;)
   {
-
     while (!check_pin())
     {
       sleep_ms(3000);
@@ -163,13 +176,21 @@ int main()
 
     const bytes& key = genkey();
 
-    // not wrapped as never freed
     wrap<mbedtls_ecp_keypair> ec_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
-    ecdsa::key(key, ec_key());
+    // enter error state if a problem
+    if (ecdsa::key(key, *ec_key))
+    {
+      error_state();
+    }
+
     wrap<mbedtls_aes_context> aes_key(mbedtls_aes_init, mbedtls_aes_free);
-    aes::key(key, aes_key());
+    // enter error state if a problem
+    if (aes::key(key, *aes_key))
+    {
+      error_state();
+    }
 
     // accept commands until reset
-    repl(ec_key(), aes_key());
+    repl(*ec_key, *aes_key);
   }
 }
