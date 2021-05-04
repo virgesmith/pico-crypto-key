@@ -16,9 +16,9 @@ Clone the [pico-sdk](https://github.com/raspberrypi/pico-sdk). I'm currently usi
 
 See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary.
 
-See also the [mbedtls documentation](https://tls.mbed.org/api/) and [mbedtls code](https://github.com/ARMmbed/mbedtls). I used the 2.25.0 release/tag.
+See also the [mbedtls documentation](https://tls.mbed.org/api/) and [mbedtls code](https://github.com/ARMmbed/mbedtls). I used the 2.26.0 release/tag.
 
-Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.25.0`).
+Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.26.0`).
 
 ### configure
 
@@ -31,7 +31,9 @@ scripts/config.py unset MBEDTLS_FS_IO
 scripts/config.py unset MBEDTLS_PSA_ITS_FILE_C
 scripts/config.py set MBEDTLS_NO_PLATFORM_ENTROPY
 scripts/config.py unset MBEDTLS_PSA_CRYPTO_C
+scripts/config.py unset MBEDTLS_PSA_CRYPTO_STORAGE_C
 ```
+
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## build
@@ -52,11 +54,13 @@ Now copy `crypto.uf2` to your pico device (see pico documentation for more detai
 
 ## test
 
+Tests (and use cases) use python 3, dependencies can be installed using `pip install -r requirements.txt`.
+
+They assume the device is located at `/dev/ttyACM0`, so adjust the code as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
+
 The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper expects the pin to be set in the environment variable `PICO_CRYPTO_KEY_PIN`.
 
 NB the device can get out of sync quite easily. If so, turn it off and on again ;)
-
-Tests assume the device is located at `/dev/ttyACM0`, adjust the code as necessary.
 
 ```bash
 PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python test/run.py
@@ -102,7 +106,6 @@ decryption took 9.16s
 5634  E02001708               1              28           OAS
 
 [5635 rows x 4 columns]
-closing serial connection
 ```
 
 If you now switch to a different device, the decryption will return garbage, and you'll get something like this:
@@ -111,7 +114,6 @@ If you now switch to a different device, the decryption will return garbage, and
 invalid data: 'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte
 decryption took 9.04s
 None
-closing serial connection
 ```
 
 ### 2. sign data
@@ -119,6 +121,7 @@ closing serial connection
 ```bash
 PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/sign_data.py
 ```
+
 gives you something like
 
 ```text
@@ -129,7 +132,6 @@ signing/verifying took 6.95s
   "sig": "304602210089d4bc103d00e2e23f0a911444b2a472a7950c74dbf69c3e2f0268b1207ca248022100fe38989e486cf2a2a8c13844d8a1647674b3d641ee4d29a73e8138db31c9ed90",
   "pubkey": "0486bb625d67b45d82c7b3cc087984abea8d4acc5d1fb70691387594f167929892e147364318d4ce2d2eefec134fa1d531a7e7b2421d945bb563bd4d115aeb7178"
 }
-closing serial connection
 ```
 
 ### 3. verify data
@@ -144,14 +146,12 @@ PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/verify_data.py
 verifying device is the same as signing device
 hashing/verifying took 7.11s
 verified: True
-closing serial connection
 ```
 
 or, if you use a different pico
 
-```
+```text
 verifying device is NOT the signing device (which is good)
 hashing/verifying took 6.86s
 verified: True
-closing serial connection
 ```
