@@ -4,25 +4,25 @@ Using a Raspberry Pi [pico](https://www.raspberrypi.org/products/raspberry-pi-pi
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
-- cryptographic signing and verification (256 bit ECDSA)
+- cryptographic signing and verification (256 bit ECDSA - secp256k1, as Bitcoin)
 
-I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works.
+I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
-The private key is based on the unique device id of the pico, so no two devices should have the same key.
+- the device is pin protected. Only the sha256 hash of the (salted) pin is stored on the device.
+- the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
+- the private key never leaves the device and is stored only in volatile memory.
 
 ## dependencies
 
-Clone the [pico-sdk](https://github.com/raspberrypi/pico-sdk). I'm currently using the master branch.
+- [pico-sdk](https://github.com/raspberrypi/pico-sdk): clone the sdk. I'm currently using the master branch. See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary.
 
-See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary.
-
-See also the [mbedtls documentation](https://tls.mbed.org/api/) and [mbedtls code](https://github.com/ARMmbed/mbedtls). I used the 2.26.0 release/tag.
+- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). I used the 2.26.0 release/tag.
 
 Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.26.0`).
 
 ### configure
 
-In the mbedtls subdirectory, use their python script to configure the build.
+In the mbedtls subdirectory, use their python script to configure the build:
 
 ```bash
 scripts/config.py unset MBEDTLS_NET_C
