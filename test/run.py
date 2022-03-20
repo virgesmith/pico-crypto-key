@@ -1,7 +1,7 @@
-
+import sys
+sys.path.append(".")
 
 from crypto_device import Device
-import serial
 import test_hash
 import test_encryption
 import test_sign

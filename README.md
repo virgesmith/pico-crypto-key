@@ -16,9 +16,9 @@ I'm not a security expert and the device/software is almost certainly not harden
 
 - [pico-sdk](https://github.com/raspberrypi/pico-sdk): clone the sdk. I'm currently using the master branch. See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary.
 
-- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). I used the 2.26.0 release/tag.
+- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). I used the 2.27.0 release/tag.
 
-Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.26.0`).
+Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.27.0`).
 
 ### configure
 
@@ -47,7 +47,7 @@ mkdir build && cd build && cmake ..
 then
 
 ```bash
-make -j4
+make -j
 ```
 
 Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).

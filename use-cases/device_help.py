@@ -1,6 +1,9 @@
 # use case 4:
 # print the device "API" help
 
+import sys
+sys.path.append(".")
+
 from crypto_device import Device
 
 if __name__ == "__main__":

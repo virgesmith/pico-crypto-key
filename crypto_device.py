@@ -1,13 +1,13 @@
 import os
 from io import BytesIO
-import serial
+import serial  # type: ignore
 from base64 import b64encode, b64decode
 
 CHUNK_SIZE = 4096
 
 class Device:
 
-  def __init__(self, dev = "/dev/ttyACM0"):
+  def __init__(self, dev: str = "/dev/ttyACM0") -> None:
     self.have_repl = False # tracks whether repl entered (i.e. pin was correct)
     if not os.path.exists(dev):
       raise FileNotFoundError("usb device not found")
@@ -21,12 +21,12 @@ class Device:
       raise ValueError("PICO_CRYPTO_KEY_PIN incorrect")
     self.have_repl = True
 
-  def __del__(self):
+  def __del__(self) -> None:
     if self.have_repl and getattr(self, "_Device__device"):
       self.reset()
       self.__device.close()
 
-  def __hash(self, file):
+  def __hash(self, file: str) -> str:
     with open(file, "rb") as fd:
       while True:
         raw = fd.read(CHUNK_SIZE)
@@ -36,14 +36,14 @@ class Device:
       self.__device.write(b"\n")
       return self.__device.readline().rstrip()
 
-  def help(self):
+  def help(self) -> None:
     self.__device.write(str.encode('H'))
     while True:
       l = self.__device.readline().rstrip()
       print(l.decode("utf-8"))
       if l == b'': break
 
-  def hash(self, file):
+  def hash(self, file) -> str:
     self.__device.write(str.encode('h'))
     return self.__hash(file)
 
@@ -75,13 +75,13 @@ class Device:
     self.__device.write(b"\n")
     return data_dec
 
-  def sign(self, file):
+  def sign(self, file: str):
     self.__device.write(str.encode('s'))
     hash = self.__hash(file)
     sig = self.__device.readline().rstrip()
     return (hash, sig)
 
-  def verify(self, hash, sig, pubkey):
+  def verify(self, hash: bytes, sig: bytes, pubkey: bytes) -> int:
     """
     return value:
     0:      successfully verified
@@ -94,19 +94,19 @@ class Device:
     self.__device.write(pubkey + b"\n")
     return int(self.__device.readline().rstrip())
 
-  def pubkey(self):
+  def pubkey(self) -> bytes:
     self.__device.write(str.encode('k'))
     pubkey = self.__device.readline().rstrip()
     return pubkey
 
-  def reset(self):
+  def reset(self) -> None:
     # ony reset if we have repl
     if self.have_repl:
       self.__device.write(str.encode('r'))
       self.have_repl = False
 
-def b64_to_hex_str(b64bytes):
+def b64_to_hex_str(b64bytes: bytes) -> str:
   return b64decode(b64bytes).hex()
 
-def hex_str_to_b64(hex_str):
+def hex_str_to_b64(hex_str: str) -> bytes:
   return b64encode(bytes.fromhex(hex_str))

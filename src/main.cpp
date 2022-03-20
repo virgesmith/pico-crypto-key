@@ -62,7 +62,7 @@ bool check_pin()
   static const bytes expected{27, 122, 143, 3, 174, 184, 22, 106, 189, 29, 77, 163, 101, 226, 4, 61, 171,
                   209, 237, 213, 208, 154, 177, 121, 108, 235, 5, 150, 29, 117, 204, 222};
   static const bytes salt = { 0x19, 0x93, 0x76, 0x02, 0x45, 0x4a, 0xbc, 0xde };
-  const std::string& pinstr(serial::recv());
+  const std::string& pinstr = serial::recv();
   bytes pin{pinstr.begin(), pinstr.end()};
   pin.insert(pin.end(), salt.begin(), salt.end());
   bytes h = sha256::hash(pin);
@@ -73,7 +73,7 @@ bool check_pin()
 void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 {
   // 'r' resets repl (pin needs to be reentered)
-  for (char cmd = std::getchar(); cmd != 'r'; cmd = std::getchar())
+  for (char cmd = getchar(); cmd != 'r'; cmd = getchar())
   {
     switch (cmd)
     {
@@ -153,6 +153,26 @@ void error_state()
   }
 }
 
+#if 0
+
+int main()
+{
+  stdio_init_all();
+  sleep_ms(1000);
+  std::string s;
+  for (;;)
+  {
+    serial::send("waiting for input...\n");
+    s = serial::recv();
+    serial::send("got " + s + "\n");
+    sleep_ms(100);
+  }
+
+  return 0;
+}
+
+#else
+
 int main()
 {
   bi_decl(bi_program_description("Crypto key"));
@@ -164,6 +184,9 @@ int main()
   gpio_put(LED_PIN, 1);
   sleep_ms(100);
   gpio_put(LED_PIN, 0);
+
+  serial::send("pico crypto key");
+  sleep_ms(1000);
 
   for(;;)
   {
@@ -194,3 +217,5 @@ int main()
     repl(*ec_key, *aes_key);
   }
 }
+
+#endif

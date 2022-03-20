@@ -1,5 +1,7 @@
 # use case 3:
 # use a second device to verify a signature of a dataset, given a public key (as hex strings)
+import sys
+sys.path.append(".")
 
 import os
 from crypto_device import Device, b64_to_hex_str, hex_str_to_b64

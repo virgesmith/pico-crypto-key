@@ -1,8 +1,11 @@
 # use case 1:
 # use device to decrypt an encrypted dataset and read into a pandas dataframe
 
+import sys
+sys.path.append(".")
+
 import os
-import pandas as pd
+import pandas as pd  # type: ignore
 from io import BytesIO
 from crypto_device import Device
 import time
