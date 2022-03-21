@@ -1,0 +1,8 @@
+[build]
+PICO_SDK_VERSION = "1.3.0"
+PICO_IMAGE = "crypto.uf2"
+DEST_DEVICE = "/media/az/RPI-RP2/"
+
+[run]
+DEST_SERIAL = "/dev/ttyACM0"
+PICO_CRYPTO_KEY_PIN = "pico"

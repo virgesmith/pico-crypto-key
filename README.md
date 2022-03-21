@@ -36,7 +36,24 @@ scripts/config.py unset MBEDTLS_PSA_CRYPTO_STORAGE_C
 
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
+
+## Using versioned libraries
+
+Pico-sdk releases don't have a tinyusb submodule, this needs to be got separately.
+
+Download latest releases of [pico-sdk](https://github.com/raspberrypi/pico-sdk/releases/tag/1.3.0) (currently 1.3.0) and [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0) (currently 0.13.0) and extract. Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted tinyusb, e.g.
+
+```sh
+cd pico-sdk-1.3/lib
+rmdir tinyusb
+ln -s ../../tinyusb-0.13.0 tinyusb
+```
+
+Then ensure `PICO_SDK_PATH` is set to the versioned release e.g.
+
 ## build
+
+### Manual
 
 Ensure `PICO_SDK_PATH` is set correctly (see links above), then back in the project root,
 
@@ -50,7 +67,15 @@ then
 make -j
 ```
 
-Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).
+Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).~~
+
+### One-liner
+
+Ensure settings in `config.toml` are correct, and your device is connected and ready to accept a new image, then
+
+```sh
+python scripts/build.py
+```
 
 ## test
 
@@ -58,16 +83,13 @@ Tests (and use cases) use python 3, dependencies can be installed using `pip ins
 
 They assume the device is located at `/dev/ttyACM0`, so adjust the code as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 
-The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper expects the pin to be set in the environment variable `PICO_CRYPTO_KEY_PIN`.
+The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper expects the pin to be set in the config file variable `PICO_CRYPTO_KEY_PIN`.
 
 NB the device can get out of sync quite easily. If so, turn it off and on again ;)
 
 ```bash
-PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python test/run.py
+python test/run.py
 ```
-
-(`PYTHONPATH` is required whilst `crypto_device.py` is not packaged)
-
 ## use cases
 
 The use cases use a small (~100kB) csv file.
