@@ -1,17 +1,14 @@
-# use case 2:
-# use device to sign a dataset, returning (in json format) the hash, signature and public key (as hex strings) for verification
+"""Example 2:
+Use device to sign a dataset, returning (in json format) the hash, signature and public key (as hex strings) for verification
+"""
 
-import sys
-sys.path.append(".")
-
-import os
-from pico_crypto_key import Device, b64_to_hex_str
 import time
 import json
+import toml
+from pico_crypto_key import CryptoKey, b64_to_hex_str
 
-device = Device("/dev/ttyACM0")
 
-def sign_data(filename):
+def sign_data(device: CryptoKey, filename: str) -> dict:
 
   result = { "file": filename }
 
@@ -27,11 +24,20 @@ def sign_data(filename):
   return result
 
 
-filename = "./use-cases/dataframe.csv"
+def main(device_path: str, device_pin: str) -> None:
 
-start = time.time()
-result = sign_data(filename)
-print("signing/verifying took %.2fs" % (time.time() - start))
+  with CryptoKey(device=device_path, pin=device_pin) as device:
 
-print(json.dumps(result, indent=2))
+    filename = "./examples/dataframe.csv"
 
+    start = time.time()
+    result = sign_data(device, filename)
+    print("signing/verifying took %.2fs" % (time.time() - start))
+
+    print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+  config = toml.load("./config.toml")["run"]
+
+  main(config["DEST_SERIAL"], config["PICO_CRYPTO_KEY_PIN"])

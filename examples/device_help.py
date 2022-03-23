@@ -1,12 +1,18 @@
-# use case 4:
-# print the device "API" help
+"""
+Example 0: print the device "API" help
+"""
 
-import sys
-sys.path.append(".")
-
-from pico_crypto_key import Device
+import toml
+from pico_crypto_key import CryptoKey
 
 if __name__ == "__main__":
-  device = Device("/dev/ttyACM0")
-  device.help()
+  config = toml.load("./config.toml")["run"]
+
+  # d=Device(device=config["DEST_SERIAL"], pin=config["PICO_CRYPTO_KEY_PIN"])
+  # d.__enter__()
+  # d.help()
+
+  with CryptoKey(device=config["DEST_SERIAL"], pin=config["PICO_CRYPTO_KEY_PIN"]) as crypto_key:
+    #print(crypto_key)
+    crypto_key.help()
 

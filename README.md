@@ -12,19 +12,27 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-## dependencies
+## Dependencies/prerequisites
 
-- [pico-sdk](https://github.com/raspberrypi/pico-sdk): clone the sdk. I'm currently using the master branch. See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary.
+The file [config.toml](./config.toml) reflects the current library versions. Change as necessary.
 
-- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). I used the 2.27.0 release/tag.
+- [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.3.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
 
-Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.27.0`).
+- Download and extract `tinyusb` e.g. [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
-### configure
+  ```sh
+  cd pico-sdk-1.3.0/lib
+  rmdir tinyusb
+  ln -s ../../tinyusb-0.13.0 tinyusb
+  ```
 
-In the mbedtls subdirectory, use their python script to configure the build:
+- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). I used the 2.26.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.26.0`).
 
-```bash
+### Configure
+
+If using a fresh download of `mbedtls` - in that subdirectory, use their python script to configure the build:
+
+```sh
 scripts/config.py unset MBEDTLS_NET_C
 scripts/config.py unset MBEDTLS_TIMING_C
 scripts/config.py unset MBEDTLS_FS_IO
@@ -36,78 +44,62 @@ scripts/config.py unset MBEDTLS_PSA_CRYPTO_STORAGE_C
 
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
-
-## Using versioned libraries
-
-Pico-sdk releases don't have a tinyusb submodule, this needs to be got separately.
-
-Download latest releases of [pico-sdk](https://github.com/raspberrypi/pico-sdk/releases/tag/1.3.0) (currently 1.3.0) and [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0) (currently 0.13.0) and extract. Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted tinyusb, e.g.
-
-```sh
-cd pico-sdk-1.3/lib
-rmdir tinyusb
-ln -s ../../tinyusb-0.13.0 tinyusb
-```
-
-Then ensure `PICO_SDK_PATH` is set to the versioned release e.g.
-
-## build
+## Build
 
 ### Manual
 
-Ensure `PICO_SDK_PATH` is set correctly (see links above), then back in the project root,
+Ensure `PICO_SDK_PATH` env var is set correctly (see config.toml), then back in the project root,
 
-```bash
+```sh
 mkdir build && cd build && cmake ..
 ```
 
 then
 
-```bash
+```sh
 make -j
 ```
 
-Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).~~
+Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).
 
-### One-liner
+### Automated
 
 Ensure settings in `config.toml` are correct, and your device is connected and ready to accept a new image, then
 
 ```sh
-python scripts/build.py
+python pico_crypto_key/build.py
 ```
 
-## test
+## Test
 
-Tests (and use cases) use python 3, dependencies can be installed using `pip install -r requirements.txt`.
+Tests use config.toml to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 
-They assume the device is located at `/dev/ttyACM0`, so adjust the code as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
-
-The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper expects the pin to be set in the config file variable `PICO_CRYPTO_KEY_PIN`.
+The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in config.toml.
 
 NB the device can get out of sync quite easily. If so, turn it off and on again ;)
 
-```bash
+```sh
 python test/run.py
 ```
-## use cases
 
-The use cases use a small (~100kB) csv file.
+## Examples
 
-### 0. get device help
+The examples use small (<100kB) files, as device communication is currently only ~100kb/s.
+
+### 0. Get device help
 
 This just prints the device's help.
 
-```bash
-PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/device_help.py
+```sh
+python examples/device_help.py
 ```
 
-### 1. encrypt data
+### 1. Encrypt data
 
 This example will look for an encrypted version of the data. If not found it will encrypt the plaintext. Then it decrypts the ciphertext and loads the data into a pandas dataframe.
 
-```bash
-PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/encrypted_df.py
+```sh
+python examples/encrypt_df.py
 ```
 
 You should see something like this:
@@ -138,10 +130,12 @@ decryption took 9.04s
 None
 ```
 
-### 2. sign data
+### 3. Sign data
 
-```bash
-PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/sign_data.py
+This example will compute a hash (SHA256) of a file and sign it. It outputs a json object containing the filename, the hash, the signature, and the device's public key.
+
+```sh
+python examples/sign_data.py
 ```
 
 gives you something like
@@ -149,19 +143,19 @@ gives you something like
 ```text
 signing/verifying took 6.95s
 {
-  "file": "./use-cases/dataframe.csv",
+  "file": "./examples/dataframe.csv",
   "hash": "28d839df69762085f8ac7b360cd5ee0435030247143260cfaff0b313f99a251c",
   "sig": "304602210089d4bc103d00e2e23f0a911444b2a472a7950c74dbf69c3e2f0268b1207ca248022100fe38989e486cf2a2a8c13844d8a1647674b3d641ee4d29a73e8138db31c9ed90",
   "pubkey": "0486bb625d67b45d82c7b3cc087984abea8d4acc5d1fb70691387594f167929892e147364318d4ce2d2eefec134fa1d531a7e7b2421d945bb563bd4d115aeb7178"
 }
 ```
 
-### 3. verify data
+### 3. Verify data
 
-The signature data above should be verifiable by any ECDSA validation algorithm, but you can use the device for this. First it verifies the supplied hash corresponds to the file, then it verifies the signature against the hash and the given public key.
+The signature data above should be verifiable by any ECDSA validation algorithm, but you can use the device for this. First it verifies the supplied hash corresponds to the file, then it verifies the signature against the hash and the given public key. It also prints whether the public key provided matches it's own public key.
 
-```bash
-PYTHONPATH=. PICO_CRYPTO_KEY_PIN=pico python use-cases/verify_data.py
+```sh
+python examples/verify_data.py
 ```
 
 ```text

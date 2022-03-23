@@ -1,8 +1,7 @@
 from io import BytesIO
-import sys
-from pico_crypto_key import Device, b64_to_hex_str
+from pico_crypto_key import CryptoKey
 
-def main(device, file):
+def main(device: CryptoKey, file: str) -> None:
   encrypted_file = file + ".enc"
   print("[H] encrypt %s" % file)
   with open(file, "rb") as fd:
@@ -13,10 +12,3 @@ def main(device, file):
     assert data.getbuffer() == data_dec
     print("[H] round-trip ok")
 
-if __name__ == "__main__":
-  device = Device("/dev/ttyACM0")
-  assert len(sys.argv) == 2
-  try:
-    main(device, sys.argv[1])
-  except Exception as e:
-    print(e)

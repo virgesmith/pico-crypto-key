@@ -6,7 +6,7 @@ from pathlib import Path
 import toml
 
 
-def main(config):
+def main(config: dict) -> None:
 
   # check build dir exists and create if necessary
   build_dir = Path("./build")

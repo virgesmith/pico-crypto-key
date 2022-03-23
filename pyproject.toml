@@ -1,7 +1,8 @@
 [build-system]
 requires = [
   "setuptools>=42",
-  "wheel",
+  "pyserial",
+  "toml",
   "pytest"
 ]
 
@@ -10,5 +11,5 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = [
-  "tests"
+  "test"
 ]
