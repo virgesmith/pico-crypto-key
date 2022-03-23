@@ -4,7 +4,7 @@
 import sys
 sys.path.append(".")
 
-from crypto_device import Device
+from pico_crypto_key import Device
 
 if __name__ == "__main__":
   device = Device("/dev/ttyACM0")

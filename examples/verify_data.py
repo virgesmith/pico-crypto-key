@@ -4,7 +4,7 @@ import sys
 sys.path.append(".")
 
 import os
-from crypto_device import Device, b64_to_hex_str, hex_str_to_b64
+from pico_crypto_key import Device, b64_to_hex_str, hex_str_to_b64
 import time
 import json
 

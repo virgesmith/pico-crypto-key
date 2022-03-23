@@ -7,7 +7,7 @@ sys.path.append(".")
 import os
 import pandas as pd  # type: ignore
 from io import BytesIO
-from crypto_device import Device
+from pico_crypto_key import Device
 import time
 
 device = Device("/dev/ttyACM0")

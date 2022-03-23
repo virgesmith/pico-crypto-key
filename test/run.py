@@ -1,9 +1,8 @@
 import os
 import sys
 import toml
-sys.path.append(".")
 
-from crypto_device import Device
+from pico_crypto_key import Device
 import test_hash
 import test_encryption
 import test_sign
@@ -31,7 +30,6 @@ if __name__ == "__main__":
   try:
     config = toml.load("./config.toml")["run"]
 
-    os.environ["PICO_CRYPTO_KEY_PIN"] = config["PICO_CRYPTO_KEY_PIN"]
     main(config["DEST_SERIAL"])
 
   except Exception as e:

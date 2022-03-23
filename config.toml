@@ -1,4 +1,5 @@
 [build]
+MBED_TLS_VERSION = "2.26.0"
 PICO_SDK_VERSION = "1.3.0"
 PICO_IMAGE = "crypto.uf2"
 DEST_DEVICE = "/media/az/RPI-RP2/"

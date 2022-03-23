@@ -1,7 +1,6 @@
 from io import BytesIO
 import sys
-import filecmp
-from crypto_device import Device, b64_to_hex_str
+from pico_crypto_key import Device, b64_to_hex_str
 
 def main(device, file):
   encrypted_file = file + ".enc"

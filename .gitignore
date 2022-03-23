@@ -5,3 +5,5 @@ build/
 mbedtls-*/
 *.enc
 *.pyc
+
+*.egg-info

@@ -1,5 +1,5 @@
 import sys
-from crypto_device import Device, b64_to_hex_str
+from pico_crypto_key import Device, b64_to_hex_str
 
 CHUNK_SIZE = 16384
 
