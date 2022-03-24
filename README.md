@@ -66,7 +66,7 @@ python pico_crypto_key/build.py
 
 ### Manual (legacy)
 
-Ensure `PICO_SDK_PATH` env var is set correctly (see config.toml), then back in the project root,
+Copy `pico_sdk_import.cmake` from the `external` subdir of the pico SDK to your project root. Ensure `PICO_SDK_PATH` env var is set correctly, then from the project root,
 
 ```sh
 mkdir build && cd build && cmake ..
@@ -83,7 +83,7 @@ Now copy `crypto.uf2` to your pico device (see pico documentation for more detai
 
 ## Test
 
-Tests using pytest:
+Tests use pytest, just do:
 
 ```sh
 pytest

@@ -7,9 +7,10 @@ from io import BytesIO
 import serial  # type: ignore
 from base64 import b64encode, b64decode
 
-CHUNK_SIZE = 4096
-
 class CryptoKey:
+
+  CHUNK_SIZE = 16384
+  BAUD_RATE = 115200
 
   def __init__(self, *, device: str, pin: str) -> None:
     self.have_repl = False # tracks whether repl entered (i.e. pin was correct)
@@ -34,7 +35,7 @@ class CryptoKey:
   def __hash(self, file: str) -> bytes:
     with open(file, "rb") as fd:
       while True:
-        raw = fd.read(CHUNK_SIZE)
+        raw = fd.read(CryptoKey.CHUNK_SIZE)
         if not raw: break
         b = b64encode(raw)
         self.__device.write(bytearray(b) + b"\n")
@@ -58,7 +59,7 @@ class CryptoKey:
     self.__device.write(str.encode('e'))
     data_enc = bytearray()
     while True:
-      raw = data.read(CHUNK_SIZE)
+      raw = data.read(CryptoKey.CHUNK_SIZE)
       if not raw: break
       b = b64encode(raw)
       self.__device.write(bytearray(b) + b"\n")
@@ -73,7 +74,7 @@ class CryptoKey:
     self.__device.write(str.encode('d'))
     data_dec = bytearray()
     while True:
-      raw = data.read(CHUNK_SIZE)
+      raw = data.read(CryptoKey.CHUNK_SIZE)
       if not raw: break
       b = b64encode(raw)
       self.__device.write(bytearray(b) + b"\n")
@@ -116,7 +117,7 @@ class CryptoKey:
       self.have_repl = False
     if not os.path.exists(self.device_path):
       raise FileNotFoundError("usb device not found")
-    self.__device = serial.Serial(self.device_path, 115200)
+    self.__device = serial.Serial(self.device_path, CryptoKey.BAUD_RATE)
     self.__device.write(str.encode(self.device_pin) + b"\n")
     resp = self.__device.readline().rstrip()
     if resp != b'pin ok':
