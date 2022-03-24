@@ -15,8 +15,9 @@ I'm not a security expert and the device/software is almost certainly not harden
 ## Dependencies/prerequisites
 
 `pico-crypto-key` comes as a python (dev) package that provides:
-  - a simplified build process
-  - a python interface to the device.
+
+- a simplified build process
+- a python interface to the device.
 
 First, clone/fork this repo and run
 
@@ -28,7 +29,7 @@ The file [config.toml](./config.toml) reflects the current hardware library vers
 
 - [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.3.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
 
-- Download and extract `tinyusb` e.g. [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- Download and extract [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
   ```sh
   cd pico-sdk-1.3.0/lib
@@ -36,7 +37,7 @@ The file [config.toml](./config.toml) reflects the current hardware library vers
   ln -s ../../tinyusb-0.13.0 tinyusb
   ```
 
-- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 2.26.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.26.0`). You will need to edit [CMakeLists.txt](./CMakeLists.txt) if you change this.
+- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 2.28.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.28.0`). You will need to edit [CMakeLists.txt](./CMakeLists.txt) if you change this.
 
 ### Configure
 
@@ -91,7 +92,7 @@ pytest
 
 The tests use the [config.toml](./config.toml) to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 
-The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in config.toml.
+The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in [config.toml](./config.toml).
 
 NB the device can get out of sync quite easily. If so, turn it off and on again ;)
 
@@ -118,7 +119,7 @@ python examples/encrypt_df.py
 You should see something like this:
 
 ```text
-decryption took 9.16s
+decryption took 6.48s
            Area  DC1117EW_C_SEX  DC1117EW_C_AGE NewEthpop_ETH
 0     E02001730               2              62           WBI
 1     E02001713               2              60           WBI
@@ -139,7 +140,7 @@ If you now switch to a different device, the decryption will return garbage, and
 
 ```text
 invalid data: 'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte
-decryption took 9.04s
+decryption took 7.04s
 None
 ```
 
@@ -154,7 +155,7 @@ python examples/sign_data.py
 gives you something like
 
 ```text
-signing/verifying took 6.95s
+signing/verifying took 4.44s
 {
   "file": "./examples/dataframe.csv",
   "hash": "28d839df69762085f8ac7b360cd5ee0435030247143260cfaff0b313f99a251c",
@@ -173,7 +174,7 @@ python examples/verify_data.py
 
 ```text
 verifying device is the same as signing device
-hashing/verifying took 7.11s
+hashing/verifying took 4.40s
 verified: True
 ```
 
@@ -181,6 +182,6 @@ or, if you use a different pico
 
 ```text
 verifying device is NOT the signing device (which is good)
-hashing/verifying took 6.86s
+hashing/verifying took 4.46s
 verified: True
 ```
