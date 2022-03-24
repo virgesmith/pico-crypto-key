@@ -10,11 +10,11 @@ add_executable(crypto
   src/ecdsa.cpp
   src/aes.cpp
 )
-add_subdirectory(mbedtls-2.26.0 EXCLUDE_FROM_ALL)
+add_subdirectory(mbedtls-2.28.0 EXCLUDE_FROM_ALL)
 pico_enable_stdio_usb(crypto 1)
 pico_enable_stdio_uart(crypto 0)
 pico_add_extra_outputs(crypto)
-include_directories(${CMAKE_SOURCE_DIR}/mbedtls-2.26.0/include)
+include_directories(${CMAKE_SOURCE_DIR}/mbedtls-2.28.0/include)
 target_compile_options(crypto PRIVATE -Wno-psabi -Werror -Wall -Wno-unused-but-set-variable)
 # warning disabled due to this: pico-sdk/lib/tinyusb/src/portable/raspberrypi/rp2040/rp2040_usb.h:139
 target_link_libraries(crypto pico_stdlib pico_unique_id mbedcrypto)
