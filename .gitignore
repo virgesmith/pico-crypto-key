@@ -5,5 +5,7 @@ build/
 mbedtls-*/
 *.enc
 *.pyc
-
+*.uf2
 *.egg-info
+
+pico-sdk-import.cmake
