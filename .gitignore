@@ -8,4 +8,4 @@ mbedtls-*/
 *.uf2
 *.egg-info
 
-pico-sdk-import.cmake
+pico-sdk-import.cmakex
