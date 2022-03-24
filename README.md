@@ -14,7 +14,17 @@ I'm not a security expert and the device/software is almost certainly not harden
 
 ## Dependencies/prerequisites
 
-The file [config.toml](./config.toml) reflects the current library versions. Change as necessary.
+`pico-crypto-key` comes as a python (dev) package that provides:
+  - a simplified build process
+  - a python interface to the device.
+
+First, clone/fork this repo and run
+
+```sh
+pip install -e .
+```
+
+The file [config.toml](./config.toml) reflects the current hardware library versions. Change as necessary.
 
 - [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.3.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
 
@@ -26,7 +36,7 @@ The file [config.toml](./config.toml) reflects the current library versions. Cha
   ln -s ../../tinyusb-0.13.0 tinyusb
   ```
 
-- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). I used the 2.26.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.26.0`).
+- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 2.26.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.26.0`). You will need to edit [CMakeLists.txt](./CMakeLists.txt) if you change this.
 
 ### Configure
 
@@ -46,7 +56,15 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-### Manual
+### Automated
+
+Ensure settings in `config.toml` are correct, and your device is connected and ready to accept a new image, then
+
+```sh
+python pico_crypto_key/build.py
+```
+
+### Manual (legacy)
 
 Ensure `PICO_SDK_PATH` env var is set correctly (see config.toml), then back in the project root,
 
@@ -62,25 +80,20 @@ make -j
 
 Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).
 
-### Automated
-
-Ensure settings in `config.toml` are correct, and your device is connected and ready to accept a new image, then
-
-```sh
-python pico_crypto_key/build.py
-```
 
 ## Test
 
-Tests use config.toml to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
+Tests using pytest:
+
+```sh
+pytest
+```
+
+The tests use the [config.toml](./config.toml) to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 
 The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in config.toml.
 
 NB the device can get out of sync quite easily. If so, turn it off and on again ;)
-
-```sh
-python test/run.py
-```
 
 ## Examples
 

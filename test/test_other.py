@@ -1,0 +1,18 @@
+from pico_crypto_key import CryptoKey #, b64_to_hex_str
+from base64 import b64decode
+
+
+def test_pubkey(crypto_key: CryptoKey) -> None:
+    pubkey = b64decode(crypto_key.pubkey())
+    assert len(pubkey) == 65 # ?
+    assert pubkey[0] == 4 # long-form
+
+
+def test_help(crypto_key: CryptoKey) -> None:
+    crypto_key.help()
+    # nothing to test other than no exceptions
+
+
+def test_reset(crypto_key: CryptoKey) -> None:
+    crypto_key.reset()
+    # this will break other tests?

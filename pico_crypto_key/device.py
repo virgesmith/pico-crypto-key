@@ -18,23 +18,17 @@ class CryptoKey:
     self.__device: Any = None
 
   def __enter__(self) -> "CryptoKey":
-    if not os.path.exists(self.device_path):
-      raise FileNotFoundError("usb device not found")
-    self.__device = serial.Serial(self.device_path, 115200)
-    self.__device.write(str.encode(self.device_pin) + b"\n")
-    resp = self.__device.readline().rstrip()
-    if resp != b'pin ok':
-      raise ValueError("pin incorrect")
-    self.have_repl = True
+    self.reset()
     return self
 
   def __exit__(self, exc_type: type[BaseException] | None,
                      exc_value: BaseException | None,
                      _exc_stack: TracebackType | None) -> None:
+    # print("CryptoKey.__exit__")
     if exc_type:
       print(f"{exc_type.__name__}: {exc_value}")
-    if self.have_repl:
-      self.reset()
+    # if self.have_repl:
+    #   self.reset()
     self.__device.close()
 
   def __hash(self, file: str) -> bytes:
@@ -55,10 +49,12 @@ class CryptoKey:
       if l == b'': break
 
   def hash(self, file: str) -> bytes:
+    assert self.have_repl
     self.__device.write(str.encode('h'))
     return self.__hash(file)
 
   def encrypt(self, data: BytesIO) -> bytearray:
+    assert self.have_repl
     self.__device.write(str.encode('e'))
     data_enc = bytearray()
     while True:
@@ -73,6 +69,7 @@ class CryptoKey:
 
   def decrypt(self, data: BytesIO) -> bytearray:
     # This returns garbage if the device isn't the one that encrypted it
+    assert self.have_repl
     self.__device.write(str.encode('d'))
     data_dec = bytearray()
     while True:
@@ -86,6 +83,7 @@ class CryptoKey:
     return data_dec
 
   def sign(self, file: str) -> tuple[bytes, bytes]:
+    assert self.have_repl
     self.__device.write(str.encode('s'))
     hash = self.__hash(file)
     sig = self.__device.readline().rstrip()
@@ -98,6 +96,7 @@ class CryptoKey:
     -19968: not verified
     any other value means something else went wrong e.g. data formats are incorrect
     """
+    assert self.have_repl
     self.__device.write(str.encode('v'))
     self.__device.write(hash + b"\n")
     self.__device.write(sig + b"\n")
@@ -105,15 +104,25 @@ class CryptoKey:
     return int(self.__device.readline().rstrip())
 
   def pubkey(self) -> bytes:
+    assert self.have_repl
     self.__device.write(str.encode('k'))
     pubkey = self.__device.readline().rstrip()
     return pubkey
 
   def reset(self) -> None:
-    # ony reset if we have repl
+    # only send reset request if we have repl
     if self.have_repl:
       self.__device.write(str.encode('r'))
       self.have_repl = False
+    if not os.path.exists(self.device_path):
+      raise FileNotFoundError("usb device not found")
+    self.__device = serial.Serial(self.device_path, 115200)
+    self.__device.write(str.encode(self.device_pin) + b"\n")
+    resp = self.__device.readline().rstrip()
+    if resp != b'pin ok':
+      raise ValueError("pin incorrect")
+    self.have_repl = True
+
 
 def b64_to_hex_str(b64bytes: bytes) -> str:
   return b64decode(b64bytes).hex()
