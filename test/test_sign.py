@@ -12,11 +12,11 @@ def test_sign_verify(crypto_key: CryptoKey, file: str) -> None:
   print("[D] pubkey: %s" % b64_to_hex_str(pubkey))
 
   print("[H] sign %s" % file)
-  hash, sig = crypto_key.sign(file)
-  print("[D] hash: " + b64_to_hex_str(hash))
+  digest, sig = crypto_key.sign(file)
+  print("[D] hash: " + b64_to_hex_str(digest))
   print("[D] sig: %s" % b64_to_hex_str(sig))
 
-  err_code = crypto_key.verify(hash, sig, pubkey)
+  err_code = crypto_key.verify(digest, sig, pubkey)
   assert err_code == 0
   print("[D] verify: %s" % err_code)
 
@@ -26,12 +26,12 @@ def test_sign_verify(crypto_key: CryptoKey, file: str) -> None:
   print("[D] wrong hash verify: %s" % err_code)
 
   # wrong sig
-  err_code = crypto_key.verify(hash, wrong_sig, pubkey)
+  err_code = crypto_key.verify(digest, wrong_sig, pubkey)
   assert err_code == -19968 # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
   print("[D] wrong sig verify: %s" % err_code)
 
   # wrong pubkey
-  err_code = crypto_key.verify(hash, sig, wrong_pubkey)
+  err_code = crypto_key.verify(digest, sig, wrong_pubkey)
   assert err_code == -19968 # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
   print("[D] wrong pubkey verify: %s" % err_code)
 

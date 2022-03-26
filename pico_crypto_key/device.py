@@ -86,12 +86,13 @@ class CryptoKey:
   def sign(self, file: str) -> tuple[bytes, bytes]:
     assert self.have_repl
     self.__device.write(str.encode('s'))
-    hash = self.__hash(file)
+    digest = self.__hash(file)
     sig = self.__device.readline().rstrip()
-    return (hash, sig)
+    return (digest, sig)
 
-  def verify(self, hash: bytes, sig: bytes, pubkey: bytes) -> int:
-    """return value:
+  def verify(self, digest: bytes, sig: bytes, pubkey: bytes) -> int:
+    """
+    return value:
 
     0:      successfully verified
     -19968: not verified
@@ -99,7 +100,7 @@ class CryptoKey:
     """
     assert self.have_repl
     self.__device.write(str.encode('v'))
-    self.__device.write(hash + b"\n")
+    self.__device.write(digest + b"\n")
     self.__device.write(sig + b"\n")
     self.__device.write(pubkey + b"\n")
     return int(self.__device.readline().rstrip())

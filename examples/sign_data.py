@@ -10,13 +10,13 @@ def sign_data(device: CryptoKey, filename: str) -> dict:
 
   result = { "file": filename }
 
-  hash, sig = device.sign(filename)
+  digest, sig = device.sign(filename)
   pubkey = device.pubkey()
 
   # ensure it verifies
-  assert device.verify(hash, sig, pubkey) == 0
+  assert device.verify(digest, sig, pubkey) == 0
 
-  result["hash"] = b64_to_hex_str(hash)
+  result["hash"] = b64_to_hex_str(digest)
   result["sig"] = b64_to_hex_str(sig)
   result["pubkey"] = b64_to_hex_str(pubkey)
   return result

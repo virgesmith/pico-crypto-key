@@ -15,16 +15,16 @@ def verify_data(device: CryptoKey, signature_data: dict[str, str]) -> bool:
     print("verifying device is NOT the signing device (which is good)")
 
   # first check our data hash is as expected
-  hash = device.hash(signature_data["file"])
+  digest = device.hash(signature_data["file"])
   #print(hex_str_to_b64(signature["hash"]), hash)
-  if hex_str_to_b64(signature_data["hash"]) != hash:
+  if hex_str_to_b64(signature_data["hash"]) != digest:
     raise RuntimeError("invalid hash")
 
   sig = hex_str_to_b64(signature_data["sig"])
   pubkey = hex_str_to_b64(signature_data["pubkey"])
 
   # ensure it verifies
-  result = device.verify(hash, sig, pubkey)
+  result = device.verify(digest, sig, pubkey)
   return result == 0
 
 def main(device_path: str, device_pin: str) -> None:
