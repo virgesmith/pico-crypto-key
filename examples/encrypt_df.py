@@ -1,6 +1,4 @@
-"""Example 1:
-use device to decrypt an encrypted dataset and read into a pandas dataframe
-"""
+"""Example 1: use device to decrypt an encrypted dataset and read into a pandas dataframe."""
 
 import os
 from io import BytesIO
@@ -12,7 +10,7 @@ from pico_crypto_key import CryptoKey
 
 
 def encrypt_csv(crypto_key: CryptoKey, dataframe: pd.DataFrame, filename: str) -> None:
-  """ Encrypts a dataframe and saves to filesystem """
+  """Encrypts a dataframe and saves to filesystem."""
   data = BytesIO()
   dataframe.to_csv(data, index=False)
   data.seek(0)
@@ -25,7 +23,7 @@ def encrypt_csv(crypto_key: CryptoKey, dataframe: pd.DataFrame, filename: str) -
 
 
 def decrypt_csv(crypto_key: CryptoKey, data_file: str) -> pd.DataFrame:
-  """ Loads a dataframe from an encrypted csv file """
+  """Loads a dataframe from an encrypted csv file."""
   with open(data_file, 'rb') as f:
     encrypted = BytesIO(f.read())
 

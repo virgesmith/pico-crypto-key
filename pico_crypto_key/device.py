@@ -13,23 +13,23 @@ class CryptoKey:
   BAUD_RATE = 115200
 
   def __init__(self, *, device: str, pin: str) -> None:
+    """Create device object for use in context manager."""
     self.have_repl = False # tracks whether repl entered (i.e. pin was correct)
     self.device_path = device
     self.device_pin = pin
     self.__device: Any = None
 
   def __enter__(self) -> "CryptoKey":
+    """Initialised the device's repl."""
     self.reset()
     return self
 
   def __exit__(self, exc_type: type[BaseException] | None,
                      exc_value: BaseException | None,
                      _exc_stack: TracebackType | None) -> None:
-    # print("CryptoKey.__exit__")
+    """Disconnect from the device's repl."""
     if exc_type:
       print(f"{exc_type.__name__}: {exc_value}")
-    # if self.have_repl:
-    #   self.reset()
     self.__device.close()
 
   def __hash(self, file: str) -> bytes:
@@ -91,8 +91,8 @@ class CryptoKey:
     return (hash, sig)
 
   def verify(self, hash: bytes, sig: bytes, pubkey: bytes) -> int:
-    """
-    return value:
+    """return value:
+
     0:      successfully verified
     -19968: not verified
     any other value means something else went wrong e.g. data formats are incorrect
@@ -127,6 +127,7 @@ class CryptoKey:
 
 def b64_to_hex_str(b64bytes: bytes) -> str:
   return b64decode(b64bytes).hex()
+
 
 def hex_str_to_b64(hex_str: str) -> bytes:
   return b64encode(bytes.fromhex(hex_str))

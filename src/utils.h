@@ -62,6 +62,9 @@ public:
   value_type* operator &() { return &m_struct; }
   const value_type* operator &() const { return &m_struct; }
 
+  value_type* operator ->() { return &m_struct; }
+  const value_type* operator ->() const { return &m_struct; }
+
   // can this be done better syntactically?
   value_type& operator*() { return m_struct; }
   const value_type& operator *() const { return m_struct; }

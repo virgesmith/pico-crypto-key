@@ -1,10 +1,6 @@
-"""Example 3:
-Use a second device to verify a signature of a dataset, given a public key (as hex strings)
-"""
+"""Example 3: Use a second device to verify a signature of a dataset, given a public key (as hex strings)."""
 
-import os
 import time
-import json
 import toml
 
 from pico_crypto_key import CryptoKey, b64_to_hex_str, hex_str_to_b64

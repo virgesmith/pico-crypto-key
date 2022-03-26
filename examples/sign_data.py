@@ -1,6 +1,4 @@
-"""Example 2:
-Use device to sign a dataset, returning (in json format) the hash, signature and public key (as hex strings) for verification
-"""
+"""Example 2: Use device to sign a dataset, returning (in json format) the hash, signature and public key (as hex strings) for verification."""
 
 import time
 import json

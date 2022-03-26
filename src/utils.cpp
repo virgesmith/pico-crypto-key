@@ -69,10 +69,9 @@ std::string base64::encode(const bytes& in)
   std::string out;
   out.reserve(in.size() * 4 / 3);
 
-  byte b;
   for (size_t i = 0; i < in.size(); i += 3)
   {
-    b = (in[i] & 0xFC) >> 2;
+    byte b = (in[i] & 0xFC) >> 2;
     out.push_back(base64Digits[b]);
     b = (in[i] & 0x03) << 4;
     if ((i + 1) < in.size())

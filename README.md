@@ -1,5 +1,7 @@
 # pico-crypto-key
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb9853538e3a421d9715812f87f3269d)](https://www.codacy.com/gh/virgesmith/pico-crypto-key/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=virgesmith/pico-crypto-key&amp;utm_campaign=Badge_Grade)
+
 Using a Raspberry Pi [pico](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
 
 - cryptographic hashing (SHA256)
@@ -80,7 +82,6 @@ make -j
 ```
 
 Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).
-
 
 ## Test
 

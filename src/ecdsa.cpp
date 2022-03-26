@@ -14,10 +14,10 @@
 namespace {
 
 // copied from ecdsa.c (where its static)
-int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
-                                    unsigned char *sig, size_t *slen )
+int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s, unsigned char *sig, size_t *slen )
 {
   int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+  (void)ret; // silence lint (ret is used by the MBEDTLS_ASN1_CHK_ADD macro)
   unsigned char buf[MBEDTLS_ECDSA_MAX_LEN];
   unsigned char *p = buf + sizeof( buf );
   size_t len = 0;
@@ -26,13 +26,12 @@ int ecdsa_signature_to_asn1( const mbedtls_mpi *r, const mbedtls_mpi *s,
   MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_mpi( &p, buf, r ) );
 
   MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_len( &p, buf, len ) );
-  MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &p, buf,
-                                      MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) );
+  MBEDTLS_ASN1_CHK_ADD( len, mbedtls_asn1_write_tag( &p, buf, MBEDTLS_ASN1_CONSTRUCTED | MBEDTLS_ASN1_SEQUENCE ) );
 
   memcpy( sig, p, len );
   *slen = len;
 
-  return( 0 );
+  return 0;
 }
 
 //int (*f_rng_blind)(void *, unsigned char *, size_t)
@@ -103,10 +102,10 @@ int ecdsa::verify(const bytes& hash, const bytes& sig, const bytes& pubkey)
   wrap<mbedtls_ecdsa_context> ec_key(mbedtls_ecdsa_init, mbedtls_ecdsa_free);
 
   //mbedtls_ecdsa_init(&ec_key);
-  int ret = mbedtls_ecp_group_load(&(*ec_key).grp, MBEDTLS_ECP_DP_SECP256K1);
+  int ret = mbedtls_ecp_group_load(&ec_key->grp, MBEDTLS_ECP_DP_SECP256K1);
   if (ret)
     return ret;
-  ret = mbedtls_ecp_point_read_binary(&(*ec_key).grp, &(*ec_key).Q, pubkey.data(), pubkey.size());
+  ret = mbedtls_ecp_point_read_binary(&ec_key->grp, &ec_key->Q, pubkey.data(), pubkey.size());
   if (ret)
     return ret;
 

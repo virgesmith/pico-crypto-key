@@ -4,7 +4,6 @@ from pico_crypto_key import CryptoKey
 
 @pytest.mark.parametrize("file", ["./test/test.txt", "./test/test2.txt", "./test/test3.txt", "./test/test4.bin"])
 def test_encrypt_decrypt(crypto_key: CryptoKey, file: str) -> None:
-  encrypted_file = file + ".enc"
   print(f"[H] encrypt {file}")
   with open(file, "rb") as fd:
     data = BytesIO(fd.read())
