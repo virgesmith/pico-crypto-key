@@ -13,6 +13,7 @@ def test_help(crypto_key: CryptoKey) -> None:
     # nothing to test other than no exceptions
 
 
-def test_reset(crypto_key: CryptoKey) -> None:
+def test_reset_init(crypto_key: CryptoKey) -> None:
     crypto_key.reset()
+    crypto_key.init()
     # this will break other tests?

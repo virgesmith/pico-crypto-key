@@ -77,14 +77,6 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
   {
     switch (cmd)
     {
-      // case 'D':
-      // {
-      //   if (check_pin())
-      //     serial::send("pin ok\n");
-      //   else
-      //     serial::send("pin error\n");
-      //   break;
-      // }
       case 'H':
       {
         serial::send(help_str);
@@ -141,15 +133,20 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
   }
 }
 
+enum ErrorCode { EC_KEY_ERROR = 3, AES_KEY_ERROR = 4 };
 
-void error_state()
+void error_state(ErrorCode e)
 {
   for (;;)
   {
-    gpio_put(LED_PIN, 1);
-    sleep_ms(500);
-    gpio_put(LED_PIN, 0);
-    sleep_ms(500);
+    for (int i = 0; i < e; ++i)
+    {
+      gpio_put(LED_PIN, 1);
+      sleep_ms(200);
+      gpio_put(LED_PIN, 0);
+      sleep_ms(200);
+    }
+    sleep_ms(1000);
   }
 }
 
@@ -203,14 +200,14 @@ int main()
     // enter error state if a problem
     if (ecdsa::key(key, *ec_key))
     {
-      error_state();
+      error_state(ErrorCode::EC_KEY_ERROR);
     }
 
     wrap<mbedtls_aes_context> aes_key(mbedtls_aes_init, mbedtls_aes_free);
     // enter error state if a problem
     if (aes::key(key, *aes_key))
     {
-      error_state();
+      error_state(ErrorCode::AES_KEY_ERROR);
     }
 
     // accept commands until reset
