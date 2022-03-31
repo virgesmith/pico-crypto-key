@@ -7,7 +7,7 @@ import toml
 import shutil
 
 
-def build(config: dict) -> None:
+def build(config: dict[str, str]) -> str:
 
   # check build dir exists and create if necessary
   build_dir = Path("./build")
@@ -26,7 +26,6 @@ def build(config: dict) -> None:
   # check we have pico_sdk_import.cmake
   sdk_import = Path("./pico_sdk_import.cmake")
   if not sdk_import.exists():
-    #shutil.copy(Path(os.getenv("PICO_SDK_PATH")) / "external/pico_sdk_import.cmake", sdk_import)
     shutil.copy(Path(os.getenv("PICO_SDK_PATH")) / "external" / sdk_import, sdk_import)
 
   result = subprocess.run(["cmake", "..", *cmake_args], cwd="./build")
@@ -38,7 +37,7 @@ def build(config: dict) -> None:
   return f"{config['PICO_IMAGE']}.uf2"
 
 
-def install(image, config):
+def install(image: str, config: dict[str, str]) -> None:
 
   if not Path(config["DEST_DEVICE"]).exists():
     raise FileNotFoundError("device not mounted for image loading")

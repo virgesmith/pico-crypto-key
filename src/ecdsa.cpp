@@ -62,7 +62,7 @@ bytes ecdsa::pubkey(const mbedtls_ecp_keypair& ec_key)
   bytes pubkey(65);
   size_t outlen;
 
-  int ret = mbedtls_ecp_check_pub_priv(&ec_key, &ec_key);
+  int ret = mbedtls_ecp_check_pub_priv(&ec_key, &ec_key); // for v3.x: , minstd_rand, nullptr);
   if (ret != 0)
     return bytes();
 

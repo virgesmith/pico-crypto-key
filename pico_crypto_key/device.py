@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import TracebackType
 from typing import Any
+from time import sleep
 import os
 from io import BytesIO
 import serial  # type: ignore
@@ -21,13 +22,14 @@ class CryptoKey:
 
   def __enter__(self) -> "CryptoKey":
     """Initialised the device's repl."""
-    self.reset()
+    self.init()
     return self
 
   def __exit__(self, exc_type: type[BaseException] | None,
                      exc_value: BaseException | None,
                      _exc_stack: TracebackType | None) -> None:
     """Disconnect from the device's repl."""
+    self.reset()
     if exc_type:
       print(f"{exc_type.__name__}: {exc_value}")
     self.__device.close()
@@ -116,6 +118,8 @@ class CryptoKey:
     if self.have_repl:
       self.__device.write(str.encode('r'))
       self.have_repl = False
+
+  def init(self) -> None:
     if not os.path.exists(self.device_path):
       raise FileNotFoundError("usb device not found")
     self.__device = serial.Serial(self.device_path, CryptoKey.BAUD_RATE)

@@ -27,7 +27,7 @@ First, clone/fork this repo and run
 pip install -e .
 ```
 
-The file [config.toml](./config.toml) reflects the current hardware library versions. Change as necessary.
+The project file [pyproject.toml](./pyproject.toml) reflects the current hardware library versions. Change as necessary.
 
 - [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.3.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
 
@@ -61,7 +61,7 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ### Automated
 
-Ensure settings in `config.toml` are correct, and your device is connected and ready to accept a new image, then
+Ensure the settings in `pyproject.toml` are correct, and your device is connected and ready to accept a new image, then
 
 ```sh
 python pico_crypto_key/build.py
@@ -91,9 +91,9 @@ Tests use pytest, just do:
 pytest
 ```
 
-The tests use the [config.toml](./config.toml) to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
+The tests use the [pyproject.toml](./pyproject.toml) to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 
-The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in [config.toml](./config.toml).
+The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in [pyproject.toml](./pyproject.toml).
 
 NB the device can get out of sync quite easily. If so, turn it off and on again ;)
 

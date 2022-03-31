@@ -57,7 +57,7 @@ def main(device_path: str, device_pin: str) -> None:
     print(df)
 
 if __name__ == "__main__":
-  config = toml.load("./config.toml")["run"]
+  config = toml.load("./pyproject.toml")["pico"]["run"]
 
   main(config["DEST_SERIAL"], config["PICO_CRYPTO_KEY_PIN"])
 
