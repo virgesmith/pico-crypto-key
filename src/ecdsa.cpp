@@ -1,5 +1,6 @@
 
 #include "ecdsa.h"
+#include "error.h"
 
 #include "mbedtls/ecp.h"
 #include "mbedtls/ecdsa.h"
@@ -48,13 +49,18 @@ extern "C" int minstd_rand(void*, byte* p, size_t n)
 
 }
 
-int ecdsa::key(const bytes& rawkey, mbedtls_ecp_keypair& ec_key)
+void ecdsa::key(const bytes& rawkey, mbedtls_ecp_keypair& ec_key)
 {
   int ret = mbedtls_ecp_read_key(MBEDTLS_ECP_DP_SECP256K1, &ec_key, rawkey.data(), rawkey.size());
-  if (ret)
-    return ret;
-  ret = mbedtls_ecp_mul(&ec_key.grp, &ec_key.Q, &ec_key.d, &ec_key.grp.G, NULL, NULL);
-  return ret;
+  if (!ret)
+    ret = mbedtls_ecp_mul(&ec_key.grp, &ec_key.Q, &ec_key.d, &ec_key.grp.G,  minstd_rand, nullptr);
+  switch(ret)
+  {
+    case 0:
+      break;
+    default:
+      error_state(ErrorCode::EC | ErrorCode::UNKNOWN);
+  }
 }
 
 bytes ecdsa::pubkey(const mbedtls_ecp_keypair& ec_key)
@@ -62,9 +68,16 @@ bytes ecdsa::pubkey(const mbedtls_ecp_keypair& ec_key)
   bytes pubkey(65);
   size_t outlen;
 
-  int ret = mbedtls_ecp_check_pub_priv(&ec_key, &ec_key); // for v3.x: , minstd_rand, nullptr);
-  if (ret != 0)
-    return bytes();
+  int ret = mbedtls_ecp_check_pub_priv(&ec_key, &ec_key, minstd_rand, nullptr);
+  switch (ret)
+  {
+    case 0:
+      break;
+    case MBEDTLS_ERR_ECP_BAD_INPUT_DATA:
+      error_state(ErrorCode::EC | ErrorCode::INVALID_KEYPAIR);
+    default:
+      error_state(ErrorCode::EC | ErrorCode::UNKNOWN);
+  }
 
   ret = mbedtls_ecp_point_write_binary(&ec_key.grp,
                                        &ec_key.Q,
@@ -72,8 +85,17 @@ bytes ecdsa::pubkey(const mbedtls_ecp_keypair& ec_key)
                                        &outlen,
                                        pubkey.data(),
                                        pubkey.size());
-  if (ret != 0)
-    return bytes();
+  switch (ret)
+  {
+    case 0:
+      break;
+    case MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL:
+      error_state(ErrorCode::EC | ErrorCode::MEMORY);
+    case MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE:
+      error_state(ErrorCode::EC | ErrorCode::FEATURE);
+    default:
+      error_state(ErrorCode::EC | ErrorCode::UNKNOWN);
+  }
   return pubkey;
 }
 
@@ -84,7 +106,7 @@ bytes ecdsa::sign(const mbedtls_ecp_keypair& key, const bytes& hash)
 
   int ret = mbedtls_ecdsa_sign_det_ext(const_cast<mbedtls_ecp_group*>(&key.grp) /*?*/, &r, &s, &key.d,
                                        hash.data(), hash.size(), MBEDTLS_MD_SHA256,
-                                       minstd_rand, NULL);
+                                       minstd_rand, nullptr);
   if (ret != 0)
     return bytes();
 

@@ -39,7 +39,30 @@ The project file [pyproject.toml](./pyproject.toml) reflects the current hardwar
   ln -s ../../tinyusb-0.13.0 tinyusb
   ```
 
-- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 2.28.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-2.28.0`). You will need to edit [CMakeLists.txt](./CMakeLists.txt) if you change this.
+- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 3.1.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-3.1.0`). You will need to edit [CMakeLists.txt](./CMakeLists.txt) if you change this.
+
+You should end of with a structure like this:
+
+```sh
+.
+├── pico-crypto-key
+│   ├── examples
+│   ├── mbedtls-3.1.0
+│   ├── pico_crypto_key
+│   │   ├── build.py
+│   │   ├── device.py
+│   │   └── __init__.py
+│   ├── pico_sdk_import.cmake
+│   ├── pyproject.toml
+│   ├── README.md
+│   ├── setup.cfg
+│   ├── src
+│   └── test
+├── pico-sdk-1.3.0
+│   └── lib
+│       └── tinyusb -> ../../tinyusb-0.13.0
+└── tinyusb-0.13.0
+```
 
 ### Configure
 
@@ -59,29 +82,11 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-### Automated
-
-Ensure the settings in `pyproject.toml` are correct, and your device is connected and ready to accept a new image, then
+Ensure the settings in `pyproject.toml` are correct, your device is connected, ready to accept a new image, then
 
 ```sh
-python pico_crypto_key/build.py
+picobuild
 ```
-
-### Manual (legacy)
-
-Copy `pico_sdk_import.cmake` from the `external` subdir of the pico SDK to your project root. Ensure `PICO_SDK_PATH` env var is set correctly, then from the project root,
-
-```sh
-mkdir build && cd build && cmake ..
-```
-
-then
-
-```sh
-make -j
-```
-
-Now copy `crypto.uf2` to your pico device (see pico documentation for more detail).
 
 ## Test
 
@@ -91,7 +96,7 @@ Tests use pytest, just do:
 pytest
 ```
 
-The tests use the [pyproject.toml](./pyproject.toml) to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
+The tests also use the settings in [pyproject.toml](./pyproject.toml) to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 
 The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in [pyproject.toml](./pyproject.toml).
 

@@ -46,8 +46,9 @@ def install(image: str, config: dict[str, str]) -> None:
   assert result.returncode == 0
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
+def main():
   try:
     config = toml.load("./pyproject.toml")["pico"]
     image = build(config["build"])
