@@ -3,6 +3,8 @@
 #include "ecdsa.h"
 #include "serial.h"
 #include "utils.h"
+#include "device.h"
+#include "error.h"
 
 #include "pico/stdlib.h"
 #include "pico/unique_id.h"
@@ -10,8 +12,6 @@
 
 #include <vector>
 #include <string>
-
-const uint LED_PIN = 25;
 
 const char* help_str = R"(The device must first be supplied with a correct pin to enter the repl
 repl commands:
@@ -85,10 +85,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       case 'k':
       {
         const bytes& pubkey = ecdsa::pubkey(ec_key);
-        if (pubkey.empty())
-          serial::send("ERROR in ecdsa::pubkey\n");
-        else
-          serial::send(base64::encode(pubkey) + "\n");
+        serial::send(base64::encode(pubkey) + "\n");
         break;
       }
       case 'h':
@@ -129,46 +126,10 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         serial::send("%% not a valid command"s % cmd);
       }
     }
-    //sleep_ms(250);
+    sleep_ms(250);
   }
 }
 
-enum ErrorCode { EC_KEY_ERROR = 3, AES_KEY_ERROR = 4 };
-
-void error_state(ErrorCode e)
-{
-  for (;;)
-  {
-    for (int i = 0; i < e; ++i)
-    {
-      gpio_put(LED_PIN, 1);
-      sleep_ms(200);
-      gpio_put(LED_PIN, 0);
-      sleep_ms(200);
-    }
-    sleep_ms(1000);
-  }
-}
-
-#if 0
-
-int main()
-{
-  stdio_init_all();
-  sleep_ms(1000);
-  std::string s;
-  for (;;)
-  {
-    serial::send("waiting for input...\n");
-    s = serial::recv();
-    serial::send("got " + s + "\n");
-    sleep_ms(100);
-  }
-
-  return 0;
-}
-
-#else
 
 int main()
 {
@@ -189,30 +150,19 @@ int main()
   {
     while (!check_pin())
     {
-      sleep_ms(3000);
-      serial::send("incorrect pin\n");
+      error_state(ErrorCode::PIN);
     }
     serial::send("pin ok\n");
 
     const bytes& key = genkey();
 
     wrap<mbedtls_ecp_keypair> ec_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
-    // enter error state if a problem
-    if (ecdsa::key(key, *ec_key))
-    {
-      error_state(ErrorCode::EC_KEY_ERROR);
-    }
+    ecdsa::key(key, *ec_key);
 
     wrap<mbedtls_aes_context> aes_key(mbedtls_aes_init, mbedtls_aes_free);
-    // enter error state if a problem
-    if (aes::key(key, *aes_key))
-    {
-      error_state(ErrorCode::AES_KEY_ERROR);
-    }
+    aes::key(key, *aes_key);
 
     // accept commands until reset
     repl(*ec_key, *aes_key);
   }
 }
-
-#endif
