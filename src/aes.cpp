@@ -6,21 +6,18 @@
 
 #include <string>
 
-// TODO move the serial comms out of this file...
+// TODO move the serial comms out of this file..?
+
+namespace {
+  ErrorMapper error(ErrorMapper::AES, {MBEDTLS_ERR_AES_INVALID_KEY_LENGTH, });
+}
+
+
 
 void aes::key(const bytes& raw, mbedtls_aes_context& aes_key)
 {
   // according to doc, you use the "enc" function to create a key for both encryption and decryption
-  int ret = mbedtls_aes_setkey_enc(&aes_key, raw.data(), 256);
-  switch(ret)
-  {
-    case 0:
-      break;
-    case MBEDTLS_ERR_AES_INVALID_KEY_LENGTH:
-      error_state(ErrorCode::AES | ErrorCode::INVALID_KEY_LENGTH);
-    default:
-      error_state(ErrorCode::AES | ErrorCode::UNKNOWN);
-  }
+  error.check(mbedtls_aes_setkey_enc(&aes_key, raw.data(), 256));
 }
 
 void aes::decrypt_stdin(const mbedtls_aes_context& key)

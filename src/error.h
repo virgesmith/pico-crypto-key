@@ -2,12 +2,24 @@
 
 #include "pico/stdlib.h"
 
-struct ErrorCode
+#include <vector>
+
+struct ErrorMapper final
 {
-  enum Value {
-    PIN = 2*8, EC = 3*8, AES = 4*8,
-    INVALID_KEYPAIR = 1, INVALID_KEY_LENGTH = 2, MEMORY = 3, FEATURE = 4, UNKNOWN = 7
+  enum Context
+  {
+    PIN = 2, EC = 3, AES = 4, SHA = 5
   };
+
+  // individual error states. Do not provide more than 7 states!
+  ErrorMapper(Context c, std::vector<int>&& s) : context(c), states(s) {}
+
+  void check(int ret);
+
+  void enter(int code);
+
+  Context context;
+  std::vector<int> states;
 };
 
-void error_state(int e);
+//void error_state(int e);

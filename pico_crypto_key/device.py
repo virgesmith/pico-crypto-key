@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from types import TracebackType
 from typing import Any
-from time import sleep
 import os
 from io import BytesIO
 import serial  # type: ignore
@@ -93,8 +92,7 @@ class CryptoKey:
     return (digest, sig)
 
   def verify(self, digest: bytes, sig: bytes, pubkey: bytes) -> int:
-    """
-    return value:
+    """return value:
 
     0:      successfully verified
     -19968: not verified

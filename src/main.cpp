@@ -126,7 +126,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         serial::send("%% not a valid command"s % cmd);
       }
     }
-    sleep_ms(250);
+    //sleep_ms(250);
   }
 }
 
@@ -150,7 +150,8 @@ int main()
   {
     while (!check_pin())
     {
-      error_state(ErrorCode::PIN);
+      gpio_put(LED_PIN, 0);
+      sleep_ms(3000);
     }
     serial::send("pin ok\n");
 
@@ -164,5 +165,7 @@ int main()
 
     // accept commands until reset
     repl(*ec_key, *aes_key);
+
+    sleep_ms(250);
   }
 }
