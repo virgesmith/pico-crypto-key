@@ -21,7 +21,7 @@ I'm not a security expert and the device/software is almost certainly not harden
 - a simplified build process
 - a python interface to the device.
 
-First, clone/fork this repo and run
+First, clone/fork this repo and install the package in development (editable) mode:
 
 ```sh
 pip install -e .
@@ -82,25 +82,32 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-Ensure the settings in `pyproject.toml` are correct, your device is connected, ready to accept a new image, then
+Modify the `[pico.build]` and `[pico.install]` settings in `pyproject.toml` as necessary. Ensure your device is connected and ready to accept a new image, then:
 
 ```sh
 picobuild
 ```
 
-## Test
+## Using the device
 
-Tests use pytest, just do:
+The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop).
+
+Both the tests and examples read the serial port and the pin from the `[pico.run]` section in [pyproject.toml](./pyproject.toml). Modify the settings as necessary.
+
+The python interface (the `CryptoKey` class) is context-managed to help ensure the device gets properly opened and closed.
+### Troubleshooting
+
+- If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
+
+- the device can get out of sync quite (too) easily. If so, turn it off and on again ;)
+
+### Testing
+
+Just run:
 
 ```sh
 pytest
 ```
-
-The tests also use the settings in [pyproject.toml](./pyproject.toml) to locate the device (typically `/dev/ttyACM0`), adjust as necessary. If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
-
-The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop). The host-side python wrapper gets the pin from the `PICO_CRYPTO_KEY_PIN` entry in [pyproject.toml](./pyproject.toml).
-
-NB the device can get out of sync quite easily. If so, turn it off and on again ;)
 
 ## Examples
 

@@ -1,6 +1,7 @@
 #include "sha256.h"
 #include "serial.h"
 #include "error.h"
+
 #include "mbedtls/sha256.h"
 
 namespace {

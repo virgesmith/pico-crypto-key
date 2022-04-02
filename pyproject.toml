@@ -20,9 +20,9 @@ PICO_SDK_VERSION = "1.3.0"
 PICO_IMAGE = "pico-crypto-key"
 
 [pico.install]
-DEST_DEVICE = "/media/az/RPI-RP2/"
+DEVICE_PATH = "/media/az/RPI-RP2/"
 
 [pico.run]
-DEST_SERIAL = "/dev/ttyACM0"
+DEVICE_SERIAL = "/dev/ttyACM0"
 PICO_CRYPTO_KEY_PIN = "pico"
 

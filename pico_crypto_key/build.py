@@ -26,7 +26,7 @@ def build(config: dict[str, str]) -> str:
   # check we have pico_sdk_import.cmake
   sdk_import = Path("./pico_sdk_import.cmake")
   if not sdk_import.exists():
-    shutil.copy(Path(os.getenv("PICO_SDK_PATH")) / "external" / sdk_import, sdk_import)
+    shutil.copy(Path(sdk_dir / "external" / sdk_import), sdk_import)
 
   result = subprocess.run(["cmake", "..", *cmake_args], cwd="./build")
   assert result.returncode == 0
@@ -39,16 +39,14 @@ def build(config: dict[str, str]) -> str:
 
 def install(image: str, config: dict[str, str]) -> None:
 
-  if not Path(config["DEST_DEVICE"]).exists():
+  if not Path(config["DEVICE_PATH"]).exists():
     raise FileNotFoundError("device not mounted for image loading")
 
-  result = subprocess.run(["cp", image, config["DEST_DEVICE"]], cwd="./build")
+  result = subprocess.run(["cp", image, config["DEVICE_PATH"]], cwd="./build")
   assert result.returncode == 0
 
 
-#if __name__ == "__main__":
-
-def main():
+def main() -> None:
   try:
     config = toml.load("./pyproject.toml")["pico"]
     image = build(config["build"])

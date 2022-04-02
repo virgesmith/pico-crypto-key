@@ -56,7 +56,7 @@ namespace
 
 }
 
-void ecdsa::key(const bytes &rawkey, mbedtls_ecp_keypair &ec_key)
+void ecdsa::key(const bytes& rawkey, mbedtls_ecp_keypair& ec_key)
 {
   error.check(mbedtls_ecp_read_key(MBEDTLS_ECP_DP_SECP256K1, &ec_key, rawkey.data(), rawkey.size()));
   error.check(mbedtls_ecp_mul(&ec_key.grp, &ec_key.Q, &ec_key.d, &ec_key.grp.G, minstd_rand, nullptr));
@@ -78,7 +78,7 @@ bytes ecdsa::pubkey(const mbedtls_ecp_keypair &ec_key)
   return pubkey;
 }
 
-bytes ecdsa::sign(const mbedtls_ecp_keypair &key, const bytes &hash)
+bytes ecdsa::sign(const mbedtls_ecp_keypair& key, const bytes& hash)
 {
   wrap<mbedtls_mpi> r(mbedtls_mpi_init, mbedtls_mpi_free);
   wrap<mbedtls_mpi> s(mbedtls_mpi_init, mbedtls_mpi_free);
@@ -95,7 +95,7 @@ bytes ecdsa::sign(const mbedtls_ecp_keypair &key, const bytes &hash)
   return sig;
 }
 
-int ecdsa::verify(const bytes &hash, const bytes &sig, const bytes &pubkey)
+int ecdsa::verify(const bytes& hash, const bytes& sig, const bytes& pubkey)
 {
   // context is keypair typedef. needs to be initialised with group and pubkey
   wrap<mbedtls_ecdsa_context> ec_key(mbedtls_ecdsa_init, mbedtls_ecdsa_free);

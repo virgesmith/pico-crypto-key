@@ -19,7 +19,7 @@ class CryptoKey:
     self.device_pin = pin
     self.__device: Any = None
 
-  def __enter__(self) -> "CryptoKey":
+  def __enter__(self) -> CryptoKey:
     """Initialised the device's repl."""
     self.init()
     return self

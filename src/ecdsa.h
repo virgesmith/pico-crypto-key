@@ -5,8 +5,6 @@
 
 #include "mbedtls/ecp.h"
 
-extern "C" struct mbedtls_mpi;
-
 namespace ecdsa {
 
 void key(const bytes& rawkey, mbedtls_ecp_keypair& ec_key);
