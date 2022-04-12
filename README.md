@@ -27,9 +27,11 @@ First, clone/fork this repo and install the package in development (editable) mo
 pip install -e .
 ```
 
+If this step fails, try upgrading to a more recent version of pip.
+
 The project file [pyproject.toml](./pyproject.toml) reflects the current hardware library versions. Change as necessary.
 
-- [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.3.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
+- Toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.3.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
 
 - Download and extract [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
@@ -66,23 +68,17 @@ You should end of with a structure like this:
 
 ### Configure
 
-If using a fresh download of `mbedtls` - in that subdirectory, use their python script to configure the build:
+If using a fresh download of `mbedtls` - run the configuration script to customise the build for the pico, e.g.:
 
 ```sh
-scripts/config.py unset MBEDTLS_NET_C
-scripts/config.py unset MBEDTLS_TIMING_C
-scripts/config.py unset MBEDTLS_FS_IO
-scripts/config.py unset MBEDTLS_PSA_ITS_FILE_C
-scripts/config.py set MBEDTLS_NO_PLATFORM_ENTROPY
-scripts/config.py unset MBEDTLS_PSA_CRYPTO_C
-scripts/config.py unset MBEDTLS_PSA_CRYPTO_STORAGE_C
+./configure-mbedtls.sh mbedtls-1.3.0
 ```
 
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-Modify the `[pico.build]` and `[pico.install]` settings in `pyproject.toml` as necessary. Ensure your device is connected and ready to accept a new image, then:
+Modify the `[pico.build]` and `[pico.install]` settings in `pyproject.toml` as necessary. Ensure your device is connected and ready to accept a new image (press BOOTSEL when connecting), then:
 
 ```sh
 picobuild
