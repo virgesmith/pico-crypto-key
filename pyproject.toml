@@ -17,9 +17,6 @@ testpaths = [
 [pico.build]
 PICO_IMAGE = "pico-crypto-key"
 
-[pico.install]
-DEVICE_PATH = "/media/az/RPI-RP2/"
-
 [pico.run]
 DEVICE_SERIAL = "/dev/ttyACM0"
 PICO_CRYPTO_KEY_PIN = "pico"

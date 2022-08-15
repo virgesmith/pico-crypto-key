@@ -31,12 +31,12 @@ If this step fails, try upgrading to a more recent version of pip.
 
 The project file [pyproject.toml](./pyproject.toml) reflects the current hardware library versions. Change as necessary.
 
-- Toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.4.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
+- Toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.4.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.4.0.tar.gz)
 
-- Download and extract [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- Download and extract [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.4.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
   ```sh
-  cd pico-sdk-1.3.0/lib
+  cd pico-sdk-1.4.0/lib
   rmdir tinyusb
   ln -s ../../tinyusb-0.13.0 tinyusb
   ```
@@ -87,11 +87,21 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-Modify the `[pico.build]` and `[pico.install]` settings in `pyproject.toml` as necessary. Ensure your device is connected and ready to accept a new image (press BOOTSEL when connecting), then:
+Use the `picobuild` script. E.g. to clean, rebuild, install and test:
 
 ```sh
-picobuild
+picobuild clean
+picobuild build
 ```
+
+Ensure your device is connected and ready to accept a new image (press BOOTSEL when connecting), then:
+
+```
+picobuild install /media/username/RPI-RP2
+picobuild test
+```
+
+(The default device path and the device PIN are currently defined in [pyproject.toml](./pyproject.toml))
 
 ## Using the device
 
@@ -100,6 +110,7 @@ The device is pin protected (the word 'pico'), and (for now) it can't be changed
 Both the tests and examples read the serial port and the pin from the `[pico.run]` section in [pyproject.toml](./pyproject.toml). Modify the settings as necessary.
 
 The python interface (the `CryptoKey` class) is context-managed to help ensure the device gets properly opened and closed.
+
 ### Troubleshooting
 
 - If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
@@ -126,9 +137,40 @@ This just prints the device's help.
 python examples/device_help.py
 ```
 
+```text
+The device must first be supplied with a correct pin to enter the repl
+repl commands:
+H displays this message
+h computes sha256 hash of data streamed to device
+  inputs: <data> <data> <data>... <>
+  returns: <hash>
+k get the public key
+  inputs: none
+  returns: <pubkey>
+d decrypts each chunk of streamed data
+  inputs: <data> <data>... <>
+  returns: <data> <data>...
+e encrypts each chunk of streamed data
+  inputs: <data> <data>... <>
+  returns: <data> <data>...
+s hashes and signs (the hash of) the streamed data
+  inputs: <data> <data>... <>
+  returns: <hash> <sig>
+v verifies a signature
+  inputs: <hash> <sig> <pubkey>
+  returns: stringified integer. 0 if verification was successful
+r resets the device repl (i.e. pin will need to be reentered)
+  inputs: none
+  returns: nothing
+All commands are a single character (no newline).
+All data sent and received is base64 encoded and terminated with a newline,
+unless otherwise specified. Where a variable number of inputs is received,
+a blank line is used to indicate the end of the data.
+```
+
 ### 1. Encrypt data
 
-This example will look for an encrypted version of the data. If not found it will encrypt the plaintext. Then it decrypts the ciphertext and loads the data into a pandas dataframe.
+This example will look for an encrypted version of the data. If not found it will encrypt the plaintext. Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
 
 ```sh
 python examples/encrypt_df.py
