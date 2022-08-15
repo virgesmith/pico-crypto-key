@@ -9,3 +9,5 @@ mbedtls-*/
 *.egg-info
 
 pico_sdk_import.cmake
+pico-sdk
+mbedtls

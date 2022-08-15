@@ -1,6 +1,7 @@
 #!/bin/bash
 
-cd $1
+# assumes there is a dir or symlink to mbedtls in the project root
+cd mbedtls
 
 scripts/config.py unset MBEDTLS_NET_C
 scripts/config.py unset MBEDTLS_TIMING_C

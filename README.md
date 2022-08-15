@@ -31,7 +31,7 @@ If this step fails, try upgrading to a more recent version of pip.
 
 The project file [pyproject.toml](./pyproject.toml) reflects the current hardware library versions. Change as necessary.
 
-- Toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.3.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
+- Toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.4.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.3.0.tar.gz)
 
 - Download and extract [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.3.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
@@ -41,26 +41,35 @@ The project file [pyproject.toml](./pyproject.toml) reflects the current hardwar
   ln -s ../../tinyusb-0.13.0 tinyusb
   ```
 
-- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 3.1.0 release/tag. Download a release of mbedtls and extract in the project root (so you have a subdir like `mbedtls-3.1.0`). You will need to edit [CMakeLists.txt](./CMakeLists.txt) if you change this.
+- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 3.2.1 release/tag. Download a release of mbedtls, and symlink to to `mbedtls` in the project root, e.g.
 
-You should end of with a structure like this:
+- Create symlinks in the project root to the pico SDK and mbedtls, e.g.:
+
+```sh
+ln -s ../pico-sdk-1.4.0 pico-sdk
+ln -s ../mbedtls-3.2.1 mbedtls
+```
+
+You should end up with a structure something like this:
 
 ```sh
 .
+├── mbedtls-3.2.1
 ├── pico-crypto-key
 │   ├── examples
-│   ├── mbedtls-3.1.0
+│   ├── mbedtls -> ../mbedtls-3.2.1
 │   ├── pico_crypto_key
 │   │   ├── build.py
 │   │   ├── device.py
 │   │   └── __init__.py
+│   ├── pico-sdk -> ../pico-sdk-1.4.0
 │   ├── pico_sdk_import.cmake
 │   ├── pyproject.toml
 │   ├── README.md
 │   ├── setup.cfg
 │   ├── src
 │   └── test
-├── pico-sdk-1.3.0
+├── pico-sdk-1.4.0
 │   └── lib
 │       └── tinyusb -> ../../tinyusb-0.13.0
 └── tinyusb-0.13.0
@@ -71,7 +80,7 @@ You should end of with a structure like this:
 If using a fresh download of `mbedtls` - run the configuration script to customise the build for the pico, e.g.:
 
 ```sh
-./configure-mbedtls.sh mbedtls-1.3.0
+./configure-mbedtls.sh
 ```
 
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
