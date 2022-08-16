@@ -15,10 +15,49 @@ def configure():
   raise NotImplementedError("TODO...")
 
 
+def _check_symlink(path: str) -> bool:
+  link = Path(path)
+  print(f"Checking {path} ", end='')
+  if link.is_dir() or link.is_symlink():
+    print(f" -> {os.readlink(link)}")
+    return True
+  else:
+    print("NOT FOUND")
+    return False
+
+
+def _check_config(config: dict[str, str], key: str, check_exists: bool=False) -> bool:
+  print(f"Checking {key} ", end='')
+
+  if key in config:
+    print(f"= {config[key]}", end='')
+    if check_exists:
+      path = Path(config[key])
+      if path.is_file():
+        print(" [connected]")
+      else:
+        print(" [not found]")
+    else:
+      print()
+    return True
+  else:
+    print("NOT FOUND")
+    return False
+
+
 @app.command()
 def check():
   """Check the project configuration."""
-  raise NotImplementedError("TODO...")
+  ok = True
+  config = toml.load("./pyproject.toml")["pico"]
+  ok &= _check_symlink("./pico-sdk")
+  ok &= _check_symlink("./pico-sdk/lib/tinyusb")
+  ok &= _check_symlink("./mbedtls")
+  ok &= _check_config(config["build"], "PICO_IMAGE")
+  ok &= _check_config(config["run"], "DEVICE_SERIAL", True)
+  ok &= _check_config(config["run"], "PICO_CRYPTO_KEY_PIN")
+
+  print("check ok" if ok else "configuration errors found")
 
 
 @app.command()

@@ -29,11 +29,11 @@ pip install -e .
 
 If this step fails, try upgrading to a more recent version of pip.
 
-The project file [pyproject.toml](./pyproject.toml) reflects the current hardware library versions. Change as necessary.
+You will then need to:
 
-- Toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk): See [here](https://www.raspberrypi.org/documentation/pico/getting-started/) for more info on getting set up if necessary, and download and extract a release, e.g. [1.4.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.4.0.tar.gz)
+- install the compiler toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk), see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [1.4.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.4.0.tar.gz)
 
-- Download and extract [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.4.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.4.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
   ```sh
   cd pico-sdk-1.4.0/lib
@@ -41,18 +41,18 @@ The project file [pyproject.toml](./pyproject.toml) reflects the current hardwar
   ln -s ../../tinyusb-0.13.0 tinyusb
   ```
 
-- [mbedtls](https://tls.mbed.org/api/): see also the [code](https://github.com/ARMmbed/mbedtls). Currently using the 3.2.1 release/tag. Download a release of mbedtls, and symlink to to `mbedtls` in the project root, e.g.
+- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.2.1 release/tag.
 
-- Create symlinks in the project root to the pico SDK and mbedtls, e.g.:
+- create symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
-```sh
-ln -s ../pico-sdk-1.4.0 pico-sdk
-ln -s ../mbedtls-3.2.1 mbedtls
-```
+  ```sh
+  ln -s ../pico-sdk-1.4.0 pico-sdk
+  ln -s ../mbedtls-3.2.1 mbedtls
+  ```
 
-You should end up with a structure something like this:
+You should now have a structure something like this:
 
-```sh
+```txt
 .
 ├── mbedtls-3.2.1
 ├── pico-crypto-key
@@ -63,7 +63,6 @@ You should end up with a structure something like this:
 │   │   ├── device.py
 │   │   └── __init__.py
 │   ├── pico-sdk -> ../pico-sdk-1.4.0
-│   ├── pico_sdk_import.cmake
 │   ├── pyproject.toml
 │   ├── README.md
 │   ├── setup.cfg
@@ -87,17 +86,17 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-Use the `picobuild` script. E.g. to clean, rebuild, install and test:
+These steps use the `picobuild` script. Optionally check your configuration looks correct then build:
 
 ```sh
-picobuild clean
+picobuild check
 picobuild build
 ```
 
-Ensure your device is connected and ready to accept a new image (press BOOTSEL when connecting), then:
+Ensure your device is connected and mounted ready to accept a new image (press BOOTSEL when connecting), then:
 
-```
-picobuild install /media/username/RPI-RP2
+```sh
+picobuild install /path/to/RPI-RP2
 picobuild test
 ```
 
@@ -105,7 +104,7 @@ picobuild test
 
 ## Using the device
 
-The device is pin protected (the word 'pico'), and (for now) it can't be changed. Sending the correct pin to the device activates the repl (read-evaluate-print loop).
+The device is pin protected (the word 'pico'), and (for now) it can't be changed without editing the code. Sending the correct pin to the device activates the repl (read-evaluate-print loop).
 
 Both the tests and examples read the serial port and the pin from the `[pico.run]` section in [pyproject.toml](./pyproject.toml). Modify the settings as necessary.
 
@@ -196,7 +195,7 @@ decryption took 6.48s
 [5635 rows x 4 columns]
 ```
 
-If you now switch to a different device, the decryption will return garbage, and you'll get something like this:
+If you now switch to a different device, it won't be able to decrypt the ciphertext and will return garbage, and you'll get something like this:
 
 ```text
 invalid data: 'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte
