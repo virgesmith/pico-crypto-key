@@ -10,7 +10,6 @@ import serial  # type: ignore
 
 
 class CryptoKey:
-
     CHUNK_SIZE = 16384
     BAUD_RATE = 115200
 
@@ -52,9 +51,9 @@ class CryptoKey:
     def help(self) -> None:
         self.__device.write(str.encode("H"))
         while True:
-            l = self.__device.readline().rstrip()
-            print(l.decode("utf-8"))
-            if l == b"":
+            line = self.__device.readline().rstrip()
+            print(line.decode("utf-8"))
+            if line == b"":
                 break
 
     def hash(self, file: str) -> bytes:

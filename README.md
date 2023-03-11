@@ -31,47 +31,47 @@ If this step fails, try upgrading to a more recent version of pip.
 
 You will then need to:
 
-- install the compiler toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk), see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [1.4.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.4.0.tar.gz)
+- install the compiler toolchain (arm cross-compiler) and [pico-sdk](https://github.com/raspberrypi/pico-sdk), see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [1.5.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.5.0.tar.gz)
 
-- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.13.0). Replace the empty `pico-sdk-1.4.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.15.0). Replace the empty `pico-sdk-1.5.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
   ```sh
-  cd pico-sdk-1.4.0/lib
+  cd pico-sdk-1.5.0/lib
   rmdir tinyusb
-  ln -s ../../tinyusb-0.13.0 tinyusb
+  ln -s ../../tinyusb-0.15.0 tinyusb
   ```
 
-- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.2.1 release/tag.
+- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.3.0 release/tag.
 
 - create symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
-  ln -s ../pico-sdk-1.4.0 pico-sdk
-  ln -s ../mbedtls-3.2.1 mbedtls
+  ln -s ../pico-sdk-1.5.0 pico-sdk
+  ln -s ../mbedtls-3.3.0 mbedtls
   ```
 
 You should now have a structure something like this:
 
 ```txt
 .
-├── mbedtls-3.2.1
+├── mbedtls-3.3.0
 ├── pico-crypto-key
 │   ├── examples
-│   ├── mbedtls -> ../mbedtls-3.2.1
+│   ├── mbedtls -> ../mbedtls-3.3.0
 │   ├── pico_crypto_key
 │   │   ├── build.py
 │   │   ├── device.py
 │   │   └── __init__.py
-│   ├── pico-sdk -> ../pico-sdk-1.4.0
+│   ├── pico-sdk -> ../pico-sdk-1.5.0
 │   ├── pyproject.toml
 │   ├── README.md
 │   ├── setup.cfg
 │   ├── src
 │   └── test
-├── pico-sdk-1.4.0
+├── pico-sdk-1.5.0
 │   └── lib
-│       └── tinyusb -> ../../tinyusb-0.13.0
-└── tinyusb-0.13.0
+│       └── tinyusb -> ../../tinyusb-0.15.0
+└── tinyusb-0.15.0
 ```
 
 ### Configure

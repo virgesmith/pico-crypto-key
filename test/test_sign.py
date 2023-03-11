@@ -34,6 +34,3 @@ def test_sign_verify(crypto_key: CryptoKey, file: str) -> None:
   err_code = crypto_key.verify(digest, sig, wrong_pubkey)
   assert err_code == -19968 # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
   print("[D] wrong pubkey verify: %s" % err_code)
-
-
-
