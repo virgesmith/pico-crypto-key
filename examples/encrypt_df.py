@@ -38,9 +38,7 @@ def decrypt_csv(crypto_key: CryptoKey, data_file: str) -> pd.DataFrame:
 
 
 def main(device_path: str, device_pin: str) -> None:
-
     with CryptoKey(device=device_path, pin=device_pin) as crypto_key:
-
         ciphertext = "./examples/dataframe.csv.enc"
 
         # if the encrypted data isn't there create it from the plaintext

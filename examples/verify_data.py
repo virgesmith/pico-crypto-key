@@ -8,7 +8,6 @@ from pico_crypto_key import CryptoKey, b64_to_hex_str, hex_str_to_b64
 
 
 def verify_data(device: CryptoKey, signature_data: dict[str, str]) -> bool:
-
     device_pubkey = b64_to_hex_str(device.pubkey())
     if device_pubkey == signature_data["pubkey"]:
         print("verifying device is the same as signing device")
@@ -30,7 +29,6 @@ def verify_data(device: CryptoKey, signature_data: dict[str, str]) -> bool:
 
 
 def main(device_path: str, device_pin: str) -> None:
-
     signature = {
         "file": "./examples/dataframe.csv",
         "hash": "28d839df69762085f8ac7b360cd5ee0435030247143260cfaff0b313f99a251c",
@@ -39,7 +37,6 @@ def main(device_path: str, device_pin: str) -> None:
     }
 
     with CryptoKey(device=device_path, pin=device_pin) as device:
-
         start = time.time()
         result = verify_data(device, signature)
 

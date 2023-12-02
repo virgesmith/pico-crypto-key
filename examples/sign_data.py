@@ -9,7 +9,6 @@ from pico_crypto_key import CryptoKey, b64_to_hex_str
 
 
 def sign_data(device: CryptoKey, filename: str) -> dict:
-
     result = {"file": filename}
 
     digest, sig = device.sign(filename)
@@ -25,9 +24,7 @@ def sign_data(device: CryptoKey, filename: str) -> dict:
 
 
 def main(device_path: str, device_pin: str) -> None:
-
     with CryptoKey(device=device_path, pin=device_pin) as device:
-
         filename = "./examples/dataframe.csv"
 
         start = time.time()
