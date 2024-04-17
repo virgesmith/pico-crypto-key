@@ -1,5 +1,5 @@
 #include "sha256.h"
-#include "serial.h"
+#include "usb_cdc.h"
 #include "error.h"
 
 #include "mbedtls/sha256.h"
@@ -24,16 +24,18 @@ bytes sha256::hash(const bytes& data)
   return hash;
 }
 
-bytes sha256::hash_stdin()
+bytes sha256::hash_in(uint32_t length) 
 {
   wrap<mbedtls_sha256_context> ctx(mbedtls_sha256_init, mbedtls_sha256_free);
 
   mbedtls_sha256_starts(&ctx, 0);
 
-  for(std::string chunk = serial::recv(); !chunk.empty(); chunk = serial::recv())
+  for(uint32_t total_read = 0; total_read < length;)
   {
-    bytes s = base64::decode(chunk);
-    mbedtls_sha256_update(&ctx, (byte*)&*s.cbegin(), s.size());
+    uint32_t bytes_to_read = std::min(cdc::CHUNK_SIZE, length - total_read);
+    uint32_t bytes_read = cdc::read(cdc::read_buffer, bytes_to_read);
+    mbedtls_sha256_update(&ctx, cdc::read_buffer.data(), bytes_read);
+    total_read += bytes_read;
   }
 
   bytes hash(sha256::LENGTH_BYTES);

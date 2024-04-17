@@ -47,23 +47,23 @@ You will then need to:
   ln -s ../../tinyusb-0.16.0 tinyusb
   ```
 
-- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.5.1 release/tag.
+- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag.
 
 - create symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
   ln -s ../pico-sdk-1.5.1 pico-sdk
-  ln -s ../mbedtls-3.5.1 mbedtls
+  ln -s ../mbedtls-3.6.0 mbedtls
   ```
 
 You should now have a structure something like this:
 
 ```txt
 .
-├── mbedtls-3.5.1
+├── mbedtls-3.6.0
 ├── pico-crypto-key
 │   ├── examples
-│   ├── mbedtls -> ../mbedtls-3.5.1
+│   ├── mbedtls -> ../mbedtls-3.6.0
 │   ├── pico_crypto_key
 │   │   ├── build.py
 │   │   ├── device.py

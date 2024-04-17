@@ -7,3 +7,6 @@ cd mbedtls
 scripts/config.py unset MBEDTLS_TIMING_C
 scripts/config.py set MBEDTLS_NO_PLATFORM_ENTROPY
 scripts/config.py unset MBEDTLS_HAVE_TIME
+
+# plus this for 3.6.0
+scripts/config.py unset MBEDTLS_HAVE_TIME_DATE
