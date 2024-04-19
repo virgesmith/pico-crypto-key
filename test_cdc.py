@@ -2,10 +2,10 @@ import os
 from time import time
 import usb.core
 import usb.util
-from struct import pack
+from struct import pack, unpack
 import hashlib
 
-CHUNK_SIZE = 16384
+CHUNK_SIZE = 2048 #16384
 
 def get_endpoints(device: usb.core.Device) -> tuple:
     # TODO this function needs improvement
@@ -25,13 +25,12 @@ def get_endpoints(device: usb.core.Device) -> tuple:
 
     return endpoints
 
-def dprint(endpoint_out) -> None:
-    response = endpoint_out.read(CHUNK_SIZE)
-    print(response.tobytes().decode())
+# def dprint(endpoint_out) -> None:
+#     response = endpoint_out.read(CHUNK_SIZE)
+#     print(response.tobytes().decode())
 
 
-def main() -> None:
-    device = usb.core.find(idVendor=0xAAFE, idProduct=0xC0FF)
+def main(device) -> None:
     endpoint_in, endpoint_out = get_endpoints(device)
 
     reattach = False
@@ -44,15 +43,17 @@ def main() -> None:
     response = endpoint_out.read(CHUNK_SIZE).tobytes()
     print(f"H: got '{response}' ({len(response)})")
 
-    # key
+    # public key
     endpoint_in.write("k".encode("utf-8"))
-    response = endpoint_out.read(CHUNK_SIZE).tobytes()
-    print(f"H: got ({len(response)})")
-    print(response.hex())
+    pubkey = endpoint_out.read(CHUNK_SIZE).tobytes()
+    print(f"H: got ({len(pubkey)}) {pubkey.hex()}")
+
+    # filename = "build/pico-crypto-key.dis" 
+    filename = "CMakeLists.txt" 
 
     # hash
+    start = time()
     endpoint_in.write("h".encode("utf-8"))
-    filename = "CMakeLists.txt" 
     file_length = os.stat(filename).st_size
     uint32 = pack("I", file_length)   
     ret = endpoint_in.write(uint32)
@@ -64,55 +65,130 @@ def main() -> None:
             # write a chunk
             data = fd.read(write_chunk_length)
             ret = endpoint_in.write(data)
-            print(f"H: wrote {ret} bytes")
             write_remaining -= ret    
+    print(f"H: wrote {file_length} bytes")
     response = endpoint_out.read(CHUNK_SIZE).tobytes()
-    print(f"H: got ({len(response)})")
-    print(response.hex())
+    print(f"H: got ({len(response)}) {response.hex()}")
+    elapsed = time() - start
+    print(f"hash rate {file_length / 1024 / elapsed:.1f}kpbs")
 
+    # sign
+    start = time()
+    endpoint_in.write("s".encode("utf-8"))
+    file_length = os.stat(filename).st_size
+    uint32 = pack("I", file_length)   
+    ret = endpoint_in.write(uint32)
+    print(f"H: wrote {ret} bytes")
+    with open(filename, "rb") as fd:
+        write_remaining = file_length
+        while write_remaining > 0:
+            write_chunk_length = min(write_remaining, CHUNK_SIZE)
+            # write a chunk
+            data = fd.read(write_chunk_length)
+            ret = endpoint_in.write(data)
+            write_remaining -= ret    
+    print(f"H: wrote {file_length} bytes")
+    hash = endpoint_out.read(CHUNK_SIZE).tobytes()
+    print(f"H: got ({len(hash)}) {hash.hex()}")
+    sig = endpoint_out.read(CHUNK_SIZE).tobytes()
+    print(f"H: got ({len(sig)}) {sig.hex()}")
+    elapsed = time() - start
+    print(f"sign rate {file_length / 1024 / elapsed:.1f}kpbs")
+
+    # verify
+    start = time()
+    endpoint_in.write("v".encode("utf-8"))
+    ret = endpoint_in.write(hash)
+    print(f"H: wrote {ret}")
+    uint32 = pack("I", len(sig)) 
+    ret = endpoint_in.write(uint32)
+    print(f"H: wrote {ret}")
+    ret = endpoint_in.write(sig)
+    print(f"H: wrote {ret}")
+    uint32 = pack("I", len(pubkey))   
+    ret = endpoint_in.write(uint32)
+    print(f"H: wrote {ret}")
+    ret = endpoint_in.write(pubkey)
+    print(f"H: wrote {ret}")
+    uint32 = endpoint_out.read(4).tobytes()
+    result = unpack("I", uint32)
+    print(f"H: got {result}")
+    elapsed = time() - start
+    print(f"verify time {elapsed * 1000:.1f}ms")
+
+    # encrypt
+    start = time()
+    endpoint_in.write("e".encode("utf-8"))
+    filename = "pico_sdk_import.cmake" 
+    file_length = os.stat(filename).st_size
+    uint32 = pack("I", file_length)   
+    ret = endpoint_in.write(uint32)
+    print(f"H: wrote {ret} bytes")
+    with open(filename, "rb") as pd, open(filename + "_enc", "wb") as cd:
+        write_remaining = file_length
+        read_remaining = file_length
+        while write_remaining > 0:
+            write_chunk_length = min(write_remaining, CHUNK_SIZE)
+            # write a chunk
+            data = pd.read(write_chunk_length)
+            bytes_written = endpoint_in.write(data)
+            print(f"H: wrote {bytes_written}")
+            write_remaining -= bytes_written
+    
+            # read an encrypted chunk
+            # TODO why fail if we only ask for bytes written?
+            data = endpoint_out.read(read_remaining).tobytes()
+            bytes_read = len(data)
+            print(f"H: read {bytes_read}")
+            cd.write(data) 
+            read_remaining -= bytes_read
+
+    elapsed = time() - start
+    print(f"encrypt time {elapsed * 1000:.1f}ms")
+
+    # decrypt
+    start = time()
+    endpoint_in.write("d".encode("utf-8"))
+    file_length = os.stat(filename).st_size
+    uint32 = pack("I", file_length)   
+    ret = endpoint_in.write(uint32)
+    print(f"H: wrote {ret} bytes")
+    with open(filename + "_enc", "rb") as cd, open(filename + "_dec", "wb") as pd:
+        write_remaining = file_length
+        read_remaining = file_length
+        while write_remaining > 0:
+            write_chunk_length = min(write_remaining, CHUNK_SIZE)
+            # write a chunk
+            data = cd.read(write_chunk_length)
+            bytes_written = endpoint_in.write(data)
+            print(f"H: wrote {bytes_written}")
+            write_remaining -= bytes_written
+    
+            # read an decrypted chunk
+            # TODO why fail if we only ask for bytes written?
+            data = endpoint_out.read(read_remaining).tobytes()
+            bytes_read = len(data)
+            print(f"H: read {bytes_read}")
+            pd.write(data) 
+            read_remaining -= bytes_read
+    elapsed = time() - start
+    print(f"decrypt time {elapsed * 1000:.1f}ms")
 
     # reset the repl
     endpoint_in.write("r".encode("utf-8"))
-    
-
-    # start = time()
-    # file_length = os.stat(filename).st_size
-    # print(f"H: file is {file_length} bytes")
-    # with open(filename, "rb") as in_fd, open(filename + "_processed", "wb") as out_fd:
-    #     uint32 = pack("I", file_length)
-    #     ret = endpoint_in.write(uint32)
-    #     print(f"H: wrote {ret} bytes")
-    #     dprint(endpoint_out)
-
-    #     write_remaining = file_length
-    #     read_remaining = file_length
-    #     while read_remaining > 0:
-    #         write_chunk_length = min(write_remaining, CHUNK_SIZE)
-
-    #         # write a chunk
-    #         data = in_fd.read(write_chunk_length)
-    #         ret = endpoint_in.write(data)
-    #         print(f"H: wrote {ret} bytes")
-    #         write_remaining -= ret
-
-    #         # read a chunk (ask for as much as possible)
-    #         data = endpoint_out.read(read_remaining).tobytes()
-    #         bytes_read = len(data)
-    #         out_fd.write(data)
-    #         print(f"H: read {bytes_read} bytes")
-    #         read_remaining -= bytes_read
-
-    # elapsed = time() - start
-    # # 2 to account for read+write, 128 converts bytes to kilobits
-    # print(f"{2 * file_length / 128 / elapsed:.1f} kbps")
 
     usb.util.dispose_resources(device)
 
     # It may raise USBError if there's e.g. no kernel driver loaded at all
     if reattach:
         device.attach_kernel_driver(0)
+    
 
 
 if __name__ == "__main__":
-    main()
-
+    try:
+        device = usb.core.find(idVendor=0xAAFE, idProduct=0xC0FF)
+        main(device)
+    except:
+        device.reset()
+        raise

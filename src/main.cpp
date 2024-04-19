@@ -89,52 +89,85 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       }
       case 'H':
       {
+        gpio_put(LED_PIN, 1);
         cdc::write(help_str);
+        gpio_put(LED_PIN, 0);
         break;
       }
       case 'k':
       {
-        const bytes& pubkey = ecdsa::pubkey(ec_key);
-        cdc::write(pubkey);
+        gpio_put(LED_PIN, 1);
+        cdc::write(ecdsa::pubkey(ec_key));
+        gpio_put(LED_PIN, 0);
         break;
       }
       case 'h':
       {
         // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
         uint32_t length;
         cdc::read(length);
         bytes hash = sha256::hash_in(length);
-        cdc::write(hash, hash.size());
+        cdc::write(hash);
+        gpio_put(LED_PIN, 0);
         break;
       }
-      // case 'd':
-      // {
-      //   aes::decrypt_stdin(aes_key);
-      //   break;
-      // }
-      // case 'e':
-      // {
-      //   aes::encrypt_stdin(aes_key);
-      //   break;
-      // }
-      // case 's':
-      // {
-      //   bytes h = sha256::hash_stdin();
-      //   serial::send(base64::encode(h) + "\n");
-      //   bytes sig = ecdsa::sign(ec_key, h);
-      //   if (sig.empty())
-      //     serial::send("ERROR in ecdsa::sign\n");
-      //   serial::send(base64::encode(sig) + "\n");
-      //   break;
-      // }
-      // case 'v':
-      // {
-      //   bytes hash = base64::decode(serial::recv());
-      //   bytes sig = base64::decode(serial::recv());
-      //   bytes pubkey = base64::decode(serial::recv());
-      //   serial::send("%%\n"s % ecdsa::verify(hash, sig, pubkey));
-      //   break;
-      // }
+      case 'd':
+      {
+        // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        cdc::read(length);
+        aes::decrypt_in(aes_key, length);
+        gpio_put(LED_PIN, 0);
+        break;
+      }
+      case 'e':
+      {
+        // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        cdc::read(length);
+        aes::encrypt_in(aes_key, length);
+        gpio_put(LED_PIN, 0);
+        break;
+      }
+      case 's':
+      {
+        // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        cdc::read(length);
+        bytes hash = sha256::hash_in(length);
+        cdc::write(hash);
+        bytes sig = ecdsa::sign(ec_key, hash);
+        if (sig.empty())
+          cdc::write("ERROR in ecdsa::sign");
+        else
+          cdc::write(sig);
+        gpio_put(LED_PIN, 0);
+        break;
+      }
+      case 'v':
+      {
+        // hash[32], len(sig)[4], sig, len(key)[4], key
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        bytes hash(sha256::LENGTH_BYTES); 
+        cdc::read(hash);
+        // read signature
+        cdc::read(length);
+        bytes sig(length);
+        cdc::read(sig);
+        // read pubkey
+        cdc::read(length);
+        bytes pubkey(length);
+        cdc::read(pubkey);
+        // 4-byte int, 0 is success 
+        cdc::write(ecdsa::verify(hash, sig, pubkey));
+        gpio_put(LED_PIN, 0);
+        break;
+      }
       default:
       {
         cdc::write("%% not a valid command"s % cmd);
@@ -171,7 +204,6 @@ int main()
       sleep_ms(3000);
     }
     cdc::write("pin ok");
-    // serial::send("pin ok\n");
 
     const bytes& key = genkey();
 

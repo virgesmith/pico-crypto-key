@@ -9,42 +9,41 @@ namespace cdc {
 
 constexpr uint32_t CHUNK_SIZE = 2048;
 
-extern bytes read_buffer;
-//extern bytes write_buffer;
-
 // Read length (no checking for buffer overrun)
 uint32_t read_impl(byte* buffer, uint32_t length);
 
 // Read length into buffer without overrun
-inline uint32_t read(bytes& buffer, uint32_t length) {
-  return read_impl(buffer.data(), std::min((uint32_t)buffer.size(), length));
-}
+uint32_t read(bytes& buffer, uint32_t length);
 
-// Read into type (specialised for bytes)
-template <typename T> bool read(T& dest) {
+// Read into type
+template <typename T> 
+bool read(T& dest) {
   return read_impl(reinterpret_cast<uint8_t*>(&dest), sizeof(T)) == sizeof(T);
 }
+
+// specialise for bytes
+template <> bool cdc::read(bytes& b);
 
 // Write bytes (without flushing?)
 uint32_t write_impl(const byte* buffer, uint32_t buffer_size);
 
-// Write a byte buffer
-inline uint32_t write(const bytes& buffer) {
-  return write_impl(buffer.data(), (uint32_t)buffer.size());
-}
-
 // Write part of a byte buffer
-inline uint32_t write(const bytes& buffer, uint32_t length) {
-  return write_impl(buffer.data(), std::min((uint32_t)buffer.size(), length));
+uint32_t write(const bytes& buffer, uint32_t length);
+
+// Write a C string
+bool write(const char* str);
+
+// Write a type (specialised for bytes/string)
+template <typename T> 
+bool write(const T& src) {
+  return write_impl(reinterpret_cast<const uint8_t*>(&src), sizeof(T)) == sizeof(T);
 }
 
-// Write a string
-inline uint32_t write(const std::string& s) {
-  return write_impl(reinterpret_cast<const uint8_t*>(s.data()), s.size());
-}
+template<>
+bool cdc::write(const bytes& b);
 
-// inline uint32_t write(const bytes& b) {
-//   return write(reinterpret_cast<const uint8_t*>(b.data()), b.size());
-// }
+template<>
+bool cdc::write(const std::string& s);
+
 
 } // namespace cdc

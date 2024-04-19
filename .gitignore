@@ -3,7 +3,8 @@
 __pycache__/
 build/
 mbedtls-*/
-*.enc
+*_enc
+*_dec
 *.pyc
 *.uf2
 *.egg-info

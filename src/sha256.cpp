@@ -30,11 +30,13 @@ bytes sha256::hash_in(uint32_t length)
 
   mbedtls_sha256_starts(&ctx, 0);
 
+  bytes buffer(cdc::CHUNK_SIZE);
+
   for(uint32_t total_read = 0; total_read < length;)
   {
     uint32_t bytes_to_read = std::min(cdc::CHUNK_SIZE, length - total_read);
-    uint32_t bytes_read = cdc::read(cdc::read_buffer, bytes_to_read);
-    mbedtls_sha256_update(&ctx, cdc::read_buffer.data(), bytes_read);
+    uint32_t bytes_read = cdc::read(buffer, bytes_to_read);
+    mbedtls_sha256_update(&ctx, buffer.data(), bytes_read);
     total_read += bytes_read;
   }
 
