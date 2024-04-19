@@ -2,7 +2,6 @@
 #include "aes.h"
 #include "ecdsa.h"
 #include "usb_cdc.h"
-//#include "serial.h"
 #include "utils.h"
 #include "device.h"
 #include "error.h"
@@ -65,8 +64,6 @@ bool check_pin()
   static const bytes salt = { 0x19, 0x93, 0x76, 0x02, 0x45, 0x4a, 0xbc, 0xde };
   bytes pin(4);
   cdc::read(pin, pin.size());
-  //const std::string& pinstr = serial::recv();
-  // bytes pin{pinstr.begin(), pinstr.end()};
   pin.insert(pin.end(), salt.begin(), salt.end());
   bytes h = sha256::hash(pin);
   return h == expected;
@@ -180,19 +177,15 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 
 int main()
 {
-  bi_decl(bi_program_description("Crypto key"));
+  bi_decl(bi_program_description("PicoCryptoKey"));
   bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
 
   tusb_init();
-  //stdio_init_all();
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
   gpio_put(LED_PIN, 1);
   sleep_ms(100);
   gpio_put(LED_PIN, 0);
-
-  //serial::send("pico crypto key");
-  // sleep_ms(1000);
 
   for(;;)
   {

@@ -1,3 +1,3 @@
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
-from .device import CryptoKey, b64_to_hex_str, hex_str_to_b64  # noqa: F401
+from .device import CryptoKey  # noqa: F401

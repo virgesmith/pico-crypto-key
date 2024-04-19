@@ -11,7 +11,6 @@ pico_sdk_init()
 
 add_executable(${PICO_IMAGE}
   src/main.cpp
-  src/utils.cpp
   src/usb_cdc.cpp
   src/sha256.cpp
   src/ecdsa.cpp
