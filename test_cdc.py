@@ -3,9 +3,8 @@ from time import time
 import usb.core
 import usb.util
 from struct import pack, unpack
-import hashlib
 
-CHUNK_SIZE = 2048 #16384
+CHUNK_SIZE = 16384
 
 def get_endpoints(device: usb.core.Device) -> tuple:
     # TODO this function needs improvement
@@ -39,12 +38,12 @@ def main(device) -> None:
         device.detach_kernel_driver(0)
 
     print("H: sending pin")
-    endpoint_in.write("pico".encode("utf-8"))
+    endpoint_in.write(b"pico")
     response = endpoint_out.read(CHUNK_SIZE).tobytes()
     print(f"H: got '{response}' ({len(response)})")
 
     # public key
-    endpoint_in.write("k".encode("utf-8"))
+    endpoint_in.write(b"k")
     pubkey = endpoint_out.read(CHUNK_SIZE).tobytes()
     print(f"H: got ({len(pubkey)}) {pubkey.hex()}")
 
@@ -53,7 +52,7 @@ def main(device) -> None:
 
     # hash
     start = time()
-    endpoint_in.write("h".encode("utf-8"))
+    endpoint_in.write(b"h")
     file_length = os.stat(filename).st_size
     uint32 = pack("I", file_length)   
     ret = endpoint_in.write(uint32)
@@ -74,7 +73,7 @@ def main(device) -> None:
 
     # sign
     start = time()
-    endpoint_in.write("s".encode("utf-8"))
+    endpoint_in.write(b"s")
     file_length = os.stat(filename).st_size
     uint32 = pack("I", file_length)   
     ret = endpoint_in.write(uint32)
@@ -97,7 +96,7 @@ def main(device) -> None:
 
     # verify
     start = time()
-    endpoint_in.write("v".encode("utf-8"))
+    endpoint_in.write(b"v")
     ret = endpoint_in.write(hash)
     print(f"H: wrote {ret}")
     uint32 = pack("I", len(sig)) 
@@ -118,13 +117,14 @@ def main(device) -> None:
 
     # encrypt
     start = time()
-    endpoint_in.write("e".encode("utf-8"))
-    filename = "pico_sdk_import.cmake" 
-    file_length = os.stat(filename).st_size
+    endpoint_in.write(b"e")
+    plaintext_filename = "pico_sdk_import.cmake" 
+    encrypted_filename = plaintext_filename + "_enc"
+    file_length = os.stat(plaintext_filename).st_size
     uint32 = pack("I", file_length)   
     ret = endpoint_in.write(uint32)
     print(f"H: wrote {ret} bytes")
-    with open(filename, "rb") as pd, open(filename + "_enc", "wb") as cd:
+    with open(plaintext_filename, "rb") as pd, open(encrypted_filename, "wb") as cd:
         write_remaining = file_length
         read_remaining = file_length
         while write_remaining > 0:
@@ -147,13 +147,14 @@ def main(device) -> None:
     print(f"encrypt time {elapsed * 1000:.1f}ms")
 
     # decrypt
+    decrypted_filename = plaintext_filename + "_dec" 
     start = time()
-    endpoint_in.write("d".encode("utf-8"))
-    file_length = os.stat(filename).st_size
+    endpoint_in.write(b"d")
+    file_length = os.stat(encrypted_filename).st_size
     uint32 = pack("I", file_length)   
     ret = endpoint_in.write(uint32)
     print(f"H: wrote {ret} bytes")
-    with open(filename + "_enc", "rb") as cd, open(filename + "_dec", "wb") as pd:
+    with open(encrypted_filename, "rb") as cd, open(decrypted_filename, "wb") as pd:
         write_remaining = file_length
         read_remaining = file_length
         while write_remaining > 0:
@@ -175,7 +176,7 @@ def main(device) -> None:
     print(f"decrypt time {elapsed * 1000:.1f}ms")
 
     # reset the repl
-    endpoint_in.write("r".encode("utf-8"))
+    endpoint_in.write(b"r")
 
     usb.util.dispose_resources(device)
 
