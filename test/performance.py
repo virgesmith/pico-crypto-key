@@ -1,9 +1,9 @@
-
 import os
-from time import time
 from tempfile import mkstemp
+from time import time
 
 from pico_crypto_key import CryptoKey
+
 
 def hash_performance(filename: str) -> None:
     length_k = os.stat(filename).st_size / 1024
@@ -12,6 +12,7 @@ def hash_performance(filename: str) -> None:
         _ = crypto_key.hash(filename)
         elapsed = time() - start
         print(f"Hash {length_k}kB: {elapsed:.3f}s {length_k * 8 / elapsed:.0f}kbps")
+
 
 def sign_verify_performance(filename: str) -> None:
     length_k = os.stat(filename).st_size / 1024
@@ -27,6 +28,7 @@ def sign_verify_performance(filename: str) -> None:
         elapsed = time() - start
         print(f"Verify {length_k}kB: {elapsed:.3f}s")
 
+
 def encryption_performance(filename: str) -> None:
     length_k = os.stat(filename).st_size / 1024
     with open(filename, "rb") as fd, CryptoKey(pin="pico") as crypto_key:
@@ -41,13 +43,12 @@ def encryption_performance(filename: str) -> None:
         print(f"Decrypt {length_k}kB: {elapsed:.3f}s {length_k * 8 / elapsed:.0f}kbps")
 
 
-
 if __name__ == "__main__":
-    for file_size in [1024 * 10 ** i for i in range(4)]:
+    for file_size in [1024 * 10**i for i in range(4)]:
         _, filename = mkstemp()
         with open(filename, "wb") as fd:
             fd.write(os.urandom(file_size))
-        
+
         hash_performance(filename)
         sign_verify_performance(filename)
         encryption_performance(filename)

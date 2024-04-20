@@ -103,7 +103,7 @@ def build() -> str:
 def install(
     device_path: str = typer.Argument(
         ..., help="the path to the device storage, e.g. /media/user/RPI-RP2"
-    )
+    ),
 ) -> None:
     """Install the pico-crypto-key image. The device must be mounted with BOOTSEL pressed."""
 

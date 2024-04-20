@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import os
 from struct import pack, unpack
 from types import TracebackType
@@ -6,13 +7,14 @@ from types import TracebackType
 import usb.core
 import usb.util
 
+
 class CryptoKeyNotFoundError(ConnectionError):
     pass
 
 
 class CryptoKey:
     CHUNK_SIZE = 2048
-    VERIFY_FAILED = 2 ** 32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
+    VERIFY_FAILED = 2**32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
     def __init__(self, *, pin: str) -> None:
         """Create device object for use in context manager."""
@@ -50,7 +52,7 @@ class CryptoKey:
         assert self.have_repl
         self._write(b"h")
         file_length = os.stat(filename).st_size
-        uint32 = pack("I", file_length)   
+        uint32 = pack("I", file_length)
         ret = self._write(uint32)
         with open(filename, "rb") as fd:
             write_remaining = file_length
@@ -58,7 +60,7 @@ class CryptoKey:
                 write_chunk_length = min(write_remaining, self.CHUNK_SIZE)
                 data = fd.read(write_chunk_length)
                 ret = self._write(data)
-                write_remaining -= ret    
+                write_remaining -= ret
         return self._read(32)
 
     def encrypt(self, data: bytes) -> bytes:
@@ -66,14 +68,14 @@ class CryptoKey:
         self._write(b"e")
 
         length = len(data)
-        uint32 = pack("I", length)   
+        uint32 = pack("I", length)
         self._write(uint32)
 
         output = bytearray()
         for pos in range(0, length, self.CHUNK_SIZE):
             chunk_length = min(length - pos, self.CHUNK_SIZE)
             # write a chunk
-            bytes_written = self._write(data[pos:pos + chunk_length])
+            bytes_written = self._write(data[pos : pos + chunk_length])
             chunk = self._read(bytes_written)
             output += chunk
         return bytes(output)
@@ -84,14 +86,14 @@ class CryptoKey:
         self._write(b"d")
 
         length = len(data)
-        uint32 = pack("I", length)   
+        uint32 = pack("I", length)
         self._write(uint32)
 
         output = bytearray()
         for pos in range(0, length, self.CHUNK_SIZE):
             chunk_length = min(length - pos, self.CHUNK_SIZE)
             # write a chunk
-            bytes_written = self._write(data[pos:pos + chunk_length])
+            bytes_written = self._write(data[pos : pos + chunk_length])
             chunk = self._read(bytes_written)
             output += chunk
         return bytes(output)
@@ -107,7 +109,7 @@ class CryptoKey:
                 write_chunk_length = min(write_remaining, self.CHUNK_SIZE)
                 data = fd.read(write_chunk_length)
                 ret = self._write(data)
-                write_remaining -= ret    
+                write_remaining -= ret
         # somehow separates hash and sig even when length not specified
         hash = self._read(32)
         siglen = self._read_int()
@@ -183,7 +185,7 @@ class CryptoKey:
             result += chunk
             length -= len(chunk)
         return bytes(result)
-    
+
     def _read_int(self) -> int:
         """Read raw uint32_t (?-endian)"""
         data = self._read(4)
@@ -193,10 +195,8 @@ class CryptoKey:
         bytes_written = self.__endpoint_in.write(b)
         assert bytes_written == len(b)
         return bytes_written
-    
+
     def _write_int(self, n: int) -> bool:
         """Writes an int as uint32_t (?-endian)"""
-        uint32 = pack("I", n)   
+        uint32 = pack("I", n)
         return self._write(uint32) == 4
-
-
