@@ -134,57 +134,28 @@ pytest
 
 The examples use small (<100kB) files, as device communication is currently only ~100kb/s.
 
-### 0. Get device help
+### 0. Hash file
 
-This just prints the device's help.
-
-```sh
-python examples/device_help.py
-```
-
-```text
-The device must first be supplied with a correct pin to enter the repl
-repl commands:
-H displays this message
-h computes sha256 hash of data streamed to device
-  inputs: <data> <data> <data>... <>
-  returns: <hash>
-k get the public key
-  inputs: none
-  returns: <pubkey>
-d decrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-e encrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-s hashes and signs (the hash of) the streamed data
-  inputs: <data> <data>... <>
-  returns: <hash> <sig>
-v verifies a signature
-  inputs: <hash> <sig> <pubkey>
-  returns: stringified integer. 0 if verification was successful
-r resets the device repl (i.e. pin will need to be reentered)
-  inputs: none
-  returns: nothing
-All commands are a single character (no newline).
-All data sent and received is base64 encoded and terminated with a newline,
-unless otherwise specified. Where a variable number of inputs is received,
-a blank line is used to indicate the end of the data.
-```
-
-### 1. Encrypt data
-
-This example will look for an encrypted version of the data. If not found it will encrypt the plaintext. Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
+This just prints the hash of itself.
 
 ```sh
-python examples/encrypt_df.py
+python examples/hash_file.py
+```
+
+### 1. Decrypt data
+
+This example will look for an encrypted version of the data (examples/dataframe.csv). If not found it will encrypt the plaintext. 
+
+Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
+
+```sh
+python examples/decrypt_data.py
 ```
 
 You should see something like this:
 
 ```text
-decryption took 6.48s
+decryption took 2.56s
            Area  DC1117EW_C_SEX  DC1117EW_C_AGE NewEthpop_ETH
 0     E02001730               2              62           WBI
 1     E02001713               2              60           WBI
@@ -205,7 +176,7 @@ If you now switch to a different device, it won't be able to decrypt the ciphert
 
 ```text
 invalid data: 'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte
-decryption took 7.04s
+decryption took 2.74s
 None
 ```
 
@@ -220,13 +191,8 @@ python examples/sign_data.py
 gives you something like
 
 ```text
-signing/verifying took 4.44s
-{
-  "file": "./examples/dataframe.csv",
-  "hash": "28d839df69762085f8ac7b360cd5ee0435030247143260cfaff0b313f99a251c",
-  "sig": "304602210089d4bc103d00e2e23f0a911444b2a472a7950c74dbf69c3e2f0268b1207ca248022100fe38989e486cf2a2a8c13844d8a1647674b3d641ee4d29a73e8138db31c9ed90",
-  "pubkey": "0486bb625d67b45d82c7b3cc087984abea8d4acc5d1fb70691387594f167929892e147364318d4ce2d2eefec134fa1d531a7e7b2421d945bb563bd4d115aeb7178"
-}
+signing/verifying took 0.55s
+signature written to signature.json
 ```
 
 ### 3. Verify data
@@ -238,15 +204,17 @@ python examples/verify_data.py
 ```
 
 ```text
-verifying device is the same as signing device
-hashing/verifying took 4.40s
-verified: True
+file hash matches file
+verifying device is the signing device
+signature is valid
+verifying took 0.79s
 ```
 
 or, if you use a different pico
 
 ```text
-verifying device is NOT the signing device (which is good)
-hashing/verifying took 4.46s
-verified: True
+file hash matches file
+verifying device is not the signing device
+signature is valid
+verifying took 0.79s
 ```

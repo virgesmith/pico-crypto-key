@@ -40,8 +40,11 @@ class CryptoKey:
 
         usb.util.dispose_resources(self.device)
         # It may raise USBError if there's e.g. no kernel driver loaded at all
-        if self.reattach:
-            self.device.attach_kernel_driver(0)
+        try:
+            if self.reattach:
+                self.device.attach_kernel_driver(0)
+        except usb.core.USBError:
+            pass
 
     def help(self) -> str:
         assert self.have_repl

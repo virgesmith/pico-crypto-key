@@ -18,6 +18,5 @@ testpaths = [
 PICO_IMAGE = "pico-crypto-key"
 
 [pico.run]
-DEVICE_SERIAL = "/dev/ttyACM0"
 PICO_CRYPTO_KEY_PIN = "pico"
 
