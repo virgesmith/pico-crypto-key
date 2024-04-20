@@ -8,8 +8,6 @@ def test_pubkey(crypto_key: CryptoKey) -> None:
 
 
 def test_reset_init(crypto_key: CryptoKey) -> None:
-    pass
-    # crypto_key.reset()
-    # crypto_key.init()
-    # # this will break other tests?
-    # test_pubkey(crypto_key)
+    crypto_key.reset()
+    crypto_key.init()
+    test_pubkey(crypto_key)

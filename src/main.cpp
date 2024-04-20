@@ -138,7 +138,6 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         cdc::write(ErrorCode::INVALID_CMD);
       }
     }
-    //sleep_ms(250);
   }
 }
 
