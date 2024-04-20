@@ -4,7 +4,7 @@ import usb.core
 import usb.util
 from struct import pack, unpack
 
-CHUNK_SIZE = 16384
+CHUNK_SIZE = 2048
 
 def get_endpoints(device: usb.core.Device) -> tuple:
     # TODO this function needs improvement
@@ -38,8 +38,8 @@ def main(device) -> None:
         device.detach_kernel_driver(0)
 
     print("H: sending pin")
-    endpoint_in.write(b"pico")
-    response = endpoint_out.read(CHUNK_SIZE).tobytes()
+    endpoint_in.write(b"pick")
+    response = endpoint_out.read(4).tobytes()
     print(f"H: got '{response}' ({len(response)})")
 
     # public key
@@ -48,7 +48,7 @@ def main(device) -> None:
     print(f"H: got ({len(pubkey)}) {pubkey.hex()}")
 
     # filename = "build/pico-crypto-key.dis" 
-    filename = "CMakeLists.txt" 
+    filename = "random.bin" 
 
     # hash
     start = time()
@@ -99,16 +99,19 @@ def main(device) -> None:
     endpoint_in.write(b"v")
     ret = endpoint_in.write(hash)
     print(f"H: wrote {ret}")
+
     uint32 = pack("I", len(sig)) 
     ret = endpoint_in.write(uint32)
     print(f"H: wrote {ret}")
     ret = endpoint_in.write(sig)
     print(f"H: wrote {ret}")
+
     uint32 = pack("I", len(pubkey))   
     ret = endpoint_in.write(uint32)
     print(f"H: wrote {ret}")
     ret = endpoint_in.write(pubkey)
     print(f"H: wrote {ret}")
+
     uint32 = endpoint_out.read(4).tobytes()
     result = unpack("I", uint32)
     print(f"H: got {result}")
@@ -118,7 +121,7 @@ def main(device) -> None:
     # encrypt
     start = time()
     endpoint_in.write(b"e")
-    plaintext_filename = "pico_sdk_import.cmake" 
+    plaintext_filename = "random.bin" 
     encrypted_filename = plaintext_filename + "_enc"
     file_length = os.stat(plaintext_filename).st_size
     uint32 = pack("I", file_length)   
@@ -157,7 +160,7 @@ def main(device) -> None:
     with open(encrypted_filename, "rb") as cd, open(decrypted_filename, "wb") as pd:
         write_remaining = file_length
         read_remaining = file_length
-        while write_remaining > 0:
+        while read_remaining > 0:
             write_chunk_length = min(write_remaining, CHUNK_SIZE)
             # write a chunk
             data = cd.read(write_chunk_length)

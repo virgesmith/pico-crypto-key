@@ -1,16 +1,18 @@
 from __future__ import annotations
 import os
-from io import BytesIO
 from struct import pack, unpack
 from types import TracebackType
-from typing import Any
 
 import usb.core
 import usb.util
 
+class CryptoKeyNotFoundError(ConnectionError):
+    pass
+
 
 class CryptoKey:
-    CHUNK_SIZE = 16384
+    CHUNK_SIZE = 2048
+    VERIFY_FAILED = 2 ** 32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
     def __init__(self, *, pin: str) -> None:
         """Create device object for use in context manager."""
@@ -42,7 +44,7 @@ class CryptoKey:
     def help(self) -> str:
         assert self.have_repl
         self._write(b"H")
-        return self._read().decode()
+        return self._read_int()
 
     def hash(self, filename: str) -> bytes:
         assert self.have_repl
@@ -57,45 +59,48 @@ class CryptoKey:
                 data = fd.read(write_chunk_length)
                 ret = self._write(data)
                 write_remaining -= ret    
-        return self._read()
+        return self._read(32)
 
-    # def encrypt(self, data: BytesIO) -> bytearray:
-    #     assert self.have_repl
-    #     self.__device.write(str.encode("e"))
-    #     data_enc = bytearray()
-    #     while True:
-    #         raw = data.read(CryptoKey.CHUNK_SIZE)
-    #         if not raw:
-    #             break
-    #         b = b64encode(raw)
-    #         self.__device.write(bytearray(b) + b"\n")
-    #         resp = b64decode(self.__device.readline())
-    #         data_enc.extend(resp)
-    #     self.__device.write(b"\n")
-    #     return data_enc
+    def encrypt(self, data: bytes) -> bytes:
+        assert self.have_repl
+        self._write(b"e")
 
-    # def decrypt(self, data: BytesIO) -> bytearray:
-    #     # This returns garbage if the device isn't the one that encrypted it
-    #     assert self.have_repl
-    #     self.__device.write(str.encode("d"))
-    #     data_dec = bytearray()
-    #     while True:
-    #         raw = data.read(CryptoKey.CHUNK_SIZE)
-    #         if not raw:
-    #             break
-    #         b = b64encode(raw)
-    #         self.__device.write(bytearray(b) + b"\n")
-    #         resp = b64decode(self.__device.readline())
-    #         data_dec.extend(resp)
-    #     self.__device.write(b"\n")
-    #     return data_dec
+        length = len(data)
+        uint32 = pack("I", length)   
+        self._write(uint32)
+
+        output = bytearray()
+        for pos in range(0, length, self.CHUNK_SIZE):
+            chunk_length = min(length - pos, self.CHUNK_SIZE)
+            # write a chunk
+            bytes_written = self._write(data[pos:pos + chunk_length])
+            chunk = self._read(bytes_written)
+            output += chunk
+        return bytes(output)
+
+    def decrypt(self, data: bytes) -> bytes:
+        # This returns garbage if the device isn't the one that encrypted it
+        assert self.have_repl
+        self._write(b"d")
+
+        length = len(data)
+        uint32 = pack("I", length)   
+        self._write(uint32)
+
+        output = bytearray()
+        for pos in range(0, length, self.CHUNK_SIZE):
+            chunk_length = min(length - pos, self.CHUNK_SIZE)
+            # write a chunk
+            bytes_written = self._write(data[pos:pos + chunk_length])
+            chunk = self._read(bytes_written)
+            output += chunk
+        return bytes(output)
 
     def sign(self, filename: str) -> tuple[bytes, bytes]:
         assert self.have_repl
         self._write(b"s")
         file_length = os.stat(filename).st_size
         self._write_int(file_length)
-        # print(f"H: wrote {ret} bytes")
         with open(filename, "rb") as fd:
             write_remaining = file_length
             while write_remaining > 0:
@@ -105,15 +110,15 @@ class CryptoKey:
                 write_remaining -= ret    
         # somehow separates hash and sig even when length not specified
         hash = self._read(32)
-        sig = self._read()
+        siglen = self._read_int()
+        sig = self._read(siglen)
         return hash, sig
 
-
     def verify(self, digest: bytes, sig: bytes, pubkey: bytes) -> int:
-        """return value:
-
+        """
+        device return value:
         0:      successfully verified
-        -19968: not verified
+        -19968: not verified (=4294947328u)
         any other value means something else went wrong e.g. data formats are incorrect
         """
         assert self.have_repl
@@ -123,23 +128,25 @@ class CryptoKey:
         self._write(sig)
         self._write_int(len(pubkey))
         self._write(pubkey)
-        return self._read_int() == 0
+        return self._read_int()
 
     def pubkey(self) -> bytes:
         assert self.have_repl
         self.__endpoint_in.write(str.encode("k"))
-        pubkey = self._read()
+        pubkey = self._read(65)
         return pubkey
 
     def reset(self) -> None:
         # only send reset request if we have repl
         if self.have_repl:
-            print("resetting")
             self.__endpoint_in.write(b"r")
             self.have_repl = False
 
     def init(self) -> None:
         self.device = usb.core.find(idVendor=0xAAFE, idProduct=0xC0FF)
+
+        if not self.device:
+            raise CryptoKeyNotFoundError()
 
         cfg = self.device.get_active_configuration()
         # usb.core.USBError: [Errno 13] Access denied (insufficient permissions)
@@ -156,18 +163,20 @@ class CryptoKey:
             self.reattach = True
             self.device.detach_kernel_driver(0)
 
-        print("H: sending pin")
         self._write(self.device_pin)
-        response = self._read()
-        print(f"H: got '{response}' ({len(response)})")
+        error_code = unpack("I", self._read(4))[0]
 
-        if response != b"pin ok":
+        if error_code:
             raise ValueError("pin incorrect")
         self.have_repl = True
 
-    def _read(self, length: int | None = None) -> bytes:
-        length = length or self.CHUNK_SIZE
-        return self.__endpoint_out.read(length).tobytes()
+    def _read(self, length: int) -> bytes:
+        result = bytearray()
+        while length:
+            chunk = self.__endpoint_out.read(length).tobytes()
+            result += chunk
+            length -= len(chunk)
+        return bytes(result)
     
     def _read_int(self) -> int:
         """Read raw uint32_t (?-endian)"""
@@ -175,7 +184,9 @@ class CryptoKey:
         return unpack("I", data)[0]
 
     def _write(self, b: bytes) -> int:
-        return self.__endpoint_in.write(b)
+        bytes_written = self.__endpoint_in.write(b)
+        assert bytes_written == len(b)
+        return bytes_written
     
     def _write_int(self, n: int) -> bool:
         """Writes an int as uint32_t (?-endian)"""
@@ -183,17 +194,3 @@ class CryptoKey:
         return self._write(uint32) == 4
 
 
-
-def get_endpoints(device: usb.core.Device) -> tuple:
-    # TODO this function needs improvement
-    cfg = device.get_active_configuration()
-    # usb.core.USBError: [Errno 13] Access denied (insufficient permissions)
-    # see https://stackoverflow.com/questions/53125118/why-is-python-pyusb-usb-core-access-denied-due-to-permissions-and-why-wont-the
-
-    interface = cfg[(1, 0)]
-    endpoints = usb.util.find_descriptor(
-        interface,
-        find_all=True,
-    )
-
-    return endpoints

@@ -8,8 +8,8 @@ typedef std::vector<byte> bytes;
 
 namespace std
 {
-// prevents char being casted to int
-inline std::string to_string(char c)
+// force byte to print as character 
+inline std::string to_string(uint8_t c)
 {
   return std::string(1, c);
 }

@@ -6,44 +6,17 @@
 #include "device.h"
 #include "error.h"
 
-//#include "pico/stdlib.h"
 #include "pico/unique_id.h"
 #include "pico/binary_info.h"
 
 #include <vector>
 #include <string>
 
-const char* help_str = R"(The device must first be supplied with a correct pin to enter the repl
-repl commands:
-H displays this message
-h computes sha256 hash of data streamed to device
-  inputs: <data> <data> <data>... <>
-  returns: <hash>
-k get the public key
-  inputs: none
-  returns: <pubkey>
-d decrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-e encrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-s hashes and signs (the hash of) the streamed data
-  inputs: <data> <data>... <>
-  returns: <hash> <sig>
-v verifies a signature
-  inputs: <hash> <sig> <pubkey>
-  returns: stringified integer. 0 if verification was successful
-r resets the device repl (i.e. pin will need to be reentered)
-  inputs: none
-  returns: nothing
-All commands are a single character (no newline).
-All data sent and received is base64 encoded and terminated with a newline,
-unless otherwise specified. Where a variable number of inputs is received,
-a blank line is used to indicate the end of the data.
-
-)";
-
+enum class ErrorCode: uint32_t {
+  SUCCESS = 0,
+  INVALID_PIN = 1,
+  INVALID_CMD = 2
+};
 
 // raw private key for AES and ECDSA
 bytes genkey()
@@ -71,26 +44,18 @@ bool check_pin()
 
 void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 {
-  // 'r' resets repl (pin needs to be reentered)
-  // for (char cmd = getchar(); cmd != 'r'; cmd = getchar())
   uint8_t cmd;
   for(;;)
   {
     cdc::read(cmd);
     switch (cmd)
     {
+      // reset repl
       case 'r':
       {
-        // resets repl
         return;
       }
-      case 'H':
-      {
-        gpio_put(LED_PIN, 1);
-        cdc::write(help_str);
-        gpio_put(LED_PIN, 0);
-        break;
-      }
+      // get ECDSA public key
       case 'k':
       {
         gpio_put(LED_PIN, 1);
@@ -98,6 +63,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         gpio_put(LED_PIN, 0);
         break;
       }
+      // hash input
       case 'h':
       {
         // 4 byte header containing length of data
@@ -109,6 +75,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         gpio_put(LED_PIN, 0);
         break;
       }
+      // decrypt input
       case 'd':
       {
         // 4 byte header containing length of data
@@ -119,6 +86,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         gpio_put(LED_PIN, 0);
         break;
       }
+      // encrypt input
       case 'e':
       {
         // 4 byte header containing length of data
@@ -129,6 +97,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         gpio_put(LED_PIN, 0);
         break;
       }
+      // hash input and sign 
       case 's':
       {
         // 4 byte header containing length of data
@@ -138,13 +107,12 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
         bytes hash = sha256::hash_in(length);
         cdc::write(hash);
         bytes sig = ecdsa::sign(ec_key, hash);
-        if (sig.empty())
-          cdc::write("ERROR in ecdsa::sign");
-        else
-          cdc::write(sig);
+        cdc::write(sig.size());
+        cdc::write(sig);
         gpio_put(LED_PIN, 0);
         break;
       }
+      // verify hash and signature
       case 'v':
       {
         // hash[32], len(sig)[4], sig, len(key)[4], key
@@ -167,7 +135,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       }
       default:
       {
-        cdc::write("%% not a valid command"s % cmd);
+        cdc::write(ErrorCode::INVALID_CMD);
       }
     }
     //sleep_ms(250);
@@ -192,11 +160,11 @@ int main()
     while (!check_pin())
     {
       gpio_put(LED_PIN, 0);
-      cdc::write("pin err");
+      cdc::write(ErrorCode::INVALID_PIN);
 
       sleep_ms(3000);
     }
-    cdc::write("pin ok");
+    cdc::write(ErrorCode::SUCCESS);
 
     const bytes& key = genkey();
 

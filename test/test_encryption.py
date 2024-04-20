@@ -1,5 +1,3 @@
-from io import BytesIO
-
 import pytest
 
 from pico_crypto_key import CryptoKey
@@ -12,9 +10,9 @@ from pico_crypto_key import CryptoKey
 def test_encrypt_decrypt(crypto_key: CryptoKey, file: str) -> None:
     print(f"[H] encrypt {file}")
     with open(file, "rb") as fd:
-        data = BytesIO(fd.read())
-        data_enc = BytesIO(crypto_key.encrypt(data))
+        data = fd.read()
+        data_enc = crypto_key.encrypt(data)
         print("[H] decrypt encrypted data")
         data_dec = crypto_key.decrypt(data_enc)
-        assert data.getbuffer() == data_dec
+        assert data == data_dec
         print("[H] round-trip ok")
