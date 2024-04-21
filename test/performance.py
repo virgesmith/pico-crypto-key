@@ -1,8 +1,12 @@
 import os
 from tempfile import mkstemp
 from time import time
+import pandas as pd
 
 from pico_crypto_key import CryptoKey
+
+
+result = pd.DataFrame(columns=["task", "size_k", "time_s", "bitrate_kbps"]).set_index(["task", "size_k"])
 
 
 def hash_performance(filename: str) -> None:
@@ -11,7 +15,8 @@ def hash_performance(filename: str) -> None:
         start = time()
         _ = crypto_key.hash(filename)
         elapsed = time() - start
-        print(f"Hash {length_k}kB: {elapsed:.3f}s {length_k * 8 / elapsed:.0f}kbps")
+        result.loc[("hash", length_k), "time_s"] = elapsed
+        result.loc[("hash", length_k), "bitrate_kbps"] = length_k * 8 / elapsed
 
 
 def sign_verify_performance(filename: str) -> None:
@@ -20,13 +25,14 @@ def sign_verify_performance(filename: str) -> None:
         start = time()
         hash, sig = crypto_key.sign(filename)
         elapsed = time() - start
-        print(f"Sign {length_k}kB: {elapsed:.3f}s {length_k * 8 / elapsed:.0f}kbps")
+        result.loc[("sign", length_k), "time_s"] = elapsed
+        result.loc[("sign", length_k), "bitrate_kbps"] = length_k * 8 / elapsed
 
         start = time()
         pubkey = crypto_key.pubkey()
         _ = crypto_key.verify(hash, sig, pubkey)
         elapsed = time() - start
-        print(f"Verify {length_k}kB: {elapsed:.3f}s")
+        result.loc[("verify", length_k), "time_s"] = elapsed
 
 
 def encryption_performance(filename: str) -> None:
@@ -35,12 +41,14 @@ def encryption_performance(filename: str) -> None:
         start = time()
         _ = crypto_key.encrypt(fd.read())
         elapsed = time() - start
-        print(f"Encrypt {length_k}kB: {elapsed:.3f}s {length_k * 8 / elapsed:.0f}kbps")
+        result.loc[("encrypt", length_k), "time_s"] = elapsed
+        result.loc[("encrypt", length_k), "bitrate_kbps"] = length_k * 8 / elapsed
         fd.seek(0)
         start = time()
         _ = crypto_key.encrypt(fd.read())
         elapsed = time() - start
-        print(f"Decrypt {length_k}kB: {elapsed:.3f}s {length_k * 8 / elapsed:.0f}kbps")
+        result.loc[("decrypt", length_k), "time_s"] = elapsed
+        result.loc[("decrypt", length_k), "bitrate_kbps"] = length_k * 8 / elapsed
 
 
 if __name__ == "__main__":
@@ -53,3 +61,5 @@ if __name__ == "__main__":
         sign_verify_performance(filename)
         encryption_performance(filename)
         os.remove(filename)
+    print(result)
+    result.to_csv("performance.csv")

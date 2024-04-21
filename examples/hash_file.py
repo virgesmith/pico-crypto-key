@@ -10,5 +10,5 @@ if __name__ == "__main__":
     config = toml.load("./pyproject.toml")["pico"]["run"]
 
     with CryptoKey(pin=config["PICO_CRYPTO_KEY_PIN"]) as crypto_key:
-        hash = crypto_key.hash(__file__)
-    print(f"{__file__}: {hash.hex()}")
+        digest = crypto_key.hash(__file__)
+    print(f"{__file__}: {digest.hex()}")

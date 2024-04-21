@@ -14,6 +14,8 @@ class CryptoKeyNotFoundError(ConnectionError):
 
 class CryptoKey:
     CHUNK_SIZE = 2048
+    HASH_BYTES = 32
+    ECDSA_KEY_BYTES = 65  # long form with 04 prefix
     VERIFY_FAILED = 2**32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
     def __init__(self, *, pin: str) -> None:
@@ -46,12 +48,21 @@ class CryptoKey:
         except usb.core.USBError:
             pass
 
-    def help(self) -> str:
-        assert self.have_repl
-        self._write(b"H")
-        return self._read_int()
 
     def hash(self, filename: str) -> bytes:
+        """
+        Computes the SHA256 hash of a file
+
+        Parameters
+        ----------
+        filename: str
+            The name of the file
+
+        Returns
+        -------
+        bytes
+            The hash digest
+        """
         assert self.have_repl
         self._write(b"h")
         file_length = os.stat(filename).st_size
@@ -67,6 +78,19 @@ class CryptoKey:
         return self._read(32)
 
     def encrypt(self, data: bytes) -> bytes:
+        """
+        Encrypts data using AES256
+
+        Parameters
+        ----------
+        data: bytes
+            Some binary data
+
+        Returns
+        -------
+        bytes
+            The encrpted data
+        """
         assert self.have_repl
         self._write(b"e")
 
@@ -84,7 +108,19 @@ class CryptoKey:
         return bytes(output)
 
     def decrypt(self, data: bytes) -> bytes:
-        # This returns garbage if the device isn't the one that encrypted it
+        """
+        Decrypts data using AES256
+
+        Parameters
+        ----------
+        data: bytes
+            Some encrypted binary data
+
+        Returns
+        -------
+        bytes
+            The decrypted data (if the device is the same as the encrypting device, random bytes otherwise)
+        """
         assert self.have_repl
         self._write(b"d")
 
@@ -102,6 +138,19 @@ class CryptoKey:
         return bytes(output)
 
     def sign(self, filename: str) -> tuple[bytes, bytes]:
+        """
+        Computes the hash of a file and its and ECDSA signature
+
+        Parameters
+        ----------
+        filename: str
+            The name of the file
+
+        Returns
+        -------
+        tuple[bytes, bytes]
+            The hash digest and the signature
+        """
         assert self.have_repl
         self._write(b"s")
         file_length = os.stat(filename).st_size
@@ -114,18 +163,33 @@ class CryptoKey:
                 ret = self._write(data)
                 write_remaining -= ret
         # somehow separates hash and sig even when length not specified
-        hash = self._read(32)
+        digest = self._read(32)
         siglen = self._read_int()
         sig = self._read(siglen)
-        return hash, sig
+        return digest, sig
 
     def verify(self, digest: bytes, sig: bytes, pubkey: bytes) -> int:
         """
-        device return value:
-        0:      successfully verified
-        -19968: not verified (=4294947328u)
-        any other value means something else went wrong e.g. data formats are incorrect
+        Checks the ECDSA signature given a hash and the ECDSA public key of the signer
+        Checking the hash corresponds to the original data is a separate step
+
+        Parameters
+        ----------
+        digest: bytes
+            The SHA256 hash for the original data (can confirm by re-hashing)
+        sig: bytes
+            The ECDSA signature
+        pubkey:
+
+
+        Returns
+        -------
+        int
+            0 if the signature verifies
+            4294947328 (-0x480) if not
+            any other nonzero value indicates an error
         """
+
         assert self.have_repl
         self._write(b"v")
         self._write(digest)
@@ -136,12 +200,27 @@ class CryptoKey:
         return self._read_int()
 
     def pubkey(self) -> bytes:
+        """
+        Computes the hash of a file and its and ECDSA signature
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        bytes
+            The long-form ECDSA public key
+        """
         assert self.have_repl
         self.__endpoint_in.write(str.encode("k"))
-        pubkey = self._read(65)
+        pubkey = self._read(CryptoKey.ECDSA_KEY_BYTES)
         return pubkey
 
     def reset(self) -> None:
+        """
+        Resets the device. Device pin will need to be reentered
+        Normally this is handled by the context manager
+        """
         # only send reset request if we have repl
         if self.have_repl:
             self.__endpoint_in.write(b"r")
@@ -154,6 +233,10 @@ class CryptoKey:
             self.device.attach_kernel_driver(0)
 
     def init(self) -> None:
+        """
+        Initialises the device with the supplied pin
+        Normally this is handled by the context manager
+        """
         self.device = usb.core.find(idVendor=0xAAFE, idProduct=0xC0FF)
 
         if not self.device:

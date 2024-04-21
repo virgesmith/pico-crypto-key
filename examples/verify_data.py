@@ -1,5 +1,5 @@
 """
-Example 3: 
+Example 3:
 Use a second (or original) device to verify a data signature of given a public key (as hex strings).
 """
 
@@ -20,8 +20,8 @@ def verify_data(signature_file: str, device_pin: str) -> None:
             signature = json.load(fd)
             # first check hash matches file
             start = time()
-            hash = crypto_key.hash(signature["file"])
-            if hash != bytes.fromhex(signature["hash"]):
+            digest = crypto_key.hash(signature["file"])
+            if digest != bytes.fromhex(signature["hash"]):
                 print("file hash doesn't match signature hash")
                 return
             else:
@@ -34,7 +34,7 @@ def verify_data(signature_file: str, device_pin: str) -> None:
             else:
                 print("verifying device is not the signing device")
 
-            if crypto_key.verify(hash, sig, pubkey):
+            if crypto_key.verify(digest, sig, pubkey):
                 print("signature is not valid")
             else:
                 print("signature is valid")
