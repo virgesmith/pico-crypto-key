@@ -1,3 +1,5 @@
-__version__ = "1.1.0"
+import importlib.metadata
 
-from .device import CryptoKey  # noqa: F401
+__version__ = importlib.metadata.version("humanleague")
+
+from .device import CryptoKey

@@ -39,7 +39,7 @@ uint32_t cdc::write(const bytes& b, uint32_t length) {
 }
 
 bool cdc::write(const char* str) {
-  return cdc::write_impl(reinterpret_cast<const uint8_t*>(str), strlen(str)) == strlen(str);
+  return cdc::write_impl(reinterpret_cast<const uint8_t*>(str), strnlen(str, cdc::CHUNK_SIZE)) == strnlen(str, cdc::CHUNK_SIZE);
 }
 
 template <> bool cdc::write(const bytes& b) { return cdc::write_impl(b.data(), b.size()) == b.size(); }

@@ -23,14 +23,14 @@ def sign_verify_performance(filename: str) -> None:
     length_k = os.stat(filename).st_size / 1024
     with CryptoKey(pin="pico") as crypto_key:
         start = time()
-        hash, sig = crypto_key.sign(filename)
+        digest, sig = crypto_key.sign(filename)
         elapsed = time() - start
         result.loc[("sign", length_k), "time_s"] = elapsed
         result.loc[("sign", length_k), "bitrate_kbps"] = length_k * 8 / elapsed
 
         start = time()
         pubkey = crypto_key.pubkey()
-        _ = crypto_key.verify(hash, sig, pubkey)
+        _ = crypto_key.verify(digest, sig, pubkey)
         elapsed = time() - start
         result.loc[("verify", length_k), "time_s"] = elapsed
 
