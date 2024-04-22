@@ -16,7 +16,7 @@ uint32_t read_impl(byte* buffer, uint32_t length);
 uint32_t read(bytes& buffer, uint32_t length);
 
 // Read into type
-template <typename T> 
+template <typename T>
 bool read(T& dest) {
   return read_impl(reinterpret_cast<uint8_t*>(&dest), sizeof(T)) == sizeof(T);
 }
@@ -34,7 +34,7 @@ uint32_t write(const bytes& buffer, uint32_t length);
 bool write(const char* str);
 
 // Write a type (specialised for bytes/string)
-template <typename T> 
+template <typename T>
 bool write(const T& src) {
   return write_impl(reinterpret_cast<const uint8_t*>(&src), sizeof(T)) == sizeof(T);
 }

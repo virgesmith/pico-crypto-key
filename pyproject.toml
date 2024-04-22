@@ -1,10 +1,9 @@
 [build-system]
 requires = [
-  "setuptools>=42",
+  "setuptools>=61",
   "toml",
   "pytest"
 ]
-
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -14,7 +13,7 @@ authors = [
   { name="Andrew Smith", email="andrew@friarswood.net" },
 ]
 license = {file = "LICENSE.md"}
-description = "Raspberry Pi pico cryptography device"
+description = "Raspberry Pi pico cryptography key and python driver"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -22,11 +21,21 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Operating System :: linux",
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: C++ :: 20",
+    "Programming Language :: C :: 17"
 ]
 dependencies = [
-    "pyusb>=1.2.1"
+    "pyusb>=1.2.1",
+    "toml>=0.10.2",
+    "typer>=0.12.3"
 ]
+
+[project.scripts]
+picobuild = "pico_crypto_key.build:app"
 
 [project.optional-dependencies]
 dev = [
@@ -37,11 +46,17 @@ dev = [
   "pandas"
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/virgesmith/pico-crypto-key"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 testpaths = [
   "test"
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
 
 [tool.ruff.per-file-ignores]
 "**/__init__.py" = ["F401", "F403"]
