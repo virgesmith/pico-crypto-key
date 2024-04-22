@@ -1,49 +1,22 @@
 #include "sha256.h"
 #include "aes.h"
 #include "ecdsa.h"
-#include "serial.h"
+#include "usb_cdc.h"
 #include "utils.h"
 #include "device.h"
 #include "error.h"
 
-#include "pico/stdlib.h"
 #include "pico/unique_id.h"
 #include "pico/binary_info.h"
 
 #include <vector>
 #include <string>
 
-const char* help_str = R"(The device must first be supplied with a correct pin to enter the repl
-repl commands:
-H displays this message
-h computes sha256 hash of data streamed to device
-  inputs: <data> <data> <data>... <>
-  returns: <hash>
-k get the public key
-  inputs: none
-  returns: <pubkey>
-d decrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-e encrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-s hashes and signs (the hash of) the streamed data
-  inputs: <data> <data>... <>
-  returns: <hash> <sig>
-v verifies a signature
-  inputs: <hash> <sig> <pubkey>
-  returns: stringified integer. 0 if verification was successful
-r resets the device repl (i.e. pin will need to be reentered)
-  inputs: none
-  returns: nothing
-All commands are a single character (no newline).
-All data sent and received is base64 encoded and terminated with a newline,
-unless otherwise specified. Where a variable number of inputs is received,
-a blank line is used to indicate the end of the data.
-
-)";
-
+enum class ErrorCode: uint32_t {
+  SUCCESS = 0,
+  INVALID_PIN = 1,
+  INVALID_CMD = 2
+};
 
 // raw private key for AES and ECDSA
 bytes genkey()
@@ -62,98 +35,135 @@ bool check_pin()
   static const bytes expected{27, 122, 143, 3, 174, 184, 22, 106, 189, 29, 77, 163, 101, 226, 4, 61, 171,
                   209, 237, 213, 208, 154, 177, 121, 108, 235, 5, 150, 29, 117, 204, 222};
   static const bytes salt = { 0x19, 0x93, 0x76, 0x02, 0x45, 0x4a, 0xbc, 0xde };
-  const std::string& pinstr = serial::recv();
-  bytes pin{pinstr.begin(), pinstr.end()};
+  bytes pin(4);
+  cdc::read(pin, pin.size());
   pin.insert(pin.end(), salt.begin(), salt.end());
   bytes h = sha256::hash(pin);
-
   return h == expected;
 }
 
 void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 {
-  // 'r' resets repl (pin needs to be reentered)
-  for (char cmd = getchar(); cmd != 'r'; cmd = getchar())
+  uint8_t cmd;
+  for(;;)
   {
+    cdc::read(cmd);
     switch (cmd)
     {
-      case 'H':
+      // reset repl
+      case 'r':
       {
-        serial::send(help_str);
-        break;
+        return;
       }
+      // get ECDSA public key
       case 'k':
       {
-        const bytes& pubkey = ecdsa::pubkey(ec_key);
-        serial::send(base64::encode(pubkey) + "\n");
+        gpio_put(LED_PIN, 1);
+        cdc::write(ecdsa::pubkey(ec_key));
+        gpio_put(LED_PIN, 0);
         break;
       }
+      // hash input
       case 'h':
       {
-        serial::send(base64::encode(sha256::hash_stdin()) + "\n");
+        // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        cdc::read(length);
+        bytes hash = sha256::hash_in(length);
+        cdc::write(hash);
+        gpio_put(LED_PIN, 0);
         break;
       }
+      // decrypt input
       case 'd':
       {
-        aes::decrypt_stdin(aes_key);
+        // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        cdc::read(length);
+        aes::decrypt_in(aes_key, length);
+        gpio_put(LED_PIN, 0);
         break;
       }
+      // encrypt input
       case 'e':
       {
-        aes::encrypt_stdin(aes_key);
+        // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        cdc::read(length);
+        aes::encrypt_in(aes_key, length);
+        gpio_put(LED_PIN, 0);
         break;
       }
+      // hash input and sign 
       case 's':
       {
-        bytes h = sha256::hash_stdin();
-        serial::send(base64::encode(h) + "\n");
-        bytes sig = ecdsa::sign(ec_key, h);
-        if (sig.empty())
-          serial::send("ERROR in ecdsa::sign\n");
-        serial::send(base64::encode(sig) + "\n");
+        // 4 byte header containing length of data
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        cdc::read(length);
+        bytes hash = sha256::hash_in(length);
+        cdc::write(hash);
+        bytes sig = ecdsa::sign(ec_key, hash);
+        cdc::write(sig.size());
+        cdc::write(sig);
+        gpio_put(LED_PIN, 0);
         break;
       }
+      // verify hash and signature
       case 'v':
       {
-        bytes hash = base64::decode(serial::recv());
-        bytes sig = base64::decode(serial::recv());
-        bytes pubkey = base64::decode(serial::recv());
-        serial::send("%%\n"s % ecdsa::verify(hash, sig, pubkey));
+        // hash[32], len(sig)[4], sig, len(key)[4], key
+        gpio_put(LED_PIN, 1);
+        uint32_t length;
+        bytes hash(sha256::LENGTH_BYTES); 
+        cdc::read(hash);
+        // read signature
+        cdc::read(length);
+        bytes sig(length);
+        cdc::read(sig);
+        // read pubkey
+        cdc::read(length);
+        bytes pubkey(length);
+        cdc::read(pubkey);
+        // 4-byte int, 0 is success 
+        cdc::write(ecdsa::verify(hash, sig, pubkey));
+        gpio_put(LED_PIN, 0);
         break;
       }
       default:
       {
-        serial::send("%% not a valid command"s % cmd);
+        cdc::write(ErrorCode::INVALID_CMD);
       }
     }
-    //sleep_ms(250);
   }
 }
 
 
 int main()
 {
-  bi_decl(bi_program_description("Crypto key"));
+  bi_decl(bi_program_description("PicoCryptoKey"));
   bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
 
-  stdio_init_all();
+  tusb_init();
   gpio_init(LED_PIN);
   gpio_set_dir(LED_PIN, GPIO_OUT);
   gpio_put(LED_PIN, 1);
   sleep_ms(100);
   gpio_put(LED_PIN, 0);
 
-  serial::send("pico crypto key");
-  sleep_ms(1000);
-
   for(;;)
   {
     while (!check_pin())
     {
       gpio_put(LED_PIN, 0);
+      cdc::write(ErrorCode::INVALID_PIN);
+
       sleep_ms(3000);
     }
-    serial::send("pin ok\n");
+    cdc::write(ErrorCode::SUCCESS);
 
     const bytes& key = genkey();
 

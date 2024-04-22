@@ -14,6 +14,20 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
+## Update v1.1.0
+
+The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000k input):
+
+| task    | CDC<br>time(s) | CDC<br>bitrate(kbps) | serial<br>time(s) | serial<br>bitrate(kbps)| Speedup(%) |
+|:--------|---------------:|---------------------:|------------------:|-----------------------:|-----------:|
+| hash    |            2.6 |               3026.3 |              19.6 |                  407.9 |      641.9 |
+| sign    |            2.8 |               2904.1 |              19.6 |                  408.3 |      611.3 |
+| verify  |            0.4 |                      |               0.5 |                        |       16.0 |
+| encrypt |           23.9 |                334.2 |              43.5 |                  183.8 |       81.9 |
+| decrypt |           23.8 |                336.0 |              43.1 |                  185.7 |       81.0 |
+
+
+
 ## Dependencies/prerequisites
 
 `pico-crypto-key` comes as a python (dev) package that provides:
@@ -24,7 +38,7 @@ I'm not a security expert and the device/software is almost certainly not harden
 First, clone/fork this repo and install the package in development (editable) mode:
 
 ```sh
-pip install -e .
+pip install -e .[dev]
 ```
 
 If this step fails, try upgrading to a more recent version of pip.
@@ -47,23 +61,23 @@ You will then need to:
   ln -s ../../tinyusb-0.16.0 tinyusb
   ```
 
-- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.5.1 release/tag.
+- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag.
 
 - create symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
   ln -s ../pico-sdk-1.5.1 pico-sdk
-  ln -s ../mbedtls-3.5.1 mbedtls
+  ln -s ../mbedtls-3.6.0 mbedtls
   ```
 
 You should now have a structure something like this:
 
 ```txt
 .
-├── mbedtls-3.5.1
+├── mbedtls-3.6.0
 ├── pico-crypto-key
 │   ├── examples
-│   ├── mbedtls -> ../mbedtls-3.5.1
+│   ├── mbedtls -> ../mbedtls-3.6.0
 │   ├── pico_crypto_key
 │   │   ├── build.py
 │   │   ├── device.py
@@ -106,21 +120,35 @@ picobuild install /path/to/RPI-RP2
 picobuild test
 ```
 
-(The default device path and the device PIN are currently defined in [pyproject.toml](./pyproject.toml))
+(The device PIN is currently defined in [pyproject.toml](./pyproject.toml))
 
 ## Using the device
 
-The device is pin protected (the word 'pico'), and (for now) it can't be changed without editing the code. Sending the correct pin to the device activates the repl (read-evaluate-print loop).
+The device is pin protected (the word 'pico'), and (for now) it can't be changed without editing the code.
 
-Both the tests and examples read the serial port and the pin from the `[pico.run]` section in [pyproject.toml](./pyproject.toml). Modify the settings as necessary.
+The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it.
 
-The python interface (the `CryptoKey` class) is context-managed to help ensure the device gets properly opened and closed.
+- `pubkey` return the ECDSA public key (long-form, 65 bytes)
+- `hash` compute the SHA256 hash of the input
+- `sign` compute the SHA256 hash and ECDSA signature of the input
+- `verify` verify the given hash matches the signature and public key
+- `encrypt` encrypts using AES256
+- `decrypt` decrypts using AES256
+
+Both the tests and examples read the pin from the `[pico.run]` section in [pyproject.toml](./pyproject.toml). Modify the settings as necessary.
+
+See the examples for more details.
+
 
 ### Troubleshooting
 
 - If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
+- If you get `usb.core.USBError: [Errno 13] Access denied (insufficient permissions)` you'll need to add a udev rule for the device, see [this stackoverflow post](https://stackoverflow.com/questions/53125118/why-is-python-pyusb-usb-core-access-denied-due-to-permissions-and-why-wont-the). This worked for me:
 
-- the device can get out of sync quite (too) easily. If so, turn it off and on again ;)
+  `SUBSYSTEMS=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="aafe", ATTRS{idProduct}=="c0ff", GROUP="plugdev", MODE="0777"`
+
+
+- the device can get out of sync quite easily when something goes wrong. If so, turn it off and on again ;)
 
 ### Testing
 
@@ -132,59 +160,28 @@ pytest
 
 ## Examples
 
-The examples use small (<100kB) files, as device communication is currently only ~100kb/s.
+### 0. Hash file
 
-### 0. Get device help
-
-This just prints the device's help.
+This just prints the hash of itself.
 
 ```sh
-python examples/device_help.py
+python examples/hash_file.py
 ```
 
-```text
-The device must first be supplied with a correct pin to enter the repl
-repl commands:
-H displays this message
-h computes sha256 hash of data streamed to device
-  inputs: <data> <data> <data>... <>
-  returns: <hash>
-k get the public key
-  inputs: none
-  returns: <pubkey>
-d decrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-e encrypts each chunk of streamed data
-  inputs: <data> <data>... <>
-  returns: <data> <data>...
-s hashes and signs (the hash of) the streamed data
-  inputs: <data> <data>... <>
-  returns: <hash> <sig>
-v verifies a signature
-  inputs: <hash> <sig> <pubkey>
-  returns: stringified integer. 0 if verification was successful
-r resets the device repl (i.e. pin will need to be reentered)
-  inputs: none
-  returns: nothing
-All commands are a single character (no newline).
-All data sent and received is base64 encoded and terminated with a newline,
-unless otherwise specified. Where a variable number of inputs is received,
-a blank line is used to indicate the end of the data.
-```
+### 1. Decrypt data
 
-### 1. Encrypt data
+This example will look for an encrypted version of the data (examples/dataframe.csv). If not found it will encrypt the plaintext.
 
-This example will look for an encrypted version of the data. If not found it will encrypt the plaintext. Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
+Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
 
 ```sh
-python examples/encrypt_df.py
+python examples/decrypt_data.py
 ```
 
-You should see something like this:
+If you are using the same device you used to encrypt the data, you should see something like this:
 
 ```text
-decryption took 6.48s
+decryption took 2.56s
            Area  DC1117EW_C_SEX  DC1117EW_C_AGE NewEthpop_ETH
 0     E02001730               2              62           WBI
 1     E02001713               2              60           WBI
@@ -201,13 +198,7 @@ decryption took 6.48s
 [5635 rows x 4 columns]
 ```
 
-If you now switch to a different device, it won't be able to decrypt the ciphertext and will return garbage, and you'll get something like this:
-
-```text
-invalid data: 'utf-8' codec can't decode byte 0xf4 in position 0: invalid continuation byte
-decryption took 7.04s
-None
-```
+If you now switch to a different device, it won't be able to decrypt the ciphertext and will return garbage.
 
 ### 3. Sign data
 
@@ -220,13 +211,8 @@ python examples/sign_data.py
 gives you something like
 
 ```text
-signing/verifying took 4.44s
-{
-  "file": "./examples/dataframe.csv",
-  "hash": "28d839df69762085f8ac7b360cd5ee0435030247143260cfaff0b313f99a251c",
-  "sig": "304602210089d4bc103d00e2e23f0a911444b2a472a7950c74dbf69c3e2f0268b1207ca248022100fe38989e486cf2a2a8c13844d8a1647674b3d641ee4d29a73e8138db31c9ed90",
-  "pubkey": "0486bb625d67b45d82c7b3cc087984abea8d4acc5d1fb70691387594f167929892e147364318d4ce2d2eefec134fa1d531a7e7b2421d945bb563bd4d115aeb7178"
-}
+signing/verifying took 0.55s
+signature written to signature.json
 ```
 
 ### 3. Verify data
@@ -238,15 +224,17 @@ python examples/verify_data.py
 ```
 
 ```text
-verifying device is the same as signing device
-hashing/verifying took 4.40s
-verified: True
+file hash matches file
+verifying device is the signing device
+signature is valid
+verifying took 0.79s
 ```
 
 or, if you use a different pico
 
 ```text
-verifying device is NOT the signing device (which is good)
-hashing/verifying took 4.46s
-verified: True
+file hash matches file
+verifying device is not the signing device
+signature is valid
+verifying took 0.79s
 ```

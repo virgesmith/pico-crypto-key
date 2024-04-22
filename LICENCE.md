@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright &copy; 2021-2022 Andrew P Smith
+Copyright &copy; 2021-2024 Andrew P Smith
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

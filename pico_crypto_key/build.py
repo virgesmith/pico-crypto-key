@@ -54,7 +54,6 @@ def check():
     ok &= _check_symlink("./pico-sdk/lib/tinyusb")
     ok &= _check_symlink("./mbedtls")
     ok &= _check_config(config["build"], "PICO_IMAGE")
-    ok &= _check_config(config["run"], "DEVICE_SERIAL", True)
     ok &= _check_config(config["run"], "PICO_CRYPTO_KEY_PIN")
 
     print("check ok" if ok else "configuration errors found")
@@ -103,7 +102,7 @@ def build() -> str:
 def install(
     device_path: str = typer.Argument(
         ..., help="the path to the device storage, e.g. /media/user/RPI-RP2"
-    )
+    ),
 ) -> None:
     """Install the pico-crypto-key image. The device must be mounted with BOOTSEL pressed."""
 
@@ -121,6 +120,6 @@ def install(
 
 # TODO pass settings here instead of setting in pyproject.toml
 @app.command()
-def test():  # device_path: str, device_pin: str):
+def test():
     """Run unit tests."""
     os.system("pytest")

@@ -4,6 +4,8 @@ __pycache__/
 build/
 mbedtls-*/
 *.enc
+*.dec
+signature.json
 *.pyc
 *.uf2
 *.egg-info

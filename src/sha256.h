@@ -9,7 +9,7 @@ const size_t LENGTH_BITS = 256;
 
 bytes hash(const bytes& data);
 
-// hashes base64-encoded stdin until a blank line is read
-bytes hash_stdin();
+// hashes CDC input
+bytes hash_in(uint32_t length);
 
 }

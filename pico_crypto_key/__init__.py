@@ -1,3 +1,5 @@
-__version__ = "1.0.0"
+import importlib.metadata
 
-from .device import CryptoKey, b64_to_hex_str, hex_str_to_b64  # noqa: F401
+__version__ = importlib.metadata.version("pico-crypto-key")
+
+from .device import CryptoKey

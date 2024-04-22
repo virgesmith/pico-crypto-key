@@ -1,10 +1,16 @@
 import pytest
 
-from pico_crypto_key import CryptoKey, b64_to_hex_str
+from pico_crypto_key import CryptoKey
 
-wrong_hash = b"S1L93ZmizMM7zScSFiQDqdWzF3FYj0SACivbiiY/Bdk="
-wrong_sig = b"MEQCIFSHjtLevnv268DYt57j0zbXThO/RtpxBC6kaW6a1B2aAiBl71b4mEH5yUMGkPpMwFAF/XZ+2//LABB0puHi19HvKg=="
-wrong_pubkey = b"BPqvnhfp83ao7n2oWpwIPBW2TBH6LylpG32Rab10n0qUXjzJ4cLdaZY2+n94KQ7PZsvx+iigW62xL/vru2D0Jn4="
+wrong_hash = bytes.fromhex(
+    "4b52fddd99a2ccc33bcd2712162403a9d5b31771588f44800a2bdb8a263f05d9"
+)
+wrong_sig = bytes.fromhex(
+    "3044022054878ed2debe7bf6ebc0d8b79ee3d336d74e13bf46da71042ea4696e9ad41d9a022065ef56f89841f9c9430690fa4cc05005fd767edbffcb001074a6e1e2d7d1ef2a"
+)
+wrong_pubkey = bytes.fromhex(
+    "04faaf9e17e9f376a8ee7da85a9c083c15b64c11fa2f29691b7d9169bd749f4a945e3cc9e1c2dd699636fa7f78290ecf66cbf1fa28a05badb12ffbebbb60f4267e"
+)
 
 
 @pytest.mark.parametrize(
@@ -13,28 +19,19 @@ wrong_pubkey = b"BPqvnhfp83ao7n2oWpwIPBW2TBH6LylpG32Rab10n0qUXjzJ4cLdaZY2+n94KQ7
 )
 def test_sign_verify(crypto_key: CryptoKey, file: str) -> None:
     pubkey = crypto_key.pubkey()
-    print("[D] pubkey: %s" % b64_to_hex_str(pubkey))
-
-    print("[H] sign %s" % file)
     digest, sig = crypto_key.sign(file)
-    print("[D] hash: " + b64_to_hex_str(digest))
-    print("[D] sig: %s" % b64_to_hex_str(sig))
 
     err_code = crypto_key.verify(digest, sig, pubkey)
-    assert err_code == 0
-    print("[D] verify: %s" % err_code)
+    assert not err_code
 
     # wrong hash
     err_code = crypto_key.verify(wrong_hash, sig, pubkey)
-    assert err_code == -19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
-    print("[D] wrong hash verify: %s" % err_code)
+    assert err_code == CryptoKey.VERIFY_FAILED
 
     # wrong sig
     err_code = crypto_key.verify(digest, wrong_sig, pubkey)
-    assert err_code == -19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
-    print("[D] wrong sig verify: %s" % err_code)
+    assert err_code == CryptoKey.VERIFY_FAILED
 
     # wrong pubkey
     err_code = crypto_key.verify(digest, sig, wrong_pubkey)
-    assert err_code == -19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
-    print("[D] wrong pubkey verify: %s" % err_code)
+    assert err_code == CryptoKey.VERIFY_FAILED
