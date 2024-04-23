@@ -4,10 +4,10 @@ import os
 from struct import pack, unpack
 from types import TracebackType
 
-
 import usb.core
 import usb.util
 from pwinput import pwinput
+
 
 class CryptoKeyNotFoundError(ConnectionError):
     pass

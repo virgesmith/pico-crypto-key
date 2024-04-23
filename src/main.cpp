@@ -31,14 +31,7 @@ namespace {
 }
 
 bool check_pin() {
-  // static const bytes expected{27, 122, 143, 3, 174, 184, 22, 106, 189, 29, 77, 163, 101, 226, 4, 61, 171,
-  //                 209, 237, 213, 208, 154, 177, 121, 108, 235, 5, 150, 29, 117, 204, 222};
-  // static const bytes expected {
-  //   0x1b, 0x7a, 0x8f, 0x3, 0xae, 0xb8, 0x16, 0x6a, 0xbd, 0x1d, 0x4d, 0xa3, 0x65, 0xe2, 0x4, 0x3d, 0xab, 0xd1, 0xed,
-  //       0xd5, 0xd0, 0x9a, 0xb1, 0x79, 0x6c, 0xeb, 0x5, 0x96, 0x1d, 0x75, 0xcc, 0xde
-  // };
   bytes expected = flash::read(32);
-
   uint32_t size;
   cdc::read(size);
   bytes pin(size);
@@ -56,8 +49,8 @@ uint32_t set_pin() {
   cdc::read(pin);
   pin.reserve(pin.size() + 8);
   pin.insert(pin.end(), salt.begin(), salt.end());
-  // bytes h = sha256::hash(pin);
-  // flash::write(h);
+  bytes h = sha256::hash(pin);
+  flash::write(h);
   return 0;
 }
 

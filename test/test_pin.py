@@ -1,5 +1,6 @@
 from pico_crypto_key import CryptoKey
 
+
 def test_pin(crypto_key: CryptoKey) -> None:
     crypto_key._write(b"X")
     r = crypto_key._read(32)

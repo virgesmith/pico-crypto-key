@@ -1,10 +1,10 @@
 import os
 from tempfile import mkstemp
 from time import time
+
 import pandas as pd
 
 from pico_crypto_key import CryptoKey
-
 
 result = pd.DataFrame(columns=["task", "size_k", "time_s", "bitrate_kbps"]).set_index(["task", "size_k"])
 

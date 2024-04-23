@@ -4,6 +4,7 @@ Example: compute SHA256 hash of a file.
 
 from pico_crypto_key import CryptoKey
 
+
 def hash_file(file: str) -> None:
     with CryptoKey() as crypto_key:
         digest = crypto_key.hash(file)

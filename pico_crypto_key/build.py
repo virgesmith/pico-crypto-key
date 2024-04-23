@@ -3,9 +3,9 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
 import toml
 import typer
-import pytest
 
 app = typer.Typer()
 
