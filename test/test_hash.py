@@ -1,5 +1,4 @@
 from hashlib import sha256
-from time import sleep
 
 import pytest
 
@@ -19,4 +18,3 @@ def test_hash(crypto_key: CryptoKey, file: str) -> None:
 
     # check hash matches hashlib's sha256
     assert digest == hash2
-    sleep(0.1)

@@ -1,13 +1,10 @@
 """
-Example 3:
-Use a second (or original) device to verify a data signature of given a public key (as hex strings).
+Example: use a second (or original) device to verify an ECDSA signature.
 """
 
 import json
 import os
 from time import time
-
-import toml
 
 from pico_crypto_key import CryptoKey
 
@@ -42,6 +39,4 @@ def verify_data(signature_file: str, device_pin: str) -> None:
 
 
 if __name__ == "__main__":
-    config = toml.load("./pyproject.toml")["pico"]["run"]
-
-    verify_data("signature.json", config["PICO_CRYPTO_KEY_PIN"])
+    verify_data("signature.json")

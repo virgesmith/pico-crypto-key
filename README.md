@@ -120,11 +120,23 @@ picobuild install /path/to/RPI-RP2
 picobuild test
 ```
 
-(The device PIN is currently defined in [pyproject.toml](./pyproject.toml))
+## PIN protection
+
+The device is protected with a PIN, the salted hash of which is read from flash memory. Before first use (or a forgotten PIN), a hash must be written to flash (press BOOTSEL when connecting):
+
+```sh
+picobuild reset-pin /path/to/RPI-RP2
+```
+
+then reinstall the crypto key image as above. The pin will then be "pico", and it can be changed (see below).
+
+The python interface will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
+
+(NB for the tests to run, the env var *must* be set)
 
 ## Using the device
 
-The device is pin protected (the word 'pico'), and (for now) it can't be changed without editing the code.
+The device is pin protected (default is the word 'pico')
 
 The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it.
 
@@ -134,8 +146,7 @@ The `CryptoKey` class provides the python interface and is context-managed to he
 - `verify` verify the given hash matches the signature and public key
 - `encrypt` encrypts using AES256
 - `decrypt` decrypts using AES256
-
-Both the tests and examples read the pin from the `[pico.run]` section in [pyproject.toml](./pyproject.toml). Modify the settings as necessary.
+- `set_pin` set a new PIN
 
 See the examples for more details.
 
@@ -150,17 +161,10 @@ See the examples for more details.
 
 - the device can get out of sync quite easily when something goes wrong. If so, turn it off and on again ;)
 
-### Testing
-
-Just run:
-
-```sh
-pytest
-```
 
 ## Examples
 
-### 0. Hash file
+### Hash file
 
 This just prints the hash of itself.
 
@@ -168,7 +172,7 @@ This just prints the hash of itself.
 python examples/hash_file.py
 ```
 
-### 1. Decrypt data
+### Encrypt/decrypt data
 
 This example will look for an encrypted version of the data (examples/dataframe.csv). If not found it will encrypt the plaintext.
 
@@ -200,7 +204,7 @@ decryption took 2.56s
 
 If you now switch to a different device, it won't be able to decrypt the ciphertext and will return garbage.
 
-### 3. Sign data
+### Sign data
 
 This example will compute a hash (SHA256) of a file and sign it. It outputs a json object containing the filename, the hash, the signature, and the device's public key.
 
@@ -215,7 +219,7 @@ signing/verifying took 0.55s
 signature written to signature.json
 ```
 
-### 3. Verify data
+### Verify data
 
 The signature data above should be verifiable by any ECDSA validation algorithm, but you can use the device for this. First it verifies the supplied hash corresponds to the file, then it verifies the signature against the hash and the given public key. It also prints whether the public key provided matches it's own public key.
 
@@ -238,3 +242,12 @@ verifying device is not the signing device
 signature is valid
 verifying took 0.79s
 ```
+
+### Change PIN
+
+This just runs the PIN reset process:
+- initialise device
+- reset device (you may need to enter the old PIN again)
+- enter new PIN and repeat to confirm
+- write new PIN to device
+- reset device and initialise with new PIN

@@ -1,13 +1,13 @@
+import os
 from typing import Generator
 
 import pytest
-import toml
 
 from pico_crypto_key import CryptoKey
 
 
 @pytest.fixture(scope="session")
 def crypto_key() -> Generator[CryptoKey, None, None]:
-    config = toml.load("./pyproject.toml")["pico"]["run"]
-    with CryptoKey(pin=config["PICO_CRYPTO_KEY_PIN"]) as device:
+    assert os.getenv("PICO_CRYPTO_KEY_PIN"), "tests need PICO_CRYPTO_KEY_PIN to be set"
+    with CryptoKey() as device:
         yield device

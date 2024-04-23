@@ -11,7 +11,7 @@ result = pd.DataFrame(columns=["task", "size_k", "time_s", "bitrate_kbps"]).set_
 
 def hash_performance(filename: str) -> None:
     length_k = os.stat(filename).st_size / 1024
-    with CryptoKey(pin="pico") as crypto_key:
+    with CryptoKey() as crypto_key:
         start = time()
         _ = crypto_key.hash(filename)
         elapsed = time() - start
@@ -21,7 +21,7 @@ def hash_performance(filename: str) -> None:
 
 def sign_verify_performance(filename: str) -> None:
     length_k = os.stat(filename).st_size / 1024
-    with CryptoKey(pin="pico") as crypto_key:
+    with CryptoKey() as crypto_key:
         start = time()
         digest, sig = crypto_key.sign(filename)
         elapsed = time() - start
@@ -37,7 +37,7 @@ def sign_verify_performance(filename: str) -> None:
 
 def encryption_performance(filename: str) -> None:
     length_k = os.stat(filename).st_size / 1024
-    with open(filename, "rb") as fd, CryptoKey(pin="pico") as crypto_key:
+    with open(filename, "rb") as fd, CryptoKey() as crypto_key:
         start = time()
         _ = crypto_key.encrypt(fd.read())
         elapsed = time() - start
