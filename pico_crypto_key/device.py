@@ -3,14 +3,16 @@ from __future__ import annotations
 import os
 from struct import pack, unpack
 from types import TracebackType
+from typing import Any
 
-import usb.core
-import usb.util
-from pwinput import pwinput
+import usb.core  # type: ignore[import-untyped]
+import usb.util  # type: ignore[import-untyped]
+from pwinput import pwinput  # type: ignore[import-untyped]
 
 
 class CryptoKeyNotFoundError(ConnectionError):
     pass
+
 
 def _read_pin_from_stdin() -> str:
     # TODO dont echo
@@ -23,11 +25,13 @@ class CryptoKey:
     ECDSA_KEY_BYTES = 65  # long form with 04 prefix
     VERIFY_FAILED = 2**32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
+    reattach: bool
+
     def __init__(self) -> None:
         """Create device object for use in context manager."""
         self.have_repl = False  # tracks whether repl entered (i.e. pin was correct)
         self.device_pin = (os.getenv("PICO_CRYPTO_KEY_PIN") or _read_pin_from_stdin()).encode("utf-8")
-        self.device = None
+        self.device: Any = None
 
     def __enter__(self) -> CryptoKey:
         """Initialised the device's repl."""
@@ -52,7 +56,6 @@ class CryptoKey:
                 self.device.attach_kernel_driver(0)
         except usb.core.USBError:
             pass
-
 
     def hash(self, filename: str) -> bytes:
         """
@@ -256,7 +259,6 @@ class CryptoKey:
         self.device_pin = new_pin
         self.init()
         print("new pin set, update your env as necessary")
-
 
     def reset(self) -> None:
         """

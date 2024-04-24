@@ -104,9 +104,7 @@ def build() -> str:
 
 @app.command()
 def install(
-    device_path: str = typer.Argument(
-        ..., help="the path to the device storage, e.g. /media/user/RPI-RP2"
-    ),
+    device_path: str = typer.Argument(..., help="the path to the device storage, e.g. /media/user/RPI-RP2"),
 ) -> None:
     """Install the pico-crypto-key image. The device must be mounted with BOOTSEL pressed."""
 
@@ -116,17 +114,13 @@ def install(
         print(f"No device not mounted at {device_path}")
         return
 
-    result = subprocess.run(
-        ["cp", f"{config['PICO_IMAGE']}.uf2", device_path], cwd="./build"
-    )
+    result = subprocess.run(["cp", f"{config['PICO_IMAGE']}.uf2", device_path], cwd="./build")
     assert result.returncode == 0
 
 
 @app.command()
 def reset_pin(
-    device_path: str = typer.Argument(
-        ..., help="the path to the device storage, e.g. /media/user/RPI-RP2"
-    ),
+    device_path: str = typer.Argument(..., help="the path to the device storage, e.g. /media/user/RPI-RP2"),
 ) -> None:
     """
     Installs a binary that resets the flash memory storing the pin hash.
@@ -139,14 +133,12 @@ def reset_pin(
         print(f"No device not mounted at {device_path}")
         return
 
-    result = subprocess.run(
-        ["cp", f"{config['PICO_RESET_PIN']}.uf2", device_path], cwd="./build"
-    )
+    result = subprocess.run(["cp", f"{config['PICO_RESET_PIN']}.uf2", device_path], cwd="./build")
     assert result.returncode == 0
 
 
 @app.command()
 def test():
-    """Run unit tests."""
+    """Run unit tests. PIN must be set in PICO_CRYPTO_KEY_PIN env var"""
     assert os.getenv("PICO_CRYPTO_KEY_PIN"), "Tests require PICO_CRYPTO_KEY_PIN to be set"
     assert pytest.main() == 0

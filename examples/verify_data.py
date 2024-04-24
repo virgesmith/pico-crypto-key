@@ -9,10 +9,10 @@ from time import time
 from pico_crypto_key import CryptoKey
 
 
-def verify_data(signature_file: str, device_pin: str) -> None:
+def verify_data(signature_file: str) -> None:
     if not os.stat(signature_file):
         print(f"{signature_file} not found (need to run sign_data.py first)")
-    with CryptoKey(pin=device_pin) as crypto_key, open(signature_file) as fd:
+    with CryptoKey() as crypto_key, open(signature_file) as fd:
         signature = json.load(fd)
         # first check hash matches file
         start = time()

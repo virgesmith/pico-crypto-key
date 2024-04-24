@@ -106,7 +106,7 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-These steps use the `picobuild` script. Optionally check your configuration looks correct then build:
+These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
 ```sh
 picobuild check
@@ -128,7 +128,7 @@ The device is protected with a PIN, the salted hash of which is read from flash 
 picobuild reset-pin /path/to/RPI-RP2
 ```
 
-then reinstall the crypto key image as above. The pin will then be "pico", and it can be changed (see below).
+If the device LED is flashing after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed (see below).
 
 The python interface will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
 
@@ -247,7 +247,7 @@ verifying took 0.79s
 
 This just runs the PIN reset process:
 - initialise device
-- reset device (you may need to enter the old PIN again)
+- reset device (you'll need to enter the old PIN, even if this was set in the env)
 - enter new PIN and repeat to confirm
 - write new PIN to device
 - reset device and initialise with new PIN

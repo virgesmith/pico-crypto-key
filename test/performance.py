@@ -2,7 +2,7 @@ import os
 from tempfile import mkstemp
 from time import time
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 
 from pico_crypto_key import CryptoKey
 
