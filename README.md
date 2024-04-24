@@ -14,6 +14,8 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
+NB This app can be installed on a pico W and will work, with the exception of the onboard LED.
+
 ## Update v1.1.0
 
 The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000k input):
@@ -26,7 +28,9 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 | encrypt |           23.9 |                334.2 |              43.5 |                  183.8 |       81.9 |
 | decrypt |           23.8 |                336.0 |              43.1 |                  185.7 |       81.0 |
 
+## Update v1.2.0
 
+The device pin is now configurable. See [PIN protection](#pin-protection).
 
 ## Dependencies/prerequisites
 
@@ -85,7 +89,6 @@ You should now have a structure something like this:
 │   ├── pico-sdk -> ../pico-sdk-1.5.1
 │   ├── pyproject.toml
 │   ├── README.md
-│   ├── setup.cfg
 │   ├── src
 │   └── test
 ├── pico-sdk-1.5.1
@@ -113,7 +116,7 @@ picobuild check
 picobuild build
 ```
 
-Ensure your device is connected and mounted ready to accept a new image (press BOOTSEL when connecting), then:
+Ensure your device is connected and mounted ready to accept a new image (press `BOOTSEL` when connecting), then:
 
 ```sh
 picobuild install /path/to/RPI-RP2
@@ -122,15 +125,15 @@ picobuild test
 
 ## PIN protection
 
-The device is protected with a PIN, the salted hash of which is read from flash memory. Before first use (or a forgotten PIN), a hash must be written to flash (press BOOTSEL when connecting):
+The device is protected with a PIN, the salted hash of which is read from flash memory. Before first use (or a forgotten PIN), a hash must be written to flash (press `BOOTSEL` when connecting):
 
 ```sh
 picobuild reset-pin /path/to/RPI-RP2
 ```
 
-If the device LED is flashing after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed (see below).
+If the device LED is flashing after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed - see the [example](#change-pin).
 
-The python interface will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
+The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
 
 (NB for the tests to run, the env var *must* be set)
 
@@ -151,6 +154,23 @@ The `CryptoKey` class provides the python interface and is context-managed to he
 See the examples for more details.
 
 
+### Errors
+
+The device LED is normally off when the device is idle, and on when it's doing something. If there are low-level errors with any of the crypto algorithms then the device may enter an error state where the LED will flash. The error codes can be interpreted like so:
+
+Long flashes | Short flashes | Algorithm | mbedtls error code
+------------:|--------------:|-----------|-------------------
+1            | 0             | ECDSA     | Unknown error
+1            | 1             | ECDSA     | `MBEDTLS_ERR_ECP_BAD_INPUT_DATA`
+1            | 2             | ECDSA     | `MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL`
+1            | 3             | ECDSA     | `MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE`
+1            | 4             | ECDSA     | `MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED`
+1            | 5             | ECDSA     | `MBEDTLS_ERR_MPI_ALLOC_FAILED`
+2            | 0             | AES       | Unknown error
+2            | 1             | AES       | `MBEDTLS_ERR_AES_INVALID_KEY_LENGTH`
+3            | 0             | SHA       | Unknown error
+
+
 ### Troubleshooting
 
 - If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
@@ -166,7 +186,7 @@ See the examples for more details.
 
 ### Hash file
 
-This just prints the hash of itself.
+This script just prints the hash of itself.
 
 ```sh
 python examples/hash_file.py
@@ -174,7 +194,7 @@ python examples/hash_file.py
 
 ### Encrypt/decrypt data
 
-This example will look for an encrypted version of the data (examples/dataframe.csv). If not found it will encrypt the plaintext.
+This example will look for an encrypted version of the data (examples/dataframe.csv). If not found it will first encrypt the plaintext.
 
 Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
 
@@ -245,7 +265,12 @@ verifying took 0.79s
 
 ### Change PIN
 
+```sh
+python examples/chang_pin.py
+```
+
 This just runs the PIN reset process:
+
 - initialise device
 - reset device (you'll need to enter the old PIN, even if this was set in the env)
 - enter new PIN and repeat to confirm

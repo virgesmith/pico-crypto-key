@@ -1,5 +1,5 @@
 #include "aes.h"
-#include "device.h"
+
 #include "ecdsa.h"
 #include "error.h"
 #include "flash.h"
@@ -8,6 +8,7 @@
 #include "utils.h"
 
 #include "pico/binary_info.h"
+#include "pico/stdlib.h"
 #include "pico/unique_id.h"
 
 #include <string>
@@ -27,7 +28,7 @@ bytes genkey() {
 }
 
 namespace {
-  const bytes salt = {0x19, 0x93, 0x76, 0x02, 0x45, 0x4a, 0xbc, 0xde};
+const bytes salt = {0x19, 0x93, 0x76, 0x02, 0x45, 0x4a, 0xbc, 0xde};
 }
 
 bool check_pin() {
@@ -50,8 +51,7 @@ uint32_t set_pin() {
   pin.reserve(pin.size() + 8);
   pin.insert(pin.end(), salt.begin(), salt.end());
   bytes h = sha256::hash(pin);
-  flash::write(h);
-  return 0;
+  return flash::write(h);
 }
 
 void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key) {
@@ -65,61 +65,53 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // write pin
     case 'p': {
-      gpio_put(LED_PIN, 1);
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       cdc::write(set_pin());
-      gpio_put(LED_PIN, 0);
-      break;
-    }
-    // read pin
-    case 'X': {
-      gpio_put(LED_PIN, 1);
-      bytes b = flash::read(32);
-      cdc::write(b);
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       break;
     }
     // get ECDSA public key
     case 'k': {
-      gpio_put(LED_PIN, 1);
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       cdc::write(ecdsa::pubkey(ec_key));
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       break;
     }
     // hash input
     case 'h': {
       // 4 byte header containing length of data
-      gpio_put(LED_PIN, 1);
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       uint32_t length;
       cdc::read(length);
       bytes hash = sha256::hash_in(length);
       cdc::write(hash);
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       break;
     }
     // decrypt input
     case 'd': {
       // 4 byte header containing length of data
-      gpio_put(LED_PIN, 1);
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       uint32_t length;
       cdc::read(length);
       aes::decrypt_in(aes_key, length);
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       break;
     }
     // encrypt input
     case 'e': {
       // 4 byte header containing length of data
-      gpio_put(LED_PIN, 1);
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       uint32_t length;
       cdc::read(length);
       aes::encrypt_in(aes_key, length);
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       break;
     }
     // hash input and sign
     case 's': {
       // 4 byte header containing length of data
-      gpio_put(LED_PIN, 1);
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       uint32_t length;
       cdc::read(length);
       bytes hash = sha256::hash_in(length);
@@ -127,13 +119,13 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       bytes sig = ecdsa::sign(ec_key, hash);
       cdc::write(sig.size());
       cdc::write(sig);
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       break;
     }
     // verify hash and signature
     case 'v': {
       // hash[32], len(sig)[4], sig, len(key)[4], key
-      gpio_put(LED_PIN, 1);
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       uint32_t length;
       bytes hash(sha256::LENGTH_BYTES);
       cdc::read(hash);
@@ -147,7 +139,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       cdc::read(pubkey);
       // 4-byte int, 0 is success
       cdc::write(ecdsa::verify(hash, sig, pubkey));
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       break;
     }
     default: {
@@ -159,18 +151,18 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 
 int main() {
   bi_decl(bi_program_description("PicoCryptoKey"));
-  bi_decl(bi_1pin_with_name(LED_PIN, "On-board LED"));
+  bi_decl(bi_1pin_with_name(PICO_DEFAULT_LED_PIN, "On-board LED"));
 
   tusb_init();
-  gpio_init(LED_PIN);
-  gpio_set_dir(LED_PIN, GPIO_OUT);
-  gpio_put(LED_PIN, 1);
+  gpio_init(PICO_DEFAULT_LED_PIN);
+  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+  gpio_put(PICO_DEFAULT_LED_PIN, 1);
   sleep_ms(100);
-  gpio_put(LED_PIN, 0);
+  gpio_put(PICO_DEFAULT_LED_PIN, 0);
 
   for (;;) {
     while (!check_pin()) {
-      gpio_put(LED_PIN, 0);
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
       cdc::write(ErrorCode::INVALID_PIN);
 
       sleep_ms(3000);

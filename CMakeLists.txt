@@ -15,7 +15,6 @@ add_executable(${PICO_IMAGE}
   src/sha256.cpp
   src/ecdsa.cpp
   src/aes.cpp
-  src/device.cpp
   src/flash.cpp
   src/error.cpp
   src/usb_descriptors.c
@@ -44,6 +43,7 @@ message("Target is ${PICO_RESET_PIN}")
 add_executable(${PICO_RESET_PIN}
   src/reset_pin.cpp
   src/flash.cpp
+  src/error.cpp
 )
 
 target_compile_options(${PICO_RESET_PIN} PRIVATE -Wno-psabi -Werror -Wall -DMBEDTLS_ALLOW_PRIVATE_ACCESS)

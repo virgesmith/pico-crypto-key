@@ -14,7 +14,7 @@ def sign_data(filename: str) -> None:
         start = time.time()
         pubkey = device.pubkey()
         digest, signature = device.sign(filename)
-        print("signing/verifying took %.2fs" % (time.time() - start))
+        print("signing took %.2fs" % (time.time() - start))
 
         result = dict(
             file=filename,
