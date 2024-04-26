@@ -14,11 +14,15 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-NB This app can be installed on a Pico W and will work, with the exception of the onboard LED.
+NB This app can be installed on a Pico W and will work, with the exception of the onboard LED - to make this work requires the wifi drivers to be compiled into the project.
+
+## Update v1.2.0
+
+The device pin is now configurable. See [PIN protection](#pin-protection) and the [change pin](#change-pin) example.
 
 ## Update v1.1.0
 
-The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000k input):
+The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000kB input):
 
 | task    | CDC<br>time(s) | CDC<br>bitrate(kbps) | serial<br>time(s) | serial<br>bitrate(kbps)| Speedup(%) |
 |:--------|---------------:|---------------------:|------------------:|-----------------------:|-----------:|
@@ -27,10 +31,6 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 | verify  |            0.4 |                      |               0.5 |                        |       16.0 |
 | encrypt |           23.9 |                334.2 |              43.5 |                  183.8 |       81.9 |
 | decrypt |           23.8 |                336.0 |              43.1 |                  185.7 |       81.0 |
-
-## Update v1.2.0
-
-The device pin is now configurable. See [PIN protection](#pin-protection).
 
 ## Dependencies/prerequisites
 
@@ -73,6 +73,8 @@ You will then need to:
   ln -s ../pico-sdk-1.5.1 pico-sdk
   ln -s ../mbedtls-3.6.0 mbedtls
   ```
+
+Not sure why, but I couldn't get it to work with the symlink inside pico-sdk like tinyusb.
 
 You should now have a structure something like this:
 
