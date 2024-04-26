@@ -55,9 +55,10 @@ def check():
     ok &= _check_symlink("./pico-sdk/lib/tinyusb")
     ok &= _check_symlink("./mbedtls")
     ok &= _check_config(config["build"], "PICO_IMAGE")
+    ok &= _check_config(config["build"], "PICO_RESET_PIN")
 
     if not os.getenv("PICO_CRYPTO_KEY_PIN"):
-        print("PICO_CRYPTO_KEY_PIN not set, PIN will have to be entered manually ()")
+        print("PICO_CRYPTO_KEY_PIN not set in env, PIN will have to be entered manually")
 
     print("check ok" if ok else "configuration errors found")
 
@@ -75,8 +76,7 @@ def build() -> str:
 
     # check build dir exists and create if necessary
     build_dir = Path("./build")
-    if not build_dir.exists():
-        build_dir.mkdir()
+    build_dir.mkdir(exist_ok=True)
 
     sdk_dir = Path("./pico-sdk")
     print(f"Pico SDK points to {os.readlink(sdk_dir)}")
@@ -87,6 +87,7 @@ def build() -> str:
         f"-DPICO_SDK_PATH={sdk_dir.resolve()}",
         f"-DPICO_IMAGE={config['PICO_IMAGE']}",
         f"-DPICO_RESET_PIN={config['PICO_RESET_PIN']}",
+        "-DPICO_BOARD=pico"
     ]
 
     # ensure we have the latest pico_sdk_import.cmake

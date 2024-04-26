@@ -14,7 +14,7 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-NB This app can be installed on a pico W and will work, with the exception of the onboard LED.
+NB This app can be installed on a Pico W and will work, with the exception of the onboard LED.
 
 ## Update v1.1.0
 
@@ -266,7 +266,7 @@ verifying took 0.79s
 ### Change PIN
 
 ```sh
-python examples/chang_pin.py
+python examples/change_pin.py
 ```
 
 This just runs the PIN reset process:

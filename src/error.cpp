@@ -1,4 +1,5 @@
 #include "error.h"
+#include "board.h"
 
 #include "pico/stdlib.h"
 
@@ -20,17 +21,17 @@ void ErrorMapper::check(int ret) {
 void ErrorMapper::enter(int code) {
   for (;;) {
     for (int i = 0; i < (int)context; ++i) {
-      gpio_put(PICO_DEFAULT_LED_PIN, 1);
+      led::on();
       sleep_ms(LONG_FLASH_MS);
-      gpio_put(PICO_DEFAULT_LED_PIN, 0);
+      led::off();
       sleep_ms(PAUSE_MS);
     }
 
     // code 0 is unknown error
     for (int i = 0; i < code; ++i) {
-      gpio_put(PICO_DEFAULT_LED_PIN, 1);
+      led::on();
       sleep_ms(SHORT_FLASH_MS);
-      gpio_put(PICO_DEFAULT_LED_PIN, 0);
+      led::off();
       sleep_ms(PAUSE_MS);
     }
   }

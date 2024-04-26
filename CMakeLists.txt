@@ -16,6 +16,7 @@ add_executable(${PICO_IMAGE}
   src/ecdsa.cpp
   src/aes.cpp
   src/flash.cpp
+  src/board.cpp
   src/error.cpp
   src/usb_descriptors.c
 )
@@ -39,13 +40,12 @@ target_link_libraries(${PICO_IMAGE}
 )
 
 message("Target is ${PICO_RESET_PIN}")
-
 add_executable(${PICO_RESET_PIN}
   src/reset_pin.cpp
   src/flash.cpp
+  src/board.cpp
   src/error.cpp
 )
-
 target_compile_options(${PICO_RESET_PIN} PRIVATE -Wno-psabi -Werror -Wall -DMBEDTLS_ALLOW_PRIVATE_ACCESS)
 target_link_libraries(${PICO_RESET_PIN}
   pico_stdlib

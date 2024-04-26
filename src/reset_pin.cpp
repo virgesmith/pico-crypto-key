@@ -1,12 +1,11 @@
 #include "utils.h"
 #include "flash.h"
+#include "board.h"
 
 #include "pico/stdlib.h"
 
 int main() {
-  gpio_init(PICO_DEFAULT_LED_PIN);
-  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-
+  led::init();
   // this is SHA256 of "pico" + salt
   const bytes expected {
     0x1b, 0x7a, 0x8f, 0x3, 0xae, 0xb8, 0x16, 0x6a, 0xbd, 0x1d, 0x4d, 0xa3, 0x65, 0xe2, 0x4, 0x3d, 0xab, 0xd1, 0xed,
@@ -26,9 +25,9 @@ int main() {
 
   } else {
     for(;;) {
-      gpio_put(PICO_DEFAULT_LED_PIN, 1);
+      led::on();
       sleep_ms(500);
-      gpio_put(PICO_DEFAULT_LED_PIN, 0);
+      led::off();
       sleep_ms(500);
     }
   }
