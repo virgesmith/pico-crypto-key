@@ -1,14 +1,12 @@
 #pragma once
 
-#include "pico/stdlib.h"
-
 #include <vector>
 
 struct ErrorMapper final
 {
   enum Context
   {
-    PIN = 2, EC = 3, AES = 4, SHA = 5
+    EC = 1, AES = 2, SHA = 3
   };
 
   // individual error states. Do not provide more than 7 states!

@@ -3,13 +3,20 @@ from __future__ import annotations
 import os
 from struct import pack, unpack
 from types import TracebackType
+from typing import Any
 
-import usb.core
-import usb.util
+import usb.core  # type: ignore[import-untyped]
+import usb.util  # type: ignore[import-untyped]
+from pwinput import pwinput  # type: ignore[import-untyped]
 
 
 class CryptoKeyNotFoundError(ConnectionError):
     pass
+
+
+def _read_pin_from_stdin() -> str:
+    # TODO dont echo
+    return pwinput("PIN:")
 
 
 class CryptoKey:
@@ -18,11 +25,13 @@ class CryptoKey:
     ECDSA_KEY_BYTES = 65  # long form with 04 prefix
     VERIFY_FAILED = 2**32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
-    def __init__(self, *, pin: str) -> None:
+    reattach: bool
+
+    def __init__(self) -> None:
         """Create device object for use in context manager."""
         self.have_repl = False  # tracks whether repl entered (i.e. pin was correct)
-        self.device_pin = pin.encode("utf-8")
-        self.device = None
+        self.device_pin = (os.getenv("PICO_CRYPTO_KEY_PIN") or _read_pin_from_stdin()).encode("utf-8")
+        self.device: Any = None
 
     def __enter__(self) -> CryptoKey:
         """Initialised the device's repl."""
@@ -47,7 +56,6 @@ class CryptoKey:
                 self.device.attach_kernel_driver(0)
         except usb.core.USBError:
             pass
-
 
     def hash(self, filename: str) -> bytes:
         """
@@ -212,9 +220,45 @@ class CryptoKey:
             The long-form ECDSA public key
         """
         assert self.have_repl
-        self.__endpoint_in.write(str.encode("k"))
+        self._write(b"k")
         pubkey = self._read(CryptoKey.ECDSA_KEY_BYTES)
         return pubkey
+
+    def set_pin(self) -> None:
+        """
+        Sets a new device pin
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        bool
+            Whether PIN change was successful
+        """
+        self.reset()
+        self.device_pin = pwinput("OLD PIN:")
+        self.init()
+        new_pin = pwinput("NEW PIN:")
+        if not 4 <= len(new_pin) <= 64:
+            print("pin must be between 4 and 64 bytes")
+            return
+        check = pwinput("CONFIRM:")
+        if new_pin != check:
+            print("doesn't match")
+            return
+        self._write(b"p")
+        self._write_int(len(new_pin))
+        self._write(new_pin)
+        result = self._read_int()
+        if result:
+            print("pin change failed: {result}")
+            return
+        print("resetting device and reauthenticating")
+        self.reset()
+        self.device_pin = new_pin
+        self.init()
+        print("new pin set, update your env as necessary")
 
     def reset(self) -> None:
         """
@@ -257,6 +301,7 @@ class CryptoKey:
             self.reattach = True
             self.device.detach_kernel_driver(0)
 
+        self._write_int(len(self.device_pin))
         self._write(self.device_pin)
         error_code = unpack("I", self._read(4))[0]
 

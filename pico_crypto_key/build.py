@@ -3,10 +3,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
 import toml
 import typer
 
 app = typer.Typer()
+
+_build_dir = Path("./build")
 
 
 @app.command()
@@ -54,7 +57,10 @@ def check():
     ok &= _check_symlink("./pico-sdk/lib/tinyusb")
     ok &= _check_symlink("./mbedtls")
     ok &= _check_config(config["build"], "PICO_IMAGE")
-    ok &= _check_config(config["run"], "PICO_CRYPTO_KEY_PIN")
+    ok &= _check_config(config["build"], "PICO_RESET_PIN")
+
+    if not os.getenv("PICO_CRYPTO_KEY_PIN"):
+        print("PICO_CRYPTO_KEY_PIN not set in env, PIN will have to be entered manually")
 
     print("check ok" if ok else "configuration errors found")
 
@@ -62,7 +68,8 @@ def check():
 @app.command()
 def clean() -> None:
     """Clean intermediate build files."""
-    shutil.rmtree("./build")
+    if _build_dir.exists():
+        shutil.rmtree(_build_dir)
 
 
 @app.command()
@@ -71,9 +78,7 @@ def build() -> str:
     config = toml.load("./pyproject.toml")["pico"]["build"]
 
     # check build dir exists and create if necessary
-    build_dir = Path("./build")
-    if not build_dir.exists():
-        build_dir.mkdir()
+    _build_dir.mkdir(exist_ok=True)
 
     sdk_dir = Path("./pico-sdk")
     print(f"Pico SDK points to {os.readlink(sdk_dir)}")
@@ -83,6 +88,8 @@ def build() -> str:
     cmake_args = [
         f"-DPICO_SDK_PATH={sdk_dir.resolve()}",
         f"-DPICO_IMAGE={config['PICO_IMAGE']}",
+        f"-DPICO_RESET_PIN={config['PICO_RESET_PIN']}",
+        "-DPICO_BOARD=pico"
     ]
 
     # ensure we have the latest pico_sdk_import.cmake
@@ -100,9 +107,7 @@ def build() -> str:
 
 @app.command()
 def install(
-    device_path: str = typer.Argument(
-        ..., help="the path to the device storage, e.g. /media/user/RPI-RP2"
-    ),
+    device_path: str = typer.Argument(..., help="the path to the device storage, e.g. /media/user/RPI-RP2"),
 ) -> None:
     """Install the pico-crypto-key image. The device must be mounted with BOOTSEL pressed."""
 
@@ -112,14 +117,31 @@ def install(
         print(f"No device not mounted at {device_path}")
         return
 
-    result = subprocess.run(
-        ["cp", f"{config['PICO_IMAGE']}.uf2", device_path], cwd="./build"
-    )
+    result = subprocess.run(["cp", f"{config['PICO_IMAGE']}.uf2", device_path], cwd="./build")
     assert result.returncode == 0
 
 
-# TODO pass settings here instead of setting in pyproject.toml
+@app.command()
+def reset_pin(
+    device_path: str = typer.Argument(..., help="the path to the device storage, e.g. /media/user/RPI-RP2"),
+) -> None:
+    """
+    Installs a binary that resets the flash memory storing the pin hash.
+    The device must be mounted with BOOTSEL pressed.
+    """
+
+    config = toml.load("./pyproject.toml")["pico"]["build"]
+
+    if not Path(device_path).exists():
+        print(f"No device not mounted at {device_path}")
+        return
+
+    result = subprocess.run(["cp", f"{config['PICO_RESET_PIN']}.uf2", device_path], cwd="./build")
+    assert result.returncode == 0
+
+
 @app.command()
 def test():
-    """Run unit tests."""
-    os.system("pytest")
+    """Run unit tests. PIN must be set in PICO_CRYPTO_KEY_PIN env var"""
+    assert os.getenv("PICO_CRYPTO_KEY_PIN"), "Tests require PICO_CRYPTO_KEY_PIN to be set"
+    assert pytest.main() == 0

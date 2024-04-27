@@ -14,9 +14,15 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
+NB This app can be installed on a Pico W and will work, with the exception of the onboard LED - to make this work requires the wifi drivers to be compiled into the project.
+
+## Update v1.2.0
+
+The device pin is now configurable. See [PIN protection](#pin-protection) and the [change pin](#change-pin) example.
+
 ## Update v1.1.0
 
-The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000k input):
+The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000kB input):
 
 | task    | CDC<br>time(s) | CDC<br>bitrate(kbps) | serial<br>time(s) | serial<br>bitrate(kbps)| Speedup(%) |
 |:--------|---------------:|---------------------:|------------------:|-----------------------:|-----------:|
@@ -25,8 +31,6 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 | verify  |            0.4 |                      |               0.5 |                        |       16.0 |
 | encrypt |           23.9 |                334.2 |              43.5 |                  183.8 |       81.9 |
 | decrypt |           23.8 |                336.0 |              43.1 |                  185.7 |       81.0 |
-
-
 
 ## Dependencies/prerequisites
 
@@ -70,31 +74,32 @@ You will then need to:
   ln -s ../mbedtls-3.6.0 mbedtls
   ```
 
+Not sure why, but I couldn't get it to work with the symlink inside pico-sdk like tinyusb.
+
 You should now have a structure something like this:
 
 ```txt
 .
-├── mbedtls-3.6.0
-├── pico-crypto-key
-│   ├── examples
-│   ├── mbedtls -> ../mbedtls-3.6.0
-│   ├── pico_crypto_key
-│   │   ├── build.py
-│   │   ├── device.py
-│   │   └── __init__.py
-│   ├── pico-sdk -> ../pico-sdk-1.5.1
-│   ├── pyproject.toml
-│   ├── README.md
-│   ├── setup.cfg
-│   ├── src
-│   └── test
-├── pico-sdk-1.5.1
-│   └── lib
-│       └── tinyusb -> ../../tinyusb-0.16.0
-└── tinyusb-0.16.0
+├──mbedtls-3.6.0
+├──pico-crypto-key
+│  ├──examples
+│  ├──mbedtls -> ../mbedtls-3.6.0
+│  ├──pico_crypto_key
+│  │  ├──build.py
+│  │  ├──device.py
+│  │  └──__init__.py
+│  ├──pico-sdk -> ../pico-sdk-1.5.1
+│  ├──pyproject.toml
+│  ├──README.md
+│  ├──src
+│  └──test
+├──pico-sdk-1.5.1
+│  └──lib
+│     └──tinyusb -> ../../tinyusb-0.16.0
+└──tinyusb-0.16.0
 ```
 
-### Configure
+## Configure
 
 If using a fresh download of `mbedtls` - run the configuration script to customise the build for the pico, e.g.:
 
@@ -106,25 +111,37 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-These steps use the `picobuild` script. Optionally check your configuration looks correct then build:
+These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
 ```sh
 picobuild check
 picobuild build
 ```
 
-Ensure your device is connected and mounted ready to accept a new image (press BOOTSEL when connecting), then:
+Ensure your device is connected and mounted ready to accept a new image (press `BOOTSEL` when connecting), then:
 
 ```sh
 picobuild install /path/to/RPI-RP2
 picobuild test
 ```
 
-(The device PIN is currently defined in [pyproject.toml](./pyproject.toml))
+## PIN protection
+
+The device is protected with a PIN, the salted hash of which is read from flash memory. Before first use (or a forgotten PIN), a hash must be written to flash (press `BOOTSEL` when connecting):
+
+```sh
+picobuild reset-pin /path/to/RPI-RP2
+```
+
+If the device LED is flashing after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed - see the [example](#change-pin).
+
+The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
+
+(NB for the tests to run, the env var *must* be set)
 
 ## Using the device
 
-The device is pin protected (the word 'pico'), and (for now) it can't be changed without editing the code.
+The device is pin protected (default is the word 'pico')
 
 The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it.
 
@@ -134,13 +151,29 @@ The `CryptoKey` class provides the python interface and is context-managed to he
 - `verify` verify the given hash matches the signature and public key
 - `encrypt` encrypts using AES256
 - `decrypt` decrypts using AES256
-
-Both the tests and examples read the pin from the `[pico.run]` section in [pyproject.toml](./pyproject.toml). Modify the settings as necessary.
+- `set_pin` set a new PIN
 
 See the examples for more details.
 
 
-### Troubleshooting
+## Errors
+
+The device LED is normally off when the device is idle, and on when it's doing something. If there are low-level errors with any of the crypto algorithms then the device may enter an error state where the LED will flash. The error codes can be interpreted like so:
+
+Long flashes | Short flashes | Algorithm | mbedtls error code
+------------:|--------------:|-----------|-------------------
+1            | 0             | ECDSA     | Unknown error
+1            | 1             | ECDSA     | `MBEDTLS_ERR_ECP_BAD_INPUT_DATA`
+1            | 2             | ECDSA     | `MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL`
+1            | 3             | ECDSA     | `MBEDTLS_ERR_ECP_FEATURE_UNAVAILABLE`
+1            | 4             | ECDSA     | `MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED`
+1            | 5             | ECDSA     | `MBEDTLS_ERR_MPI_ALLOC_FAILED`
+2            | 0             | AES       | Unknown error
+2            | 1             | AES       | `MBEDTLS_ERR_AES_INVALID_KEY_LENGTH`
+3            | 0             | SHA       | Unknown error
+
+
+## Troubleshooting
 
 - If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 - If you get `usb.core.USBError: [Errno 13] Access denied (insufficient permissions)` you'll need to add a udev rule for the device, see [this stackoverflow post](https://stackoverflow.com/questions/53125118/why-is-python-pyusb-usb-core-access-denied-due-to-permissions-and-why-wont-the). This worked for me:
@@ -150,27 +183,20 @@ See the examples for more details.
 
 - the device can get out of sync quite easily when something goes wrong. If so, turn it off and on again ;)
 
-### Testing
-
-Just run:
-
-```sh
-pytest
-```
 
 ## Examples
 
-### 0. Hash file
+### Hash file
 
-This just prints the hash of itself.
+This script just prints the hash of itself.
 
 ```sh
 python examples/hash_file.py
 ```
 
-### 1. Decrypt data
+### Encrypt/decrypt data
 
-This example will look for an encrypted version of the data (examples/dataframe.csv). If not found it will encrypt the plaintext.
+This example will look for an encrypted version of the data (examples/dataframe.csv). If not found it will first encrypt the plaintext.
 
 Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
 
@@ -200,7 +226,7 @@ decryption took 2.56s
 
 If you now switch to a different device, it won't be able to decrypt the ciphertext and will return garbage.
 
-### 3. Sign data
+### Sign data
 
 This example will compute a hash (SHA256) of a file and sign it. It outputs a json object containing the filename, the hash, the signature, and the device's public key.
 
@@ -215,7 +241,7 @@ signing/verifying took 0.55s
 signature written to signature.json
 ```
 
-### 3. Verify data
+### Verify data
 
 The signature data above should be verifiable by any ECDSA validation algorithm, but you can use the device for this. First it verifies the supplied hash corresponds to the file, then it verifies the signature against the hash and the given public key. It also prints whether the public key provided matches it's own public key.
 
@@ -238,3 +264,17 @@ verifying device is not the signing device
 signature is valid
 verifying took 0.79s
 ```
+
+### Change PIN
+
+```sh
+python examples/change_pin.py
+```
+
+This just runs the PIN reset process:
+
+- initialise device
+- reset device (you'll need to enter the old PIN, even if this was set in the env)
+- enter new PIN and repeat to confirm
+- write new PIN to device
+- reset device and initialise with new PIN

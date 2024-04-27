@@ -1,5 +1,5 @@
 """
-Example 1: use device to read an encrypted dataset into a pandas dataframe.
+Example: use device to encrypt a dataset (if not already present) and read an encrypted dataset into a pandas dataframe.
 """
 
 import os
@@ -7,13 +7,12 @@ from io import BytesIO
 from time import time
 
 import pandas as pd  # type: ignore
-import toml
 
 from pico_crypto_key import CryptoKey
 
 
-def read_encrypted_dataframe(ciphertext: str, device_pin: str) -> None:
-    with CryptoKey(pin=device_pin) as crypto_key:
+def read_encrypted_dataframe(ciphertext: str) -> None:
+    with CryptoKey() as crypto_key:
         ciphertext = filename
         # if the encrypted data isn't there, create it from the plaintext
         if not os.path.isfile(ciphertext):
@@ -34,5 +33,4 @@ def read_encrypted_dataframe(ciphertext: str, device_pin: str) -> None:
 
 if __name__ == "__main__":
     filename = "examples/dataframe.csv.enc"
-    config = toml.load("./pyproject.toml")["pico"]["run"]
-    read_encrypted_dataframe(filename, config["PICO_CRYPTO_KEY_PIN"])
+    read_encrypted_dataframe(filename)
