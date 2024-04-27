@@ -9,6 +9,8 @@ import typer
 
 app = typer.Typer()
 
+_build_dir = Path("./build")
+
 
 @app.command()
 def configure():
@@ -66,7 +68,8 @@ def check():
 @app.command()
 def clean() -> None:
     """Clean intermediate build files."""
-    shutil.rmtree("./build")
+    if _build_dir.exists():
+        shutil.rmtree(_build_dir)
 
 
 @app.command()
@@ -75,8 +78,7 @@ def build() -> str:
     config = toml.load("./pyproject.toml")["pico"]["build"]
 
     # check build dir exists and create if necessary
-    build_dir = Path("./build")
-    build_dir.mkdir(exist_ok=True)
+    _build_dir.mkdir(exist_ok=True)
 
     sdk_dir = Path("./pico-sdk")
     print(f"Pico SDK points to {os.readlink(sdk_dir)}")

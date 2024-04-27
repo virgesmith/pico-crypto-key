@@ -80,26 +80,26 @@ You should now have a structure something like this:
 
 ```txt
 .
-├── mbedtls-3.6.0
-├── pico-crypto-key
-│   ├── examples
-│   ├── mbedtls -> ../mbedtls-3.6.0
-│   ├── pico_crypto_key
-│   │   ├── build.py
-│   │   ├── device.py
-│   │   └── __init__.py
-│   ├── pico-sdk -> ../pico-sdk-1.5.1
-│   ├── pyproject.toml
-│   ├── README.md
-│   ├── src
-│   └── test
-├── pico-sdk-1.5.1
-│   └── lib
-│       └── tinyusb -> ../../tinyusb-0.16.0
-└── tinyusb-0.16.0
+├──mbedtls-3.6.0
+├──pico-crypto-key
+│  ├──examples
+│  ├──mbedtls -> ../mbedtls-3.6.0
+│  ├──pico_crypto_key
+│  │  ├──build.py
+│  │  ├──device.py
+│  │  └──__init__.py
+│  ├──pico-sdk -> ../pico-sdk-1.5.1
+│  ├──pyproject.toml
+│  ├──README.md
+│  ├──src
+│  └──test
+├──pico-sdk-1.5.1
+│  └──lib
+│     └──tinyusb -> ../../tinyusb-0.16.0
+└──tinyusb-0.16.0
 ```
 
-### Configure
+## Configure
 
 If using a fresh download of `mbedtls` - run the configuration script to customise the build for the pico, e.g.:
 
@@ -156,7 +156,7 @@ The `CryptoKey` class provides the python interface and is context-managed to he
 See the examples for more details.
 
 
-### Errors
+## Errors
 
 The device LED is normally off when the device is idle, and on when it's doing something. If there are low-level errors with any of the crypto algorithms then the device may enter an error state where the LED will flash. The error codes can be interpreted like so:
 
@@ -173,7 +173,7 @@ Long flashes | Short flashes | Algorithm | mbedtls error code
 3            | 0             | SHA       | Unknown error
 
 
-### Troubleshooting
+## Troubleshooting
 
 - If you get `[Errno 13] Permission denied: '/dev/ttyACM0'`, adding yourself to the `dialout` group and rebooting should fix.
 - If you get `usb.core.USBError: [Errno 13] Access denied (insufficient permissions)` you'll need to add a udev rule for the device, see [this stackoverflow post](https://stackoverflow.com/questions/53125118/why-is-python-pyusb-usb-core-access-denied-due-to-permissions-and-why-wont-the). This worked for me:
