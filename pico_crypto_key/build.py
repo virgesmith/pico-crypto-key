@@ -1,7 +1,6 @@
 import os
 import shutil
 import subprocess
-from typing import Optional
 from pathlib import Path
 
 import pytest
@@ -50,12 +49,15 @@ def _check_symlink(path: str) -> bool:
 
 
 @app.command()
-def check():
+def check(board: str = typer.Option(default="pico", help="the target board")):
     """Check the project configuration."""
+    print(f"Board: {board}")
     ok = True
     ok &= _check_symlink("./pico-sdk")
     ok &= _check_symlink("./pico-sdk/lib/tinyusb")
     ok &= _check_symlink("./mbedtls")
+    if board == "pico_w":
+        ok &= _check_symlink("./pico-sdk/lib/cyw43-driver")
 
     if not os.getenv("PICO_CRYPTO_KEY_PIN"):
         print("PICO_CRYPTO_KEY_PIN not set in env, PIN will have to be entered manually")
