@@ -44,7 +44,7 @@ namespace {
 uint64_t time_offset_ms = 0u;
 }
 
-uint64_t get_time_offset_ms() { return time_offset_ms; }
+// uint64_t get_time_offset_ms() { return time_offset_ms; }
 
 void set_time_offset(uint64_t unix_timestamp_ms) {
   time_offset_ms = unix_timestamp_ms - to_ms_since_boot(get_absolute_time());

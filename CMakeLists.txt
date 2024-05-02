@@ -28,7 +28,7 @@ add_executable(${PICO_IMAGE}
 
 add_subdirectory(mbedtls EXCLUDE_FROM_ALL)
 
-target_compile_definitions(${PICO_IMAGE} PUBLIC BOARD_${PICO_BOARD})
+target_compile_definitions(${PICO_IMAGE} PUBLIC BOARD_${PICO_BOARD} PCK_VER=${PCK_VER})
 target_include_directories(${PICO_IMAGE} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src ${CMAKE_CURRENT_LIST_DIR}/mbedtls/include)
 target_compile_options(${PICO_IMAGE} PRIVATE -Wno-psabi -Werror -Wall -DMBEDTLS_ALLOW_PRIVATE_ACCESS)
 # warning disabled due to this: pico-sdk/lib/tinyusb/src/portable/raspberrypi/rp2040/rp2040_usb.h:139

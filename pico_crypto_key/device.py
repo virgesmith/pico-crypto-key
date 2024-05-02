@@ -226,6 +226,12 @@ class CryptoKey:
         self._write(b"t")
         return self._read_uint64()
 
+    def info(self) -> str:
+        assert self.have_repl
+        self._write(b"i")
+        len = self._read_uint32()
+        return self._read(len).decode()
+
     def set_pin(self) -> None:
         """
         Sets a new device pin
@@ -314,6 +320,7 @@ class CryptoKey:
         self._set_device_time()
 
         self.have_repl = True
+        print(f"Board: {self.info()}")
 
     def _set_device_time(self) -> None:
         epoch_ms = int(datetime.now().timestamp() * 1000)

@@ -6,6 +6,8 @@ from pathlib import Path
 import pytest
 import typer
 
+from pico_crypto_key import __version__
+
 app = typer.Typer()
 
 # might need different build dirs for different hardware. For now use the target name to differentiate
@@ -52,6 +54,7 @@ def _check_symlink(path: str) -> bool:
 def check(board: str = typer.Option(default="pico", help="the target board")):
     """Check the project configuration."""
     print(f"Board: {board}")
+    print(f"Software version: {__version__}")
     ok = True
     ok &= _check_symlink("./pico-sdk")
     ok &= _check_symlink("./pico-sdk/lib/tinyusb")
@@ -84,7 +87,7 @@ def build(board: str = typer.Option(default="pico", help="the target board")) ->
     print(f"Mbed TLS points to {os.readlink('./mbedtls')}")
 
     # assumes SDK level with project dir and tinyusb present
-    cmake_args = [f"-DPICO_SDK_PATH={sdk_dir.resolve()}", f"-DPICO_BOARD={board}"]
+    cmake_args = [f"-DPICO_SDK_PATH={sdk_dir.resolve()}", f"-DPICO_BOARD={board}", f"-DPCK_VER={__version__}"]
 
     # ensure we have the latest pico_sdk_import.cmake
     sdk_import = Path("./pico_sdk_import.cmake")

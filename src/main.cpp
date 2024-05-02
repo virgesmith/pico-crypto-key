@@ -14,6 +14,12 @@
 #include <string>
 #include <vector>
 
+
+#define STR(s) STR_IMPL(s)
+#define STR_IMPL(s) #s
+
+const std::string VER(STR(PCK_VER) "-" PICO_BOARD);
+
 enum class ErrorCode : uint32_t { SUCCESS = 0, INVALID_PIN = 1, INVALID_CMD = 2 };
 
 // raw private key for AES and ECDSA
@@ -146,6 +152,14 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     case 't': {
       led::on();
       cdc::write(get_time_ms());
+      led::off();
+      break;
+    }
+    // board info
+    case 'i': {
+      led::on();
+      cdc::write(VER.size());
+      cdc::write(VER);
       led::off();
       break;
     }

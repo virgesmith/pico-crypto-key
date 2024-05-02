@@ -1,7 +1,9 @@
 """
 Example: change the device pin.
 """
+
 from datetime import datetime, timezone
+
 from pico_crypto_key import CryptoKey
 
 
