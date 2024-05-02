@@ -1,4 +1,5 @@
 #include "board.h"
+#include "pico/time.h"
 
 // Pico W LED is on the wifi chip and requires cyw43 driver and its dependencies
 // to function (wifi is not enabled)
@@ -38,3 +39,23 @@ void led::off() { gpio_put(PICO_DEFAULT_LED_PIN, 0); }
 #error Board not specified, set PICO_BOARD to either pico or pico_w
 
 #endif
+
+namespace {
+uint64_t time_offset_ms = 0u;
+}
+
+uint64_t get_time_offset_ms() { return time_offset_ms; }
+
+void set_time_offset(uint64_t unix_timestamp_ms) {
+  time_offset_ms = unix_timestamp_ms - to_ms_since_boot(get_absolute_time());
+}
+
+uint64_t get_time_ms() {
+  // absolute_time_t is a struct in debug mode, uint64_t otherwise
+  absolute_time_t t = get_absolute_time();
+#ifdef NDEBUG
+  return time_offset_ms + t / 1000;
+#else
+  return time_offset_ms + t._private_us_since_boot / 1000;
+#endif
+}

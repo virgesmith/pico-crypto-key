@@ -142,6 +142,13 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       led::off();
       break;
     }
+    // get timestamp
+    case 't': {
+      led::on();
+      cdc::write(get_time_ms());
+      led::off();
+      break;
+    }
     default: {
       cdc::write(ErrorCode::INVALID_CMD);
     }
@@ -164,6 +171,10 @@ int main() {
       sleep_ms(3000);
     }
     cdc::write(ErrorCode::SUCCESS);
+    // host will send timestamp on success
+    uint64_t timestamp_ms;
+    cdc::read(timestamp_ms);
+    set_time_offset(timestamp_ms);
 
     const bytes& key = genkey();
 
