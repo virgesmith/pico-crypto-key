@@ -1,14 +1,13 @@
 [build-system]
 requires = [
   "setuptools>=61",
-  "toml",
   "pytest"
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pico-crypto-key"
-version = "1.2.0"
+version = "1.2.1"
 authors = [
   { name="Andrew Smith", email="andrew@friarswood.net" },
 ]
@@ -30,7 +29,6 @@ classifiers = [
 ]
 dependencies = [
     "pyusb>=1.2.1",
-    "toml>=0.10.2",
     "typer>=0.12.3"
 ]
 
@@ -66,7 +64,3 @@ line-length = 120
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401", "F403"]
-
-[pico.build]
-PICO_IMAGE = "pico-crypto-key"
-PICO_RESET_PIN = "reset_pin"

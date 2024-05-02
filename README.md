@@ -14,13 +14,13 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-NB This app can be installed on a Pico W and will work, with the exception of the onboard LED - to make this work requires the wifi drivers to be compiled into the project.
+NB This has been tested on both Pico and Pico W boards. The latter requires a bit of extra work for the onboard LED to work.
 
-## Update v1.2.0
+## Update v1.2
 
 The device pin is now configurable. See [PIN protection](#pin-protection) and the [change pin](#change-pin) example.
 
-## Update v1.1.0
+## Update v1.1
 
 The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000kB input):
 
@@ -33,6 +33,8 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 | decrypt |           23.8 |                336.0 |              43.1 |                  185.7 |       81.0 |
 
 ## Dependencies/prerequisites
+
+Both pico and pico_w boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. wifi and bluetooth will not be enabled.
 
 `pico-crypto-key` comes as a python (dev) package that provides:
 
@@ -65,16 +67,18 @@ You will then need to:
   ln -s ../../tinyusb-0.16.0 tinyusb
   ```
 
+- [**pico_w only**], repeat the above step for `cyw43-driver`, which can be found [here](https://github.com/georgerobotics/cyw43-driver)
+
 - download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag.
 
-- create symlinks in the project root to the pico SDK and mbedtls, e.g.:
+  create symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
   ln -s ../pico-sdk-1.5.1 pico-sdk
   ln -s ../mbedtls-3.6.0 mbedtls
   ```
 
-Not sure why, but I couldn't get it to work with the symlink inside pico-sdk like tinyusb.
+  Not sure why, but I couldn't get it to work with the symlink inside pico-sdk like tinyusb.
 
 You should now have a structure something like this:
 
@@ -95,8 +99,11 @@ You should now have a structure something like this:
 │  └──test
 ├──pico-sdk-1.5.1
 │  └──lib
+│     ├──cyw43-driver -> ../../cyw43-driver-1.0.3 *
 │     └──tinyusb -> ../../tinyusb-0.16.0
 └──tinyusb-0.16.0
+
+* required for pico_w only
 ```
 
 ## Configure
@@ -110,6 +117,8 @@ If using a fresh download of `mbedtls` - run the configuration script to customi
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
+
+If using a pico_w you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the pico will work on a pico_w aside from the LED.)
 
 These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
@@ -141,7 +150,7 @@ The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall
 
 ## Using the device
 
-The device is pin protected (default is the word 'pico')
+The device is pin protected (the default is 'pico', see )
 
 The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it.
 
