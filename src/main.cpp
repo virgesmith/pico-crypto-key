@@ -148,18 +148,35 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       led::off();
       break;
     }
-    // get timestamp
-    case 't': {
+    // authenticate: read challenge bytes, append timestamp, hash, sign
+    case 'a': {
       led::on();
-      cdc::write(get_time_ms());
+      // read challenge
+      uint32_t length;
+      cdc::read(length);
+      bytes challenge(length);
+      cdc::read(challenge);
+      // append timestamp bytes
+      uint64_t timestamp = get_time_ms();
+      timestamp = timestamp - timestamp % AUTH_TIME_VALIDITY_MS;
+      byte* p = reinterpret_cast<byte*>(&timestamp);
+      // this is little-endian
+      std::copy(p, p + sizeof(timestamp), std::back_inserter(challenge));
+      // hash and sign
+      bytes hash = sha256::hash(challenge);
+      bytes sig = ecdsa::sign(ec_key, hash);
+      // read signature
+      cdc::write(sig.size());
+      cdc::write(sig);
       led::off();
       break;
     }
     // board info
     case 'i': {
       led::on();
-      cdc::write(VER.size());
+      cdc::write(VER.size() + sizeof(uint64_t));
       cdc::write(VER);
+      cdc::write(get_time_ms());
       led::off();
       break;
     }

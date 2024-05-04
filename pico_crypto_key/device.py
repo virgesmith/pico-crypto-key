@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from struct import pack, unpack
 from types import TracebackType
 from typing import Any
@@ -22,7 +22,7 @@ def _read_pin_from_stdin() -> str:
 class CryptoKey:
     CHUNK_SIZE = 2048
     HASH_BYTES = 32
-    ECDSA_KEY_BYTES = 65  # long form with 04 prefix
+    ECDSA_PUBKEY_BYTES = 65  # long form with 04 prefix
     VERIFY_FAILED = 2**32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
     reattach: bool
@@ -218,19 +218,29 @@ class CryptoKey:
         """
         assert self.have_repl
         self._write(b"k")
-        pubkey = self._read(CryptoKey.ECDSA_KEY_BYTES)
+        pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
         return pubkey
 
-    def totp(self) -> int:
+    def auth(self, challenge: bytes) -> int:
         assert self.have_repl
-        self._write(b"t")
-        return self._read_uint64()
+        self._write(b"a")
+        self._write_uint32(len(challenge))
+        self._write(challenge)
+        length = self._read_uint32()
+        sig = self._read(length)
+        return sig
 
-    def info(self) -> str:
+    def info(self) -> tuple[str, datetime]:
+        """
+        Returns board information: board type, firmware version, timestamp
+        """
         assert self.have_repl
         self._write(b"i")
         len = self._read_uint32()
-        return self._read(len).decode()
+        raw = self._read(len)
+        version = raw[:-8].decode()
+        timestamp = datetime.fromtimestamp(unpack("Q", raw[-8:])[0] / 1000, tz=timezone.utc)
+        return version, timestamp
 
     def set_pin(self) -> None:
         """
@@ -320,7 +330,8 @@ class CryptoKey:
         self._set_device_time()
 
         self.have_repl = True
-        print(f"Board: {self.info()}")
+        version, time = self.info()
+        print(f"PicoCryptoKey {version} {time}")
 
     def _set_device_time(self) -> None:
         epoch_ms = int(datetime.now().timestamp() * 1000)

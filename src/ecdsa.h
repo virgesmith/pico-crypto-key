@@ -7,6 +7,8 @@
 
 namespace ecdsa {
 
+const size_t FULL_FORM_PUBKEY_LENGTH = 65;
+
 void key(const bytes& rawkey, mbedtls_ecp_keypair& ec_key);
 
 bytes pubkey(const mbedtls_ecp_keypair& ec_key);

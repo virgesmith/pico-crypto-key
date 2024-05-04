@@ -108,7 +108,7 @@ def install(
     """Install the pico-crypto-key image. The device must be mounted with BOOTSEL pressed."""
 
     if not Path(device_path).exists():
-        print(f"No device not mounted at {device_path}")
+        print(f"No device mounted at {device_path}")
         return
 
     image = f"{board}-crypto-key.uf2"

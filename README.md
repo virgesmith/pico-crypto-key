@@ -6,7 +6,7 @@ Using a Raspberry Pi [pico](https://www.raspberrypi.org/products/raspberry-pi-pi
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
-- cryptographic signing and verification (256 bit ECDSA - secp256k1, as Bitcoin)
+- public key cryptography (ECDSA - secp256k1, as Bitcoin)
 
 I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
@@ -34,7 +34,7 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 
 ## Dependencies/prerequisites
 
-Both pico and pico_w boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. wifi and bluetooth will not be enabled.
+Both Pico and Pico W boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. However, neither wifi nor bluetooth are enabled.
 
 `pico-crypto-key` comes as a python (dev) package that provides:
 
@@ -118,7 +118,7 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-If using a pico_w you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the pico will work on a pico_w aside from the LED.)
+If using a Pico W you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the pico will work on a Pico W aside from the LED.)
 
 These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
@@ -160,7 +160,9 @@ The `CryptoKey` class provides the python interface and is context-managed to he
 - `verify` verify the given hash matches the signature and public key
 - `encrypt` encrypts using AES256
 - `decrypt` decrypts using AES256
+- `auth` generates a one-time authentication string, a bit like TOTP or WebAuthn
 - `set_pin` set a new PIN
+- `info` returns version, board type and device time
 
 See the examples for more details.
 
