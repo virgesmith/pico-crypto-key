@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb9853538e3a421d9715812f87f3269d)](https://www.codacy.com/gh/virgesmith/pico-crypto-key/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=virgesmith/pico-crypto-key&amp;utm_campaign=Badge_Grade)
 
-Using a Raspberry Pi [pico](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
+Using a Raspberry Pi [Pico](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
@@ -11,10 +11,18 @@ Using a Raspberry Pi [pico](https://www.raspberrypi.org/products/raspberry-pi-pi
 I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
 - the device is pin protected. Only the sha256 hash of the (salted) pin is stored on the device.
-- the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
+- the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the Pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
 NB This has been tested on both Pico and Pico W boards. The latter requires a bit of extra work for the onboard LED to work.
+
+## Update v1.3
+
+Adds:
+  - Time synchronisation between host and device
+  - Device info: firmware version, board type, current time
+  - Generation of time-based authentication tokens (like Webauthn)
+  - Multiple build targets: Pico and Pico W. LED now works on Pico W.
 
 ## Update v1.2
 
@@ -36,7 +44,7 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 
 Both Pico and Pico W boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. However, neither wifi nor bluetooth are enabled.
 
-`pico-crypto-key` comes as a python (dev) package that provides:
+`pico-crypto-key` is a python (dev) package that provides:
 
 - a simplified build process
 - a python interface to the device.
@@ -108,7 +116,7 @@ You should now have a structure something like this:
 
 ## Configure
 
-If using a fresh download of `mbedtls` - run the configuration script to customise the build for the pico, e.g.:
+If using a fresh download of `mbedtls` - run the configuration script to customise the build for the Pico, e.g.:
 
 ```sh
 ./configure-mbedtls.sh
@@ -118,7 +126,7 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-If using a Pico W you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the pico will work on a Pico W aside from the LED.)
+If using a Pico W you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the Pico will work on a Pico W aside from the LED.)
 
 These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
@@ -160,7 +168,7 @@ The `CryptoKey` class provides the python interface and is context-managed to he
 - `verify` verify the given hash matches the signature and public key
 - `encrypt` encrypts using AES256
 - `decrypt` decrypts using AES256
-- `auth` generates a one-time authentication string, a bit like TOTP or WebAuthn
+- `auth` generates a one-time ECDSA-based authentication string, along the lines of WebAuthn
 - `set_pin` set a new PIN
 - `info` returns version, board type and device time
 
@@ -267,13 +275,29 @@ signature is valid
 verifying took 0.79s
 ```
 
-or, if you use a different pico
+or, if you use a different board
 
 ```text
 file hash matches file
 verifying device is not the signing device
 signature is valid
 verifying took 0.79s
+```
+
+### Authenticate
+
+Generates a time-based auth token from a challenge string. The token is a base64-encoded ECDSA signature of the SHA256 of the challenge appended with timestamp rounded to the minute.
+
+```sh
+python examples/auth.py
+```
+
+```txt
+PicoCryptoKey 1.3.0-pico 2024-05-04 19:16:09.508000+00:00
+Host-device time diff: 0.000678s
+challenge is: b'testing time-based auth'
+response is: b'MEYCIQDjEKAkS1w/bSdn2LJMv1skM656o7qbz7MjZ68ufeJg5AIhANLVnmSJ7YqWBKeaNi+YBGCgxGXiZHrzcrkDL5BQV1rI'
+Verified: True
 ```
 
 ### Change PIN

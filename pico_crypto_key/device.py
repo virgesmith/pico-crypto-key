@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from base64 import b64encode
 from datetime import datetime, timezone
 from struct import pack, unpack
 from types import TracebackType
@@ -74,7 +75,7 @@ class CryptoKey:
         assert self.have_repl
         self._write(b"h")
         file_length = os.stat(filename).st_size
-        ret = self._write_uint32(file_length)
+        self._write_uint32(file_length)
         with open(filename, "rb") as fd:
             write_remaining = file_length
             while write_remaining > 0:
@@ -82,7 +83,7 @@ class CryptoKey:
                 data = fd.read(write_chunk_length)
                 ret = self._write(data)
                 write_remaining -= ret
-        return self._read(32)
+        return self._read(CryptoKey.HASH_BYTES)
 
     def encrypt(self, data: bytes) -> bytes:
         """
@@ -168,7 +169,7 @@ class CryptoKey:
                 ret = self._write(data)
                 write_remaining -= ret
         # somehow separates hash and sig even when length not specified
-        digest = self._read(32)
+        digest = self._read(CryptoKey.HASH_BYTES)
         siglen = self._read_uint32()
         sig = self._read(siglen)
         return digest, sig
@@ -221,14 +222,14 @@ class CryptoKey:
         pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
         return pubkey
 
-    def auth(self, challenge: bytes) -> int:
+    def auth(self, challenge: bytes) -> str:
         assert self.have_repl
         self._write(b"a")
         self._write_uint32(len(challenge))
         self._write(challenge)
         length = self._read_uint32()
         sig = self._read(length)
-        return sig
+        return b64encode(sig)
 
     def info(self) -> tuple[str, datetime]:
         """
