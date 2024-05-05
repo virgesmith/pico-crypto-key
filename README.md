@@ -19,10 +19,11 @@ NB This has been tested on both Pico and Pico W boards. The latter requires a bi
 ## Update v1.3
 
 Adds:
-  - Time synchronisation between host and device
-  - Device info: firmware version, board type, current time
-  - Generation of time-based authentication tokens (like Webauthn)
-  - Multiple build targets: Pico and Pico W. LED now works on Pico W.
+
+- Time synchronisation between host and device
+- Device info: firmware version, board type, current time
+- Generation of time-based authentication tokens (like Webauthn)
+- Multiple build targets: Pico and Pico W. LED now works on Pico W.
 
 ## Update v1.2
 

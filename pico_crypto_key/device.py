@@ -223,8 +223,12 @@ class CryptoKey:
         return pubkey
 
     def auth(self, challenge: bytes) -> str:
+        """
+        Time-limted authentication
+        Appends challenge with current minute timestamp, hashes and signs
+        Returns base64-encoded signature
+        """
         assert self.have_repl
-        board, timestamp = self.info()
         self._write(b"a")
         self._write_uint32(len(challenge))
         self._write(challenge)
@@ -238,8 +242,8 @@ class CryptoKey:
         """
         assert self.have_repl
         self._write(b"i")
-        len = self._read_uint32()
-        raw = self._read(len)
+        length = self._read_uint32()
+        raw = self._read(length)
         version = raw[:-8].decode()
         timestamp = datetime.fromtimestamp(unpack("Q", raw[-8:])[0] / 1000, tz=timezone.utc)
         return version, timestamp
