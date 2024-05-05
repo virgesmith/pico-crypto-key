@@ -224,6 +224,7 @@ class CryptoKey:
 
     def auth(self, challenge: bytes) -> str:
         assert self.have_repl
+        board, timestamp = self.info()
         self._write(b"a")
         self._write_uint32(len(challenge))
         self._write(challenge)

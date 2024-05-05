@@ -23,6 +23,7 @@ add_executable(${PICO_IMAGE}
   src/flash.cpp
   src/board.cpp
   src/error.cpp
+  src/pin.cpp
   src/usb_descriptors.c
 )
 

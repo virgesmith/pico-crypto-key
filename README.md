@@ -256,7 +256,7 @@ python examples/sign_data.py
 gives you something like
 
 ```text
-signing/verifying took 0.55s
+signing took 0.55s
 signature written to signature.json
 ```
 

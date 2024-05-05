@@ -15,11 +15,15 @@ void aes::key(const bytes& raw, mbedtls_aes_context& aes_key) {
   error.check(mbedtls_aes_setkey_enc(&aes_key, raw.data(), KEY_BITS));
 }
 
-void aes::decrypt_in(const mbedtls_aes_context& key, uint32_t length) {
+void aes::decrypt_in(const mbedtls_aes_context& key) {
   bytes iv(16, 0);
 
   bytes ciphertext(cdc::CHUNK_SIZE);
   bytes plaintext(cdc::CHUNK_SIZE);
+
+  // 4 byte header containing length of data
+  uint32_t length;
+  cdc::read(length);
 
   while (length) {
     uint32_t chunk_length = length < cdc::CHUNK_SIZE ? length : cdc::CHUNK_SIZE;
@@ -38,11 +42,15 @@ void aes::decrypt_in(const mbedtls_aes_context& key, uint32_t length) {
 
 }
 
-void aes::encrypt_in(const mbedtls_aes_context& key, uint32_t length) {
+void aes::encrypt_in(const mbedtls_aes_context& key) {
   bytes iv(16, 0);
 
   bytes plaintext(cdc::CHUNK_SIZE);
   bytes ciphertext(cdc::CHUNK_SIZE);
+
+  // 4 byte header containing length of data
+  uint32_t length;
+  cdc::read(length);
 
   while (length) {
     uint32_t chunk_length = length < cdc::CHUNK_SIZE ? length : cdc::CHUNK_SIZE;

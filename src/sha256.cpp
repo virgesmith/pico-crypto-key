@@ -21,12 +21,16 @@ bytes sha256::hash(const bytes& data) {
   return hash;
 }
 
-bytes sha256::hash_in(uint32_t length) {
+bytes sha256::hash_in() {
   wrap<mbedtls_sha256_context> ctx(mbedtls_sha256_init, mbedtls_sha256_free);
 
   mbedtls_sha256_starts(&ctx, 0);
 
   bytes buffer(cdc::CHUNK_SIZE);
+
+  // 4 byte header containing length of data
+  uint32_t length;
+  cdc::read(length);
 
   for (uint32_t total_read = 0; total_read < length;) {
     uint32_t bytes_to_read = std::min(cdc::CHUNK_SIZE, length - total_read);

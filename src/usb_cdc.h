@@ -16,8 +16,7 @@ uint32_t read_impl(byte* buffer, uint32_t length);
 uint32_t read(bytes& buffer, uint32_t length);
 
 // Read into type
-template <typename T>
-bool read(T& dest) {
+template <typename T> bool read(T& dest) {
   return read_impl(reinterpret_cast<uint8_t*>(&dest), sizeof(T)) == sizeof(T);
 }
 
@@ -34,16 +33,27 @@ uint32_t write(const bytes& buffer, uint32_t length);
 bool write(const char* str);
 
 // Write a type (specialised for bytes/string)
-template <typename T>
-bool write(const T& src) {
+template <typename T> bool write(const T& src) {
   return write_impl(reinterpret_cast<const uint8_t*>(&src), sizeof(T)) == sizeof(T);
 }
 
-template<>
-bool cdc::write(const bytes& b);
+template <> bool cdc::write(const bytes& b);
 
-template<>
-bool cdc::write(const std::string& s);
+template <> bool cdc::write(const std::string& s);
 
+// read data where size not known at compile time
+inline bytes read_with_length() {
+  uint32_t length;
+  cdc::read(length);
+  bytes data(length);
+  cdc::read(data);
+  return data;
+}
+
+// write data where size not known at compile time
+inline bool write_with_length(const bytes& b) {
+  cdc::write(b.size());
+  return cdc::write(b);
+}
 
 } // namespace cdc

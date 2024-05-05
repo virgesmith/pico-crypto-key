@@ -6,25 +6,28 @@ signature and public key (as hex strings) for verification.
 import json
 import time
 
-from pico_crypto_key import CryptoKey
+from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError
 
 
 def sign_data(filename: str) -> None:
-    with CryptoKey() as device:
-        start = time.time()
-        pubkey = device.pubkey()
-        digest, signature = device.sign(filename)
-        print("signing took %.2fs" % (time.time() - start))
+    try:
+        with CryptoKey() as device:
+            start = time.time()
+            pubkey = device.pubkey()
+            digest, signature = device.sign(filename)
+            print("signing took %.2fs" % (time.time() - start))
 
-        result = dict(
-            file=filename,
-            hash=digest.hex(),
-            signature=signature.hex(),
-            pubkey=pubkey.hex(),
-        )
-        with open("signature.json", "w") as fd:
-            json.dump(result, fd, indent=2)
-        print("signature written to signature.json")
+            result = dict(
+                file=filename,
+                hash=digest.hex(),
+                signature=signature.hex(),
+                pubkey=pubkey.hex(),
+            )
+            with open("signature.json", "w") as fd:
+                json.dump(result, fd, indent=2)
+            print("signature written to signature.json")
+    except CryptoKeyNotFoundError:
+        print("Key not connected")
 
 
 if __name__ == "__main__":

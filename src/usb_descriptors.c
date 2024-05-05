@@ -29,7 +29,7 @@
 #define USB_VID 0xAafe
 #define USB_BCD 0x0200
 
-#define USB_MANUFACTURER_NAME "Feckarse"
+#define USB_MANUFACTURER_NAME "Friarswood"
 #define USB_PRODUCT_NAME "PicoCryptoKey"
 #define USB_SERIAL_NUMBER "123456"
 #define USB_INTERFACE_NAME "TinyUSB CDC"

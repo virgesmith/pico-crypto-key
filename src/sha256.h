@@ -8,6 +8,6 @@ const size_t LENGTH_BYTES = 32;
 bytes hash(const bytes& data);
 
 // hashes CDC input
-bytes hash_in(uint32_t length);
+bytes hash_in();
 
 } // namespace sha256

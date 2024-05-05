@@ -2,7 +2,7 @@
 #include "board.h"
 #include "ecdsa.h"
 #include "error.h"
-#include "flash.h"
+#include "pin.h"
 #include "sha256.h"
 #include "usb_cdc.h"
 #include "utils.h"
@@ -13,7 +13,6 @@
 
 #include <string>
 #include <vector>
-
 
 #define STR(s) STR_IMPL(s)
 #define STR_IMPL(s) #s
@@ -33,31 +32,13 @@ bytes genkey() {
   return sha256::hash(raw);
 }
 
-namespace {
-const bytes salt = {0x19, 0x93, 0x76, 0x02, 0x45, 0x4a, 0xbc, 0xde};
-}
-
-bool check_pin() {
-  bytes expected = flash::read(32);
-  uint32_t size;
-  cdc::read(size);
-  bytes pin(size);
-  cdc::read(pin);
-  pin.reserve(pin.size() + 8);
-  pin.insert(pin.end(), salt.begin(), salt.end());
-  bytes h = sha256::hash(pin);
-  return h == expected;
-}
-
-uint32_t set_pin() {
-  uint32_t size;
-  cdc::read(size);
-  bytes pin(size);
-  cdc::read(pin);
-  pin.reserve(pin.size() + 8);
-  pin.insert(pin.end(), salt.begin(), salt.end());
-  bytes h = sha256::hash(pin);
-  return flash::write(h);
+void append_timestamp(bytes& challenge) {
+  uint64_t timestamp = get_time_ms();
+  timestamp = timestamp - timestamp % AUTH_TIME_VALIDITY_MS;
+  byte* p = reinterpret_cast<byte*>(&timestamp);
+  // this is little-endian
+  challenge.reserve(challenge.size() + sizeof(timestamp));
+  challenge.insert(challenge.end(), p, p + sizeof(timestamp));
 }
 
 void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key) {
@@ -72,7 +53,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     // write pin
     case 'p': {
       led::on();
-      cdc::write(set_pin());
+      cdc::write(pin::set());
       led::off();
       break;
     }
@@ -85,46 +66,33 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // hash input
     case 'h': {
-      // 4 byte header containing length of data
       led::on();
-      uint32_t length;
-      cdc::read(length);
-      bytes hash = sha256::hash_in(length);
+      bytes hash = sha256::hash_in();
       cdc::write(hash);
       led::off();
       break;
     }
     // decrypt input
     case 'd': {
-      // 4 byte header containing length of data
       led::on();
-      uint32_t length;
-      cdc::read(length);
-      aes::decrypt_in(aes_key, length);
+      aes::decrypt_in(aes_key);
       led::off();
       break;
     }
     // encrypt input
     case 'e': {
-      // 4 byte header containing length of data
       led::on();
-      uint32_t length;
-      cdc::read(length);
-      aes::encrypt_in(aes_key, length);
+      aes::encrypt_in(aes_key);
       led::off();
       break;
     }
     // hash input and sign
     case 's': {
-      // 4 byte header containing length of data
       led::on();
-      uint32_t length;
-      cdc::read(length);
-      bytes hash = sha256::hash_in(length);
+      bytes hash = sha256::hash_in();
       cdc::write(hash);
       bytes sig = ecdsa::sign(ec_key, hash);
-      cdc::write(sig.size());
-      cdc::write(sig);
+      cdc::write_with_length(sig);
       led::off();
       break;
     }
@@ -132,17 +100,10 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     case 'v': {
       // hash[32], len(sig)[4], sig, len(key)[4], key
       led::on();
-      uint32_t length;
       bytes hash(sha256::LENGTH_BYTES);
       cdc::read(hash);
-      // read signature
-      cdc::read(length);
-      bytes sig(length);
-      cdc::read(sig);
-      // read pubkey
-      cdc::read(length);
-      bytes pubkey(length);
-      cdc::read(pubkey);
+      bytes sig = cdc::read_with_length();
+      bytes pubkey = cdc::read_with_length();
       // 4-byte int, 0 is success
       cdc::write(ecdsa::verify(hash, sig, pubkey));
       led::off();
@@ -151,23 +112,14 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     // authenticate: read challenge bytes, append timestamp, hash, sign
     case 'a': {
       led::on();
-      // read challenge
-      uint32_t length;
-      cdc::read(length);
-      bytes challenge(length);
-      cdc::read(challenge);
+      bytes challenge = cdc::read_with_length();
       // append timestamp bytes
-      uint64_t timestamp = get_time_ms();
-      timestamp = timestamp - timestamp % AUTH_TIME_VALIDITY_MS;
-      byte* p = reinterpret_cast<byte*>(&timestamp);
-      // this is little-endian
-      std::copy(p, p + sizeof(timestamp), std::back_inserter(challenge));
+      append_timestamp(challenge);
       // hash and sign
       bytes hash = sha256::hash(challenge);
       bytes sig = ecdsa::sign(ec_key, hash);
-      // read signature
-      cdc::write(sig.size());
-      cdc::write(sig);
+      // write signature
+      cdc::write_with_length(sig);
       led::off();
       break;
     }
@@ -188,14 +140,13 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 }
 
 int main() {
-  bi_decl(bi_program_description("PicoCryptoKey"));
-  // bi_decl(bi_1pin_with_name(PICO_DEFAULT_LED_PIN, "On-board LED"));
+  bi_decl(bi_program_name("PicoCryptoKey"));
 
   tusb_init();
   led::init();
 
   for (;;) {
-    while (!check_pin()) {
+    while (!pin::check()) {
       led::off();
       cdc::write(ErrorCode::INVALID_PIN);
 
