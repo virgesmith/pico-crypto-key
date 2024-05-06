@@ -19,23 +19,42 @@ def auth() -> None:
             _, timestamp = crypto_key.info()
             print(f"Host-device time diff: {(now - timestamp).total_seconds()}s")
 
+            rps = ["example.com", "another.org"]
+
+            pubkeys = [crypto_key.register(rp) for rp in rps]
+
+            for rp, pk in zip(rps, pubkeys, strict=True):
+                print(f"registered {rp}: {pk.hex()}")
+
             challenge = b"testing time-based auth"
             print(f"challenge is: {challenge}")
-            response = crypto_key.auth(challenge)
-            print(f"response is: {response}")
-            sig = b64decode(response)
+            responses = [crypto_key.auth(rp, challenge) for rp in rps]
+
+            for rp, token in zip(rps, responses, strict=True):
+                print(f"auth response {rp}: {token}")
 
             # check it verifies using a 3rdparty library
-            verifying_key = ecdsa.VerifyingKey.from_string(crypto_key.pubkey(), curve=ecdsa.SECP256k1, hashfunc=sha256)
+            vks = [ecdsa.VerifyingKey.from_string(pk, curve=ecdsa.SECP256k1, hashfunc=sha256) for pk in pubkeys]
 
             # append rounded timestamp to challenge
             t = int(now.timestamp() * 1000)
             challenge += struct.pack("Q", t - t % 60000)
-            try:
-                result = verifying_key.verify(sig, challenge, sigdecode=ecdsa.util.sigdecode_der)
-                print(f"Verified: {result}")
-            except ecdsa.keys.BadSignatureError:
-                print("Verified: False")
+            for rp, vk, token in zip(rps, vks, responses, strict=True):
+                try:
+                    result = vk.verify(b64decode(token), challenge, sigdecode=ecdsa.util.sigdecode_der)
+                    print(f"{rp} verified: {result}")
+                except ecdsa.keys.BadSignatureError:
+                    print("{rp} verified: False")
+
+            # one RP cannot verify tokens for a different RP
+            for i in range(2):
+                try:
+                    vks[i].verify(b64decode(responses[1 - i]), challenge, sigdecode=ecdsa.util.sigdecode_der)
+                except ecdsa.keys.BadSignatureError:
+                    print(f"{rps[i]} cannot verify {responses[i-1]}")
+                else:
+                    raise RuntimeError(f"{rps[i]} verified {responses[i-1]}, this should not happen")
+
     except CryptoKeyNotFoundError:
         print("Key not connected")
 

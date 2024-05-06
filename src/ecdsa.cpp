@@ -61,8 +61,8 @@ bytes ecdsa::pubkey(const mbedtls_ecp_keypair& ec_key) {
 
   error.check(mbedtls_ecp_check_pub_priv(&ec_key, &ec_key, minstd_rand, nullptr));
 
-  error.check(mbedtls_ecp_point_write_binary(&ec_key.grp, &ec_key.Q, MBEDTLS_ECP_PF_UNCOMPRESSED, &outlen,
-                                             pubkey.data(), pubkey.size()));
+  error.check(mbedtls_ecp_point_write_binary(&ec_key.grp, &ec_key.Q, MBEDTLS_ECP_PF_COMPRESSED, &outlen, pubkey.data(),
+                                             pubkey.size()));
   return pubkey;
 }
 

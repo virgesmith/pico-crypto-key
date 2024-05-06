@@ -22,12 +22,15 @@ const std::string VER(STR(PCK_VER) "-" PICO_BOARD);
 enum class ErrorCode : uint32_t { SUCCESS = 0, INVALID_PIN = 1, INVALID_CMD = 2 };
 
 // raw private key for AES and ECDSA
-bytes genkey() {
+// Omit extra for "master" key
+bytes genkey(const bytes& extra = bytes()) {
   // 8 byte salt + 8 byte board id -> sha256
   pico_unique_board_id_t id;
   pico_get_unique_board_id(&id);
   bytes raw{0xaa, 0xfe, 0xc0, 0xff, 0xba, 0xda, 0x55, 0x55};
+  raw.reserve(raw.size() + PICO_UNIQUE_BOARD_ID_SIZE_BYTES + extra.size());
   raw.insert(raw.end(), id.id, id.id + PICO_UNIQUE_BOARD_ID_SIZE_BYTES);
+  raw.insert(raw.end(), extra.begin(), extra.end());
 
   return sha256::hash(raw);
 }
@@ -47,7 +50,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     cdc::read(cmd);
     switch (cmd) {
     // reset repl
-    case 'r': {
+    case 'x': {
       return;
     }
     // write pin
@@ -109,15 +112,29 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       led::off();
       break;
     }
-    // authenticate: read challenge bytes, append timestamp, hash, sign
+    // webauthn register: generate keypair from receiving party id, return public key
+    case 'r': {
+      led::on();
+      bytes rp = cdc::read_with_length();
+      wrap<mbedtls_ecp_keypair> webauthn_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
+      ecdsa::key(genkey(rp), *webauthn_key);
+      cdc::write(ecdsa::pubkey(*webauthn_key));
+      led::off();
+      break;
+    }
+    // webauthn authenticate: read id, generate keypair, read challenge bytes, append timestamp, hash, sign
     case 'a': {
       led::on();
+      // generate keypair
+      bytes rp = cdc::read_with_length();
+      wrap<mbedtls_ecp_keypair> webauthn_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
+      ecdsa::key(genkey(rp), *webauthn_key);
       bytes challenge = cdc::read_with_length();
       // append timestamp bytes
       append_timestamp(challenge);
       // hash and sign
       bytes hash = sha256::hash(challenge);
-      bytes sig = ecdsa::sign(ec_key, hash);
+      bytes sig = ecdsa::sign(*webauthn_key, hash);
       // write signature
       cdc::write_with_length(sig);
       led::off();

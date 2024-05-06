@@ -24,6 +24,7 @@ Adds:
 - Device info: firmware version, board type, current time
 - Generation of time-based authentication tokens (like Webauthn)
 - Multiple build targets: Pico and Pico W. LED now works on Pico W.
+- Switch to short-form public keys.
 
 ## Update v1.2
 
@@ -163,12 +164,13 @@ The device is pin protected (the default is 'pico', see )
 
 The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it.
 
-- `pubkey` return the ECDSA public key (long-form, 65 bytes)
+- `pubkey` return the ECDSA public key (short-form, 33 bytes)
 - `hash` compute the SHA256 hash of the input
 - `sign` compute the SHA256 hash and ECDSA signature of the input
 - `verify` verify the given hash matches the signature and public key
 - `encrypt` encrypts using AES256
 - `decrypt` decrypts using AES256
+- `register` dynamically create an ECDSA public key for verifying, along the lines of WebAuthn
 - `auth` generates a one-time ECDSA-based authentication string, along the lines of WebAuthn
 - `set_pin` set a new PIN
 - `info` returns version, board type and device time
@@ -287,19 +289,28 @@ verifying took 0.79s
 
 ### Authenticate
 
-Generates a time-based auth token from a challenge string. The token is a base64-encoded ECDSA signature of the SHA256 of the challenge appended with timestamp rounded to the minute.
+Step 1 generates registration keys for two receiving parties - these are short-form ECDSA public keys.
+
+Step 2 generates a time-based auth tokens for each receiving party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
+
+Third-party code is then used to verify the public key-auth token pairs.
 
 ```sh
 python examples/auth.py
 ```
 
 ```txt
-PicoCryptoKey 1.3.0-pico 2024-05-04 19:16:09.508000+00:00
-Host-device time diff: 0.000678s
+PicoCryptoKey 1.3.0-pico 2024-05-06 09:01:39.648000+00:00
+Host-device time diff: 0.001054s
+registered example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
+registered another.org: 02614fa67aa3600af7a69031cb1d69f05a8c8fdf32d1ee9db7cee24a6c172b6998
 challenge is: b'testing time-based auth'
-response is: b'MEYCIQDjEKAkS1w/bSdn2LJMv1skM656o7qbz7MjZ68ufeJg5AIhANLVnmSJ7YqWBKeaNi+YBGCgxGXiZHrzcrkDL5BQV1rI'
-Verified: True
-```
+auth response example.com: b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'
+auth response another.org: b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
+example.com verified: True
+another.org verified: True
+example.com cannot verify b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
+another.org cannot verify b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'```
 
 ### Change PIN
 

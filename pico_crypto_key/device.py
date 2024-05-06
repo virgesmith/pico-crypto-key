@@ -23,7 +23,7 @@ def _read_pin_from_stdin() -> str:
 class CryptoKey:
     CHUNK_SIZE = 2048
     HASH_BYTES = 32
-    ECDSA_PUBKEY_BYTES = 65  # long form with 04 prefix
+    ECDSA_PUBKEY_BYTES = 33  # short form with 02/03 prefix
     VERIFY_FAILED = 2**32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
     reattach: bool
@@ -222,7 +222,18 @@ class CryptoKey:
         pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
         return pubkey
 
-    def auth(self, challenge: bytes) -> str:
+    def register(self, receiving_party: str) -> bytes:
+        """
+        Returns dynamically generated ECDSA public key
+        """
+        assert self.have_repl
+        self._write(b"r")
+        self._write_uint32(len(receiving_party.encode()))
+        self._write(receiving_party.encode())
+        pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
+        return pubkey
+
+    def auth(self, receiving_party: str, challenge: bytes) -> str:
         """
         Time-limted authentication
         Appends challenge with current minute timestamp, hashes and signs
@@ -230,6 +241,8 @@ class CryptoKey:
         """
         assert self.have_repl
         self._write(b"a")
+        self._write_uint32(len(receiving_party.encode()))
+        self._write(receiving_party.encode())
         self._write_uint32(len(challenge))
         self._write(challenge)
         length = self._read_uint32()
@@ -291,7 +304,7 @@ class CryptoKey:
         """
         # only send reset request if we have repl
         if self.have_repl:
-            self.__endpoint_in.write(b"r")
+            self.__endpoint_in.write(b"x")
             self.have_repl = False
 
         usb.util.dispose_resources(self.device)

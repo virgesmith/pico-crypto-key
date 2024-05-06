@@ -62,6 +62,10 @@ def check(board: str = typer.Option(default="pico", help="the target board")):
     if board == "pico_w":
         ok &= _check_symlink("./pico-sdk/lib/cyw43-driver")
 
+    compiler = shutil.which("arm-none-eabi-g++")
+    print(f"Compiler: {compiler or 'not found'}")
+    ok &= compiler is not None
+
     if not os.getenv("PICO_CRYPTO_KEY_PIN"):
         print("PICO_CRYPTO_KEY_PIN not set in env, PIN will have to be entered manually")
 
