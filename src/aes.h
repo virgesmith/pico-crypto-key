@@ -6,7 +6,7 @@
 
 namespace aes {
 
-const uint KEY_BITS = 256;
+const size_t KEY_BITS = 256;
 
 void key(const bytes& raw, mbedtls_aes_context& aes_key);
 
