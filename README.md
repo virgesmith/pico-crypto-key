@@ -2,19 +2,29 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb9853538e3a421d9715812f87f3269d)](https://www.codacy.com/gh/virgesmith/pico-crypto-key/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=virgesmith/pico-crypto-key&amp;utm_campaign=Badge_Grade)
 
-Using a Raspberry Pi [pico](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
+Using a Raspberry Pi [Pico](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
-- cryptographic signing and verification (256 bit ECDSA - secp256k1, as Bitcoin)
+- public key cryptography (ECDSA - secp256k1, as Bitcoin)
 
 I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
 - the device is pin protected. Only the sha256 hash of the (salted) pin is stored on the device.
-- the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the pico. So no two devices should have the same key.
+- the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the Pico. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
 NB This has been tested on both Pico and Pico W boards. The latter requires a bit of extra work for the onboard LED to work.
+
+## Update v1.3
+
+Adds:
+
+- Time synchronisation between host and device
+- Device info: firmware version, board type, current time
+- Generation of time-based authentication tokens (like Webauthn)
+- Multiple build targets: Pico and Pico W. LED now works on Pico W.
+- Switch to short-form public keys.
 
 ## Update v1.2
 
@@ -34,9 +44,9 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 
 ## Dependencies/prerequisites
 
-Both pico and pico_w boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. wifi and bluetooth will not be enabled.
+Both Pico and Pico W boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. However, neither wifi nor bluetooth are enabled.
 
-`pico-crypto-key` comes as a python (dev) package that provides:
+`pico-crypto-key` is a python (dev) package that provides:
 
 - a simplified build process
 - a python interface to the device.
@@ -108,7 +118,7 @@ You should now have a structure something like this:
 
 ## Configure
 
-If using a fresh download of `mbedtls` - run the configuration script to customise the build for the pico, e.g.:
+If using a fresh download of `mbedtls` - run the configuration script to customise the build for the Pico, e.g.:
 
 ```sh
 ./configure-mbedtls.sh
@@ -118,7 +128,7 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Build
 
-If using a pico_w you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the pico will work on a pico_w aside from the LED.)
+If using a Pico W you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the Pico will work on a Pico W aside from the LED.)
 
 These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
@@ -154,13 +164,16 @@ The device is pin protected (the default is 'pico', see )
 
 The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it.
 
-- `pubkey` return the ECDSA public key (long-form, 65 bytes)
+- `pubkey` return the ECDSA public key (short-form, 33 bytes)
 - `hash` compute the SHA256 hash of the input
 - `sign` compute the SHA256 hash and ECDSA signature of the input
 - `verify` verify the given hash matches the signature and public key
 - `encrypt` encrypts using AES256
 - `decrypt` decrypts using AES256
+- `register` dynamically create an ECDSA public key for verifying, along the lines of WebAuthn
+- `auth` generates a one-time ECDSA-based authentication string, along the lines of WebAuthn
 - `set_pin` set a new PIN
+- `info` returns version, board type and device time
 
 See the examples for more details.
 
@@ -246,7 +259,7 @@ python examples/sign_data.py
 gives you something like
 
 ```text
-signing/verifying took 0.55s
+signing took 0.55s
 signature written to signature.json
 ```
 
@@ -265,7 +278,7 @@ signature is valid
 verifying took 0.79s
 ```
 
-or, if you use a different pico
+or, if you use a different board
 
 ```text
 file hash matches file
@@ -273,6 +286,31 @@ verifying device is not the signing device
 signature is valid
 verifying took 0.79s
 ```
+
+### Authenticate
+
+Step 1 generates registration keys for two receiving parties - these are short-form ECDSA public keys.
+
+Step 2 generates a time-based auth tokens for each receiving party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
+
+Third-party code is then used to verify the public key-auth token pairs.
+
+```sh
+python examples/auth.py
+```
+
+```txt
+PicoCryptoKey 1.3.0-pico 2024-05-06 09:01:39.648000+00:00
+Host-device time diff: 0.001054s
+registered example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
+registered another.org: 02614fa67aa3600af7a69031cb1d69f05a8c8fdf32d1ee9db7cee24a6c172b6998
+challenge is: b'testing time-based auth'
+auth response example.com: b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'
+auth response another.org: b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
+example.com verified: True
+another.org verified: True
+example.com cannot verify b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
+another.org cannot verify b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'```
 
 ### Change PIN
 

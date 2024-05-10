@@ -6,14 +6,14 @@
 
 namespace aes {
 
-const uint KEY_BITS = 256;
+const size_t KEY_BITS = 256;
 
 void key(const bytes& raw, mbedtls_aes_context& aes_key);
 
 // decrypt stdin and output to stdout
-void decrypt_in(const mbedtls_aes_context& key, uint32_t length);
+void decrypt_in(const mbedtls_aes_context& key);
 
 // encrypt stdin and output to stdout
-void encrypt_in(const mbedtls_aes_context& key, uint32_t length);
+void encrypt_in(const mbedtls_aes_context& key);
 
 }

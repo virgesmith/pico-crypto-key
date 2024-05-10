@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+from base64 import b64encode
+from datetime import datetime, timezone
 from struct import pack, unpack
 from types import TracebackType
 from typing import Any
@@ -15,14 +17,13 @@ class CryptoKeyNotFoundError(ConnectionError):
 
 
 def _read_pin_from_stdin() -> str:
-    # TODO dont echo
     return pwinput("PIN:")
 
 
 class CryptoKey:
     CHUNK_SIZE = 2048
     HASH_BYTES = 32
-    ECDSA_KEY_BYTES = 65  # long form with 04 prefix
+    ECDSA_PUBKEY_BYTES = 33  # short form with 02/03 prefix
     VERIFY_FAILED = 2**32 - 19968  # -0x480 MBEDTLS_ERR_ECP_VERIFY_FAILED
 
     reattach: bool
@@ -74,8 +75,7 @@ class CryptoKey:
         assert self.have_repl
         self._write(b"h")
         file_length = os.stat(filename).st_size
-        uint32 = pack("I", file_length)
-        ret = self._write(uint32)
+        self._write_uint32(file_length)
         with open(filename, "rb") as fd:
             write_remaining = file_length
             while write_remaining > 0:
@@ -83,7 +83,7 @@ class CryptoKey:
                 data = fd.read(write_chunk_length)
                 ret = self._write(data)
                 write_remaining -= ret
-        return self._read(32)
+        return self._read(CryptoKey.HASH_BYTES)
 
     def encrypt(self, data: bytes) -> bytes:
         """
@@ -103,8 +103,7 @@ class CryptoKey:
         self._write(b"e")
 
         length = len(data)
-        uint32 = pack("I", length)
-        self._write(uint32)
+        self._write_uint32(length)
 
         output = bytearray()
         for pos in range(0, length, self.CHUNK_SIZE):
@@ -133,8 +132,7 @@ class CryptoKey:
         self._write(b"d")
 
         length = len(data)
-        uint32 = pack("I", length)
-        self._write(uint32)
+        self._write_uint32(length)
 
         output = bytearray()
         for pos in range(0, length, self.CHUNK_SIZE):
@@ -162,7 +160,7 @@ class CryptoKey:
         assert self.have_repl
         self._write(b"s")
         file_length = os.stat(filename).st_size
-        self._write_int(file_length)
+        self._write_uint32(file_length)
         with open(filename, "rb") as fd:
             write_remaining = file_length
             while write_remaining > 0:
@@ -171,8 +169,8 @@ class CryptoKey:
                 ret = self._write(data)
                 write_remaining -= ret
         # somehow separates hash and sig even when length not specified
-        digest = self._read(32)
-        siglen = self._read_int()
+        digest = self._read(CryptoKey.HASH_BYTES)
+        siglen = self._read_uint32()
         sig = self._read(siglen)
         return digest, sig
 
@@ -201,11 +199,11 @@ class CryptoKey:
         assert self.have_repl
         self._write(b"v")
         self._write(digest)
-        self._write_int(len(sig))
+        self._write_uint32(len(sig))
         self._write(sig)
-        self._write_int(len(pubkey))
+        self._write_uint32(len(pubkey))
         self._write(pubkey)
-        return self._read_int()
+        return self._read_uint32()
 
     def pubkey(self) -> bytes:
         """
@@ -221,8 +219,47 @@ class CryptoKey:
         """
         assert self.have_repl
         self._write(b"k")
-        pubkey = self._read(CryptoKey.ECDSA_KEY_BYTES)
+        pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
         return pubkey
+
+    def register(self, receiving_party: str) -> bytes:
+        """
+        Returns dynamically generated ECDSA public key
+        """
+        assert self.have_repl
+        self._write(b"r")
+        self._write_uint32(len(receiving_party.encode()))
+        self._write(receiving_party.encode())
+        pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
+        return pubkey
+
+    def auth(self, receiving_party: str, challenge: bytes) -> str:
+        """
+        Time-limted authentication
+        Appends challenge with current minute timestamp, hashes and signs
+        Returns base64-encoded signature
+        """
+        assert self.have_repl
+        self._write(b"a")
+        self._write_uint32(len(receiving_party.encode()))
+        self._write(receiving_party.encode())
+        self._write_uint32(len(challenge))
+        self._write(challenge)
+        length = self._read_uint32()
+        sig = self._read(length)
+        return b64encode(sig)
+
+    def info(self) -> tuple[str, datetime]:
+        """
+        Returns board information: board type, firmware version, timestamp
+        """
+        assert self.have_repl
+        self._write(b"i")
+        length = self._read_uint32()
+        raw = self._read(length)
+        version = raw[:-8].decode()
+        timestamp = datetime.fromtimestamp(unpack("Q", raw[-8:])[0] / 1000, tz=timezone.utc)
+        return version, timestamp
 
     def set_pin(self) -> None:
         """
@@ -248,9 +285,9 @@ class CryptoKey:
             print("doesn't match")
             return
         self._write(b"p")
-        self._write_int(len(new_pin))
+        self._write_uint32(len(new_pin))
         self._write(new_pin)
-        result = self._read_int()
+        result = self._read_uint32()
         if result:
             print("pin change failed: {result}")
             return
@@ -267,7 +304,7 @@ class CryptoKey:
         """
         # only send reset request if we have repl
         if self.have_repl:
-            self.__endpoint_in.write(b"r")
+            self.__endpoint_in.write(b"x")
             self.have_repl = False
 
         usb.util.dispose_resources(self.device)
@@ -301,13 +338,23 @@ class CryptoKey:
             self.reattach = True
             self.device.detach_kernel_driver(0)
 
-        self._write_int(len(self.device_pin))
+        self._write_uint32(len(self.device_pin))
         self._write(self.device_pin)
-        error_code = unpack("I", self._read(4))[0]
 
+        error_code = self._read_uint32()
         if error_code:
             raise ValueError("pin incorrect")
+
+        # set time on device for TOTP/webauthn
+        self._set_device_time()
+
         self.have_repl = True
+        version, time = self.info()
+        print(f"PicoCryptoKey {version} {time}")
+
+    def _set_device_time(self) -> None:
+        epoch_ms = int(datetime.now().timestamp() * 1000)
+        self._write_uint64(epoch_ms)
 
     def _read(self, length: int) -> bytes:
         result = bytearray()
@@ -317,17 +364,27 @@ class CryptoKey:
             length -= len(chunk)
         return bytes(result)
 
-    def _read_int(self) -> int:
+    def _read_uint32(self) -> int:
         """Read raw uint32_t (?-endian)"""
         data = self._read(4)
         return unpack("I", data)[0]
+
+    def _read_uint64(self) -> int:
+        """Read raw uint64_t (?-endian)"""
+        data = self._read(8)
+        return unpack("Q", data)[0]
 
     def _write(self, b: bytes) -> int:
         bytes_written = self.__endpoint_in.write(b)
         assert bytes_written == len(b)
         return bytes_written
 
-    def _write_int(self, n: int) -> bool:
+    def _write_uint32(self, n: int) -> bool:
         """Writes an int as uint32_t (?-endian)"""
         uint32 = pack("I", n)
         return self._write(uint32) == 4
+
+    def _write_uint64(self, n: int) -> bool:
+        """Writes an int as uint32_t (?-endian)"""
+        uint64 = pack("Q", n)
+        return self._write(uint64) == 8
