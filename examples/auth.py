@@ -15,8 +15,9 @@ from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError
 def auth() -> None:
     try:
         with CryptoKey() as crypto_key:
+            version, timestamp = crypto_key.info()
             now = datetime.now(tz=timezone.utc)
-            _, timestamp = crypto_key.info()
+            print(f"PicoCryptoKey {version} {timestamp}")
             print(f"Host-device time diff: {(now - timestamp).total_seconds()}s")
 
             rps = ["example.com", "another.org"]

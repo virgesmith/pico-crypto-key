@@ -5,20 +5,23 @@ signature and public key (as hex strings) for verification.
 
 import json
 import time
+from pathlib import Path
 
 from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError
 
 
-def sign_data(filename: str) -> None:
+def sign_data(filename: Path) -> None:
     try:
         with CryptoKey() as device:
+            version, _ = device.info()
+            print(f"PicoCryptoKey {version}")
             start = time.time()
             pubkey = device.pubkey()
             digest, signature = device.sign(filename)
             print("signing took %.2fs" % (time.time() - start))
 
             result = dict(
-                file=filename,
+                file=str(filename),
                 hash=digest.hex(),
                 signature=signature.hex(),
                 pubkey=pubkey.hex(),
@@ -31,5 +34,5 @@ def sign_data(filename: str) -> None:
 
 
 if __name__ == "__main__":
-    filename = "./examples/dataframe.csv"
+    filename = Path("./examples/dataframe.csv")
     sign_data(filename)

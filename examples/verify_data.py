@@ -3,17 +3,19 @@ Example: use a second (or original) device to verify an ECDSA signature.
 """
 
 import json
-import os
+from pathlib import Path
 from time import time
 
 from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError
 
 
-def verify_data(signature_file: str) -> None:
+def verify_data(signature_file: Path) -> None:
     try:
-        if not os.stat(signature_file):
+        if not signature_file.is_file():
             print(f"{signature_file} not found (need to run sign_data.py first)")
         with CryptoKey() as crypto_key, open(signature_file) as fd:
+            version, _ = crypto_key.info()
+            print(f"PicoCryptoKey {version}")
             signature = json.load(fd)
             # first check hash matches file
             start = time()
@@ -41,4 +43,4 @@ def verify_data(signature_file: str) -> None:
 
 
 if __name__ == "__main__":
-    verify_data("signature.json")
+    verify_data(Path("signature.json"))

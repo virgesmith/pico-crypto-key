@@ -2,8 +2,8 @@
 Example: use device to encrypt a dataset (if not already present) and read an encrypted dataset into a pandas dataframe.
 """
 
-import os
 from io import BytesIO
+from pathlib import Path
 from time import time
 
 import pandas as pd  # type: ignore
@@ -11,14 +11,17 @@ import pandas as pd  # type: ignore
 from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError
 
 
-def read_encrypted_dataframe(ciphertext: str) -> None:
+def read_encrypted_dataframe(ciphertext: Path) -> None:
     try:
         with CryptoKey() as crypto_key:
+            version, _ = crypto_key.info()
+            print(f"PicoCryptoKey {version}")
             ciphertext = filename
             # if the encrypted data isn't there, create it from the plaintext
-            if not os.path.isfile(ciphertext):
+            if not ciphertext.is_file():
                 print("Generating ciphertext")
-                plaintext = ciphertext.replace(".enc", "")
+                plaintext = ciphertext.with_suffix("")
+                print(plaintext)
                 start = time()
                 with open(plaintext, "rb") as p, open(ciphertext, "wb") as c:
                     c.write(crypto_key.encrypt(p.read()))
@@ -35,5 +38,5 @@ def read_encrypted_dataframe(ciphertext: str) -> None:
 
 
 if __name__ == "__main__":
-    filename = "examples/dataframe.csv.enc"
+    filename = Path("examples/dataframe.csv.enc")
     read_encrypted_dataframe(filename)

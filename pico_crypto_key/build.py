@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 import pytest
 import typer
@@ -29,25 +30,6 @@ def _check_symlink(path: str) -> bool:
     else:
         print("NOT FOUND")
         return False
-
-
-# def _check_config(config: dict[str, str], key: str, check_exists: bool = False) -> bool:
-#     print(f"Checking {key} ", end="")
-
-#     if key in config:
-#         print(f"= {config[key]}", end="")
-#         if check_exists:
-#             path = Path(config[key])
-#             if path.is_file():
-#                 print(" [connected]")
-#             else:
-#                 print(" [not found]")
-#         else:
-#             print()
-#         return True
-#     else:
-#         print("NOT FOUND")
-#         return False
 
 
 @app.command()
@@ -139,8 +121,15 @@ def reset_pin(
     assert result.returncode == 0
 
 
-@app.command()
-def test():
-    """Run unit tests. PIN must be set in PICO_CRYPTO_KEY_PIN env var"""
-    assert os.getenv("PICO_CRYPTO_KEY_PIN"), "Tests require PICO_CRYPTO_KEY_PIN to be set"
-    assert pytest.main() == 0
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+def test(
+    ctx: typer.Context,
+    pin: Optional[str] = typer.Option(default=None, help="pin (optional, can use env var PICO_CRYPTO_KEY_PIN)"),  # noqa: UP007
+) -> None:  # noqa: UP007
+    """Run unit tests. PIN must either be passed as an option or set in PICO_CRYPTO_KEY_PIN env var"""
+    assert pin or os.getenv(
+        "PICO_CRYPTO_KEY_PIN"
+    ), "Tests require pin to be specified as option (--pin ...) or PICO_CRYPTO_KEY_PIN in env"
+    if pin:
+        os.environ["PICO_CRYPTO_KEY_PIN"] = pin
+    assert pytest.main(ctx.args) == 0, "tests failed, see logs"

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from base64 import b64encode
 from datetime import datetime, timezone
+from pathlib import Path
 from struct import pack, unpack
 from types import TracebackType
 from typing import Any
@@ -58,7 +59,7 @@ class CryptoKey:
         except usb.core.USBError:
             pass
 
-    def hash(self, filename: str) -> bytes:
+    def hash(self, filename: Path) -> bytes:
         """
         Computes the SHA256 hash of a file
 
@@ -233,9 +234,9 @@ class CryptoKey:
         pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
         return pubkey
 
-    def auth(self, receiving_party: str, challenge: bytes) -> str:
+    def auth(self, receiving_party: str, challenge: bytes) -> bytes:
         """
-        Time-limted authentication
+        Time-limited authentication
         Appends challenge with current minute timestamp, hashes and signs
         Returns base64-encoded signature
         """
@@ -350,7 +351,6 @@ class CryptoKey:
 
         self.have_repl = True
         version, time = self.info()
-        print(f"PicoCryptoKey {version} {time}")
 
     def _set_device_time(self) -> None:
         epoch_ms = int(datetime.now().timestamp() * 1000)

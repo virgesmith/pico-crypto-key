@@ -213,7 +213,9 @@ Long flashes | Short flashes | Algorithm | mbedtls error code
 This script just prints the hash of itself.
 
 ```sh
-python examples/hash_file.py
+$ python examples/hash_file.py examples/hash_file.py
+PicoCryptoKey 1.3.0-pico
+examples/hash_file.py: f99e202cdb1c7091f291a3361eac6b8d2230eef28bd165415e86ec235b03a938
 ```
 
 ### Encrypt/decrypt data
@@ -259,8 +261,20 @@ python examples/sign_data.py
 gives you something like
 
 ```text
-signing took 0.55s
+PicoCryptoKey 1.3.0-pico
+signing took 0.46s
 signature written to signature.json
+```
+
+where signature.json contains
+
+```json
+{
+  "file": "examples/dataframe.csv",
+  "hash": "28d839df69762085f8ac7b360cd5ee0435030247143260cfaff0b313f99a251c",
+  "signature": "30460221009531919bd13f964544fb494393e1bea1cf5a04a53d572e914ea1cbc30657166c022100e1d1394240eb9a8269eafa8d06a82d1c087a0af260576577da5f45352ebb4162",
+  "pubkey": "020a7dfbd2272ad9e9d49dd11aec4743d10ba3d9e3affc3fa3a64c8a28fd78a212"
+}
 ```
 
 ### Verify data
@@ -272,6 +286,7 @@ python examples/verify_data.py
 ```
 
 ```text
+PicoCryptoKey 1.3.0-pico
 file hash matches file
 verifying device is the signing device
 signature is valid
@@ -281,6 +296,7 @@ verifying took 0.79s
 or, if you use a different board
 
 ```text
+PicoCryptoKey 1.3.0-pico
 file hash matches file
 verifying device is not the signing device
 signature is valid
@@ -293,7 +309,7 @@ Step 1 generates registration keys for two receiving parties - these are short-f
 
 Step 2 generates a time-based auth tokens for each receiving party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
 
-Third-party code is then used to verify the public key-auth token pairs.
+Third-party code (the ecdsa python package) is then used to verify the public key-auth token pairs.
 
 ```sh
 python examples/auth.py
@@ -311,6 +327,41 @@ example.com verified: True
 another.org verified: True
 example.com cannot verify b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
 another.org cannot verify b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'```
+```
+
+### Authenticate (client-server)
+
+As above, but using a webauthn-style workflow using a local python script as a proxy for a client (would normally be a website), connecting to the crypto key via a (local) socket to a server script connected to the crypto key.
+
+First run
+
+```sh
+$ python examples/webauthn_server.py
+PIN:****
+2024-05-27 22:05:41 INFO     1.3.0-pico @ 2024-05-27 21:05:41.165000+00:00
+2024-05-27 22:05:41 INFO     listening for requests on localhost:5000
+```
+
+Then the client script will register and auth, like in the example above:
+
+```sh
+$ python webauthn_client.py
+registered example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
+challenge is: b'auth me now!'
+auth response example.com: MEUCIQDftDi2LfYY8FMVP8d4gjVMJpyYArwWV1rYjWaMqaVrlQIgazKzgYjWxaFuCzpXdI3hByb3zn+k5xjZ47TqFHAZLFc=
+example.com verified: True
+```
+
+Meanwhile, the server says:
+
+```sh
+...
+2024-05-27 22:05:46 INFO     127.0.0.1 requests register:{'host': 'example.com'}
+2024-05-27 22:05:46 INFO     registering with example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
+2024-05-27 22:05:46 INFO     127.0.0.1 requests auth:{'host': 'example.com', 'challenge': 'auth me now!'}
+2024-05-27 22:05:46 INFO     Host-device time diff: 0.001346s
+2024-05-27 22:05:46 INFO     authing with example.com challenge=auth me now! response=b'MEUCIQCk5o1n5CijdYFPiaGxFV0SfLRb5S8xdzUnZ1cIALYiLAIge7s8yBgjtEPPyV//3CbcUVRYj+fCi0ipqbfFurrVAv4='
+```
 
 ### Change PIN
 
