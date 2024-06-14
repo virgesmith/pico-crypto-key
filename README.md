@@ -160,9 +160,7 @@ The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall
 
 ## Using the device
 
-The device is pin protected (the default is 'pico', see )
-
-The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it.
+The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it. Methods available are:
 
 - `pubkey` return the ECDSA public key (short-form, 33 bytes)
 - `hash` compute the SHA256 hash of the input
@@ -177,10 +175,9 @@ The `CryptoKey` class provides the python interface and is context-managed to he
 
 See the examples for more details.
 
-
 ## Errors
 
-The device LED is normally off when the device is idle, and on when it's doing something. If there are low-level errors with any of the crypto algorithms then the device may enter an error state where the LED will flash. The error codes can be interpreted like so:
+The device LED is normally off when the device is idle, and on when it's doing something. If there are low-level errors with any of the crypto algorithms then the device may enter an unrecoverable error state where the LED will flash. The error codes can be interpreted like so:
 
 Long flashes | Short flashes | Algorithm | mbedtls error code
 ------------:|--------------:|-----------|-------------------
@@ -202,9 +199,7 @@ Long flashes | Short flashes | Algorithm | mbedtls error code
 
   `SUBSYSTEMS=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="aafe", ATTRS{idProduct}=="c0ff", GROUP="plugdev", MODE="0777"`
 
-
 - the device can get out of sync quite easily when something goes wrong. If so, turn it off and on again ;)
-
 
 ## Examples
 
