@@ -3,8 +3,12 @@
 #include "pico/stdlib.h"
 
 namespace led {
+
+// support multicoloured LEDs
+enum Colour { RED = 1, GREEN = 2, BLUE = 4, WHITE = RED & GREEN & BLUE };
+
 bool init();
-void on();
+void on(Colour c);
 void off();
 } // namespace led
 

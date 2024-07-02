@@ -126,9 +126,17 @@ If using a fresh download of `mbedtls` - run the configuration script to customi
 
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
-## Build
+## Supported boards
 
-If using a Pico W you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the Pico will work on a Pico W aside from the LED.)
+The target board can be specified using the `--board` option when running `check`, `build`, `install` or `reset-pin`.
+
+- Pico: `--board pico` (default)
+- Pico W: `--board pico_w`
+- Pimoroni Tiny2040 2MB: `--board pimoroni_tiny2040_2mb`
+
+Using the correct board will ensure (amongst other things?) the LED will work. (NB Images built for one board may work on other boards, aside from the LED. YMMV.)
+
+## Build
 
 These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
@@ -152,13 +160,15 @@ The device is protected with a PIN, the salted hash of which is read from flash 
 picobuild reset-pin /path/to/RPI-RP2
 ```
 
-If the device LED is flashing after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed - see the [example](#change-pin).
+If the device LED is flashing (red if supported by the board) after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed - see the [example](#change-pin).
 
 The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
 
 (NB for the tests to run, the env var *must* be set)
 
 ## Using the device
+
+On boards with multicoloured LEDs (e.g. tiny2040), initialisation is green, busy is blue and error states are red.
 
 The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it. Methods available are:
 

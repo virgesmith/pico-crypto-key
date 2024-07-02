@@ -21,7 +21,7 @@ void ErrorMapper::check(int ret) {
 void ErrorMapper::enter(int code) {
   for (;;) {
     for (int i = 0; i < (int)context; ++i) {
-      led::on();
+      led::on(led::RED);
       sleep_ms(LONG_FLASH_MS);
       led::off();
       sleep_ms(PAUSE_MS);
@@ -29,7 +29,7 @@ void ErrorMapper::enter(int code) {
 
     // code 0 is unknown error
     for (int i = 0; i < code; ++i) {
-      led::on();
+      led::on(led::RED);
       sleep_ms(SHORT_FLASH_MS);
       led::off();
       sleep_ms(PAUSE_MS);

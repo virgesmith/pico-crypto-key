@@ -55,21 +55,21 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // write pin
     case 'p': {
-      led::on();
+      led::on(led::BLUE);
       cdc::write(pin::set());
       led::off();
       break;
     }
     // get ECDSA public key
     case 'k': {
-      led::on();
+      led::on(led::BLUE);
       cdc::write(ecdsa::pubkey(ec_key));
       led::off();
       break;
     }
     // hash input
     case 'h': {
-      led::on();
+      led::on(led::BLUE);
       bytes hash = sha256::hash_in();
       cdc::write(hash);
       led::off();
@@ -77,21 +77,21 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // decrypt input
     case 'd': {
-      led::on();
+      led::on(led::BLUE);
       aes::decrypt_in(aes_key);
       led::off();
       break;
     }
     // encrypt input
     case 'e': {
-      led::on();
+      led::on(led::BLUE);
       aes::encrypt_in(aes_key);
       led::off();
       break;
     }
     // hash input and sign
     case 's': {
-      led::on();
+      led::on(led::BLUE);
       bytes hash = sha256::hash_in();
       cdc::write(hash);
       bytes sig = ecdsa::sign(ec_key, hash);
@@ -102,7 +102,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     // verify hash and signature
     case 'v': {
       // hash[32], len(sig)[4], sig, len(key)[4], key
-      led::on();
+      led::on(led::BLUE);
       bytes hash(sha256::LENGTH_BYTES);
       cdc::read(hash);
       bytes sig = cdc::read_with_length();
@@ -114,7 +114,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // webauthn register: generate keypair from receiving party id, return public key
     case 'r': {
-      led::on();
+      led::on(led::BLUE);
       bytes rp = cdc::read_with_length();
       wrap<mbedtls_ecp_keypair> webauthn_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
       ecdsa::key(genkey(rp), *webauthn_key);
@@ -124,7 +124,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // webauthn authenticate: read id, generate keypair, read challenge bytes, append timestamp, hash, sign
     case 'a': {
-      led::on();
+      led::on(led::BLUE);
       // generate keypair
       bytes rp = cdc::read_with_length();
       wrap<mbedtls_ecp_keypair> webauthn_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
@@ -142,7 +142,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // board info
     case 'i': {
-      led::on();
+      led::on(led::BLUE);
       cdc::write(VER.size() + sizeof(uint64_t));
       cdc::write(VER);
       cdc::write(get_time_ms());

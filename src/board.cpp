@@ -1,42 +1,70 @@
 #include "board.h"
 #include "pico/time.h"
 
+#if defined(BOARD_pimoroni_tiny2040_2mb)
+
+bool led::init() {
+  gpio_init(TINY2040_LED_R_PIN);
+  gpio_init(TINY2040_LED_G_PIN);
+  gpio_init(TINY2040_LED_B_PIN);
+  gpio_set_dir(TINY2040_LED_R_PIN, GPIO_OUT);
+  gpio_set_dir(TINY2040_LED_G_PIN, GPIO_OUT);
+  gpio_set_dir(TINY2040_LED_B_PIN, GPIO_OUT);
+  led::on(led::GREEN);
+  sleep_ms(100);
+  led::off();
+  return true;
+}
+
+void led::on(Colour c) {
+  if (c & Colour::RED)
+    gpio_put(TINY2040_LED_R_PIN, 0);
+  if (c & Colour::GREEN)
+    gpio_put(TINY2040_LED_G_PIN, 0);
+  if (c & Colour::BLUE)
+    gpio_put(TINY2040_LED_B_PIN, 0);
+}
+
+void led::off() {
+  gpio_put(TINY2040_LED_R_PIN, 1);
+  gpio_put(TINY2040_LED_G_PIN, 1);
+  gpio_put(TINY2040_LED_B_PIN, 1);
+}
+
 // Pico W LED is on the wifi chip and requires cyw43 driver and its dependencies
 // to function (wifi is not enabled)
-#if defined(BOARD_pico_w)
+#elif defined(BOARD_pico_w)
 
 #include "pico/cyw43_arch.h"
 
 bool led::init() {
   auto res = cyw43_arch_init();
-  led::on();
+  led::on(led::GREEN);
   sleep_ms(100);
   led::off();
   return res == 0;
 }
 
-void led::on() { cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1); }
+// pico W only has geen LED
+void led::on(Colour) { cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1); }
 void led::off() { cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0); }
 
-#elif defined(BOARD_pico)
+#else // default to BOARD_pico
 
 #include "pico/stdlib.h"
 
 bool led::init() {
   gpio_init(PICO_DEFAULT_LED_PIN);
   gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-  led::on();
+  led::on(led::GREEN);
   sleep_ms(100);
   led::off();
   return true;
 }
 
-void led::on() { gpio_put(PICO_DEFAULT_LED_PIN, 1); }
+// pico only has geen LED
+void led::on(Colour) { gpio_put(PICO_DEFAULT_LED_PIN, 1); }
 void led::off() { gpio_put(PICO_DEFAULT_LED_PIN, 0); }
-
-#else
-
-#error Board not specified, set PICO_BOARD to either pico or pico_w
 
 #endif
 
