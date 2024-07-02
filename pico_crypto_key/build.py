@@ -11,8 +11,9 @@ from pico_crypto_key import __version__
 
 app = typer.Typer()
 
-# might need different build dirs for different hardware. For now use the target name to differentiate
-_build_dir = Path("./build")
+
+def _build_dir(board: str) -> Path:
+    return Path(f"build-{board}")
 
 
 @app.command()
@@ -55,10 +56,10 @@ def check(board: str = typer.Option(default="pico", help="the target board")):
 
 
 @app.command()
-def clean() -> None:
+def clean(board: str = typer.Option(default="pico", help="the target board")) -> None:
     """Clean intermediate build files."""
-    if _build_dir.exists():
-        shutil.rmtree(_build_dir)
+    if _build_dir(board).exists():
+        shutil.rmtree(_build_dir(board))
 
 
 @app.command()
@@ -66,7 +67,8 @@ def build(board: str = typer.Option(default="pico", help="the target board")) ->
     """Build the pico-crypto-key image."""
 
     # check build dir exists and create if necessary
-    _build_dir.mkdir(exist_ok=True)
+    build_dir = _build_dir(board)
+    build_dir.mkdir(exist_ok=True)
 
     sdk_dir = Path("./pico-sdk")
     print(f"Pico SDK points to {os.readlink(sdk_dir)}")
@@ -79,10 +81,10 @@ def build(board: str = typer.Option(default="pico", help="the target board")) ->
     sdk_import = Path("./pico_sdk_import.cmake")
     shutil.copy(Path(sdk_dir / "external" / sdk_import), sdk_import)
 
-    result = subprocess.run(["cmake", "..", *cmake_args], cwd="./build")
+    result = subprocess.run(["cmake", "..", *cmake_args], cwd=build_dir)
     assert result.returncode == 0
 
-    result = subprocess.run(["make", "-j"], cwd="./build")
+    result = subprocess.run(["make", "-j"], cwd=build_dir)
     assert result.returncode == 0
 
 
@@ -93,13 +95,15 @@ def install(
 ) -> None:
     """Install the pico-crypto-key image. The device must be mounted with BOOTSEL pressed."""
 
+    build_dir = _build_dir(board)
+
     if not Path(device_path).exists():
         print(f"No device mounted at {device_path}")
         return
 
-    image = f"{board}-crypto-key.uf2"
+    image = "crypto-key.uf2"
     print(f"Installing {image}")
-    result = subprocess.run(["cp", image, device_path], cwd="./build")
+    result = subprocess.run(["cp", image, device_path], cwd=build_dir)
     assert result.returncode == 0
 
 
@@ -117,7 +121,7 @@ def reset_pin(
         print(f"No device not mounted at {device_path}")
         return
 
-    result = subprocess.run(["cp", f"{board}-reset-pin.uf2", device_path], cwd="./build")
+    result = subprocess.run(["cp", "reset-pin.uf2", device_path], cwd=_build_dir(board))
     assert result.returncode == 0
 
 

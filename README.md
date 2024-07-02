@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb9853538e3a421d9715812f87f3269d)](https://www.codacy.com/gh/virgesmith/pico-crypto-key/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=virgesmith/pico-crypto-key&amp;utm_campaign=Badge_Grade)
 
-Using a Raspberry Pi [Pico](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
+Using a Raspberry Pi [RP2040](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
@@ -15,6 +15,10 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key never leaves the device and is stored only in volatile memory.
 
 NB This has been tested on both Pico and Pico W boards. The latter requires a bit of extra work for the onboard LED to work.
+
+## Update v1.3.1
+
+Adds support for Pimoroni [Tiny2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012300371).
 
 ## Update v1.3
 
@@ -42,14 +46,17 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 | encrypt |           23.9 |                334.2 |              43.5 |                  183.8 |       81.9 |
 | decrypt |           23.8 |                336.0 |              43.1 |                  185.7 |       81.0 |
 
-## Dependencies/prerequisites
 
-Both Pico and Pico W boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. However, neither wifi nor bluetooth are enabled.
+## Usage
 
 `pico-crypto-key` is a python (dev) package that provides:
 
 - a simplified build process
 - a python interface to the device.
+
+Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. However, neither wifi nor bluetooth are enabled.
+
+### Dependencies/prerequisites
 
 First, clone/fork this repo and install the package in development (editable) mode:
 
@@ -128,13 +135,13 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Supported boards
 
-The target board can be specified using the `--board` option when running `check`, `build`, `install` or `reset-pin`.
+The target board can/should be specified using the `--board` option when running `check`, `clean`, `build`, `install` or `reset-pin`.
 
 - Pico: `--board pico` (default)
 - Pico W: `--board pico_w`
 - Pimoroni Tiny2040 2MB: `--board pimoroni_tiny2040_2mb`
 
-Using the correct board will ensure (amongst other things?) the LED will work. (NB Images built for one board may work on other boards, aside from the LED. YMMV.)
+Using the correct board will ensure (amongst other things?) the LED will work. (NB Images built for one board may work on other boards, aside from the LED. YMMV...)
 
 ## Build
 

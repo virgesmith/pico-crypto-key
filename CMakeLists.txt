@@ -2,8 +2,8 @@
 cmake_minimum_required(VERSION 3.13)
 
 message("Board is ${PICO_BOARD}")
-set(PICO_IMAGE "${PICO_BOARD}-crypto-key")
-set(PICO_RESET_PIN "${PICO_BOARD}-reset-pin")
+set(PICO_IMAGE "crypto-key")
+set(PICO_RESET_PIN "reset-pin")
 
 include(pico_sdk_import.cmake)
 
