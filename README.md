@@ -54,7 +54,7 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 - a simplified build process
 - a python interface to the device.
 
-Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. However, neither wifi nor bluetooth are enabled.
+Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
 ### Dependencies/prerequisites
 
