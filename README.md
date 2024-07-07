@@ -10,11 +10,12 @@ Using a Raspberry Pi [RP2040](https://www.raspberrypi.org/products/raspberry-pi-
 
 I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
-- the device is pin protected. Only the sha256 hash of the (salted) pin is stored on the device.
-- the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the Pico. So no two devices should have the same key.
+- the device is pin protected. Only the SHA256 hash of the (salted) pin is stored on the device.
+- the private key is only initialised once a correct pin has been entered, and is a SHA256 hash of the (salted) unique device id. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-NB This has been tested on both Pico and Pico W boards. The latter requires a bit of extra work for the onboard LED to work.
+Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
+
 
 ## Update v1.3.1
 
@@ -53,8 +54,6 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 
 - a simplified build process
 - a python interface to the device.
-
-Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
 ### Dependencies/prerequisites
 
@@ -143,6 +142,16 @@ The target board can/should be specified using the `--board` option when running
 
 Using the correct board will ensure (amongst other things?) the LED will work. (NB Images built for one board may work on other boards, aside from the LED. YMMV...)
 
+### Board LED indicators
+
+Board    | Init        | Ready* | Busy | Invalid | [Fatal Error](#errors)
+---------|-------------|--------|------|---------|------------
+Pico     | Flash       | -      | On   | -       | Flashing
+Pico W   | Flash       | -      | On   | -       | Flashing
+Tiny2040 | White flash | Green  | Blue | Red     | Flashing Red
+
+&ast; "Ready" state required a valid pin to be supplied.
+
 ## Build
 
 These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
@@ -194,7 +203,7 @@ See the examples for more details.
 
 ## Errors
 
-The device LED is normally off when the device is idle, and on when it's doing something. If there are low-level errors with any of the crypto algorithms then the device may enter an unrecoverable error state where the LED will flash. The error codes can be interpreted like so:
+If there are low-level errors with any of the crypto algorithms then the device may enter an unrecoverable error state where the LED will flash. The error codes can be interpreted like so:
 
 Long flashes | Short flashes | Algorithm | mbedtls error code
 ------------:|--------------:|-----------|-------------------
