@@ -19,7 +19,8 @@ Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not
 
 ## Update v1.3.1
 
-Adds support for Pimoroni [Tiny2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012300371).
+- Adds support for Pimoroni [Tiny2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012300371).
+- The webauthn example has been improved.
 
 ## Update v1.3
 
@@ -350,39 +351,25 @@ example.com cannot verify b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIh
 another.org cannot verify b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'```
 ```
 
-### Authenticate (client-server)
+### Authenticate (host-user)
 
-As above, but using a webauthn-style workflow using a local python script as a proxy for a client (would normally be a website), connecting to the crypto key via a (local) socket to a server script connected to the crypto key.
+As above, but using a webauthn-style workflow using a local fastapi instance (would normally be a remote website).
 
-First run
-
-```sh
-$ python examples/webauthn_server.py
-PIN:****
-2024-05-27 22:05:41 INFO     1.3.0-pico @ 2024-05-27 21:05:41.165000+00:00
-2024-05-27 22:05:41 INFO     listening for requests on localhost:5000
-```
-
-Then the client script will register and auth, like in the example above:
+First start the host:
 
 ```sh
-$ python webauthn_client.py
-registered example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
-challenge is: b'auth me now!'
-auth response example.com: MEUCIQDftDi2LfYY8FMVP8d4gjVMJpyYArwWV1rYjWaMqaVrlQIgazKzgYjWxaFuCzpXdI3hByb3zn+k5xjZ47TqFHAZLFc=
-example.com verified: True
+fastapi run examples/webauthn_host.py
 ```
 
-Meanwhile, the server says:
+When up and running, the API endpoints should be documented at [http://localhost:8000/docs](http://localhost:8000/docs)
+
+Then use the interactive client script to interact with the crypto key and allow you to register and authenticate with the host, like in the example above:
 
 ```sh
-...
-2024-05-27 22:05:46 INFO     127.0.0.1 requests register:{'host': 'example.com'}
-2024-05-27 22:05:46 INFO     registering with example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
-2024-05-27 22:05:46 INFO     127.0.0.1 requests auth:{'host': 'example.com', 'challenge': 'auth me now!'}
-2024-05-27 22:05:46 INFO     Host-device time diff: 0.001346s
-2024-05-27 22:05:46 INFO     authing with example.com challenge=auth me now! response=b'MEUCIQCk5o1n5CijdYFPiaGxFV0SfLRb5S8xdzUnZ1cIALYiLAIge7s8yBgjtEPPyV//3CbcUVRYj+fCi0ipqbfFurrVAv4='
+python examples/webauthn_user.py
 ```
+
+Try playing around with different users and different keys...
 
 ### Change PIN
 
