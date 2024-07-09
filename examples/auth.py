@@ -19,19 +19,20 @@ def auth() -> None:
             print(f"PicoCryptoKey {version} {time}")
             print(f"Host-device time diff: {(now - time).total_seconds()}s")
 
+            user = "auth_user"
             rps = ["example.com", "another.org"]
 
-            pubkeys = [crypto_key.register(rp) for rp in rps]
+            pubkeys = [crypto_key.register(f"{user}@{rp}") for rp in rps]
 
             for rp, pk in zip(rps, pubkeys, strict=True):
-                print(f"registered {rp}: {pk.hex()}")
+                print(f"registered {user}@{rp}: {pk.hex()}")
 
             challenge = b"testing time-based auth"
             print(f"challenge is: {challenge}")
-            responses = [crypto_key.auth(rp, challenge) for rp in rps]
+            responses = [crypto_key.auth(f"{user}@{rp}", challenge) for rp in rps]
 
             for rp, token in zip(rps, responses, strict=True):
-                print(f"auth response {rp}: {token}")
+                print(f"auth response {user}@{rp}: {token}")
 
             # check it verifies using a 3rdparty library
             vks = [ecdsa.VerifyingKey.from_string(pk, curve=ecdsa.SECP256k1, hashfunc=sha256) for pk in pubkeys]

@@ -1,5 +1,6 @@
 import logging
 import struct
+from time import sleep
 from base64 import b64decode
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -45,6 +46,10 @@ async def login(username: Annotated[str, "user name"], token: Annotated[str, Hea
     """
     Authenticate with the host. Token is the signature of a combination of host, challenge and timestamp
     """
+
+    # pretend we're not local (timestamp misalignment can cause auth failures)
+    sleep(0.02)
+
     logging.info(f"{username}: {token}")
 
     if username not in userdata:

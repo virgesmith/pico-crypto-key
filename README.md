@@ -338,17 +338,17 @@ python examples/auth.py
 ```
 
 ```txt
-PicoCryptoKey 1.3.0-pico 2024-05-06 09:01:39.648000+00:00
-Host-device time diff: 0.001054s
-registered example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
-registered another.org: 02614fa67aa3600af7a69031cb1d69f05a8c8fdf32d1ee9db7cee24a6c172b6998
+PicoCryptoKey 1.3.1-pimoroni_tiny2040_2mb 2024-07-09 18:00:41.382000+00:00
+Host-device time diff: 0.002865s
+registered auth_user@example.com: 0334195ea7cc307c5908bd5f80b5fd0513edf5e8bf0f49c544231e089b2ea6c682
+registered auth_user@another.org: 024f4f8fc6a8fca7069ffeb7122f545833ea82727fd3a8286e13f77bdbf6214dc9
 challenge is: b'testing time-based auth'
-auth response example.com: b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'
-auth response another.org: b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
+auth response auth_user@example.com: b'MEQCIG4Pp5o/wXMh6RY0Z2zvr1IOBWVhQcHoRyGeQQls8genAiBaJjKeM4R4kI3DD5s3xet4R/K/bQRncyWqBoO89QILkA=='
+auth response auth_user@another.org: b'MEYCIQDezWSAyNwvioDXbsO/xDMnDJLhZWWVGLhMLFNoNezRUwIhANC8gdkUtcfDcciGw9J2hbB2NdoqFP+o5RuyYQms30xk'
 example.com verified: True
 another.org verified: True
-example.com cannot verify b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
-another.org cannot verify b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'```
+example.com cannot verify b'MEYCIQDezWSAyNwvioDXbsO/xDMnDJLhZWWVGLhMLFNoNezRUwIhANC8gdkUtcfDcciGw9J2hbB2NdoqFP+o5RuyYQms30xk'
+another.org cannot verify b'MEQCIG4Pp5o/wXMh6RY0Z2zvr1IOBWVhQcHoRyGeQQls8genAiBaJjKeM4R4kI3DD5s3xet4R/K/bQRncyWqBoO89QILkA=='
 ```
 
 ### Authenticate (host-user)
