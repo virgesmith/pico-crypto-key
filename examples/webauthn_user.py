@@ -16,7 +16,7 @@ def main() -> None:
             print(f"Interacting with {HOST}")
             while True:
                 try:
-                    match input("\nRegister/Auth/List/Quit? (r/a/q) "):
+                    match cmd := input("\nRegister/Auth/List/Quit? (r/a/q) "):
                         case "r":
                             user = input("username: ")
                             pubkey = key.register(f"{user}@{HOST}").hex()
