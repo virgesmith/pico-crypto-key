@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 
-from pico_crypto_key.device import CryptoKey, CryptoKeyNotFoundError
-
 import requests
 
+from pico_crypto_key.device import CryptoKey, CryptoKeyNotFoundError
+
 HOST = "http://localhost:8000"
+
 
 def main() -> None:
     try:
@@ -15,11 +16,11 @@ def main() -> None:
             print(f"Interacting with {HOST}")
             while True:
                 try:
-                    match cmd := input("\nRegister/Auth/List/Quit? (r/a/q) "):
+                    match input("\nRegister/Auth/List/Quit? (r/a/q) "):
                         case "r":
                             user = input("username: ")
-                            pubkey = key.register(HOST).hex()
-                            print(f"Registering {user} with {HOST}: pubkey is {pubkey}")
+                            pubkey = key.register(f"{user}@{HOST}").hex()
+                            print(f"Registering {user}@{HOST}: pubkey is {pubkey}")
                             response = requests.get(f"{HOST}/register", params={"username": user, "pubkeyhex": pubkey})
                             response.raise_for_status()
                             print(response.json())
@@ -32,10 +33,12 @@ def main() -> None:
                             response = requests.get(f"{HOST}/challenge", params={"username": user})
                             response.raise_for_status()
                             challenge = response.json().format(user)
-                            token = key.auth(HOST, challenge.encode()).decode()
-                            print(f"Authenticating {user} with {HOST} using challenge='{challenge}' at {now}")
+                            token = key.auth(f"{user}@{HOST}", challenge.encode()).decode()
+                            print(f"Authenticating {user}@{HOST} using challenge='{challenge}' at {now}")
                             print(f"Token: {token}")
-                            response = requests.get(f"{HOST}/login", params={"username": user}, headers={"token": token})
+                            response = requests.get(
+                                f"{HOST}/login", params={"username": user}, headers={"token": token}
+                            )
                             response.raise_for_status()
                             print(response.json())
                         case "q":
@@ -46,6 +49,7 @@ def main() -> None:
                     print(e)
     except CryptoKeyNotFoundError:
         print("Key not found, is it connected?")
+
 
 if __name__ == "__main__":
     main()

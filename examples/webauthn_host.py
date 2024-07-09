@@ -25,7 +25,6 @@ async def register(
     """
     Register a new user and their public key. Will fail if user already exists
     """
-    global userdata
     logging.info(f"registering {username} with {pubkeyhex}")
     if username in userdata:
         raise HTTPException(status_code=403, detail="user exists")
