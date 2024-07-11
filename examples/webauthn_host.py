@@ -14,21 +14,46 @@ logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logg
 userdata: dict[str, bytes] = {}
 
 HOST_ID = "localhost:8000"
-CHALLENGE = f"sign this {{}}@{HOST_ID}!"
 
 app = FastAPI()
+
+def _get_challenge(username: str) -> str:
+    return f"sign this {username}@{HOST_ID}!"
+
+
+def _verify_challenge(username: str, pubkey: bytes, token: str) -> bool:
+    timestamp = datetime.now(tz=timezone.utc)
+    # check it verifies (using a 3rdparty library)
+    verifying_key = ecdsa.VerifyingKey.from_string(pubkey, curve=ecdsa.SECP256k1, hashfunc=sha256)
+
+    # append rounded timestamp to challenge
+    t = int(timestamp.timestamp() * 1000)
+    challenge = _get_challenge(username).encode() + struct.pack("Q", t - t % 60000)
+
+    try:
+        result = verifying_key.verify(b64decode(token), challenge, sigdecode=ecdsa.util.sigdecode_der)
+    except ecdsa.keys.BadSignatureError:
+        result = False
+    logging.info(f"{HOST_ID} verified: {result}")
+
+    return result
 
 
 @app.get("/register")
 async def register(
-    username: Annotated[str, "user name"], pubkeyhex: Annotated[str, "short-form pulic key in hex"]
+    username: Annotated[str, "user name"], pubkeyhex: Annotated[str, "short-form pulic key in hex"],
+    token: Annotated[str, Header()]
 ) -> None:
     """
-    Register a new user and their public key. Will fail if user already exists
+    Register a new user and their public key. Will fail if:
+     - user already exists
+     - public key does not verify token
     """
-    logging.info(f"registering {username} with {pubkeyhex}")
     if username in userdata:
         raise HTTPException(status_code=403, detail="user exists")
+
+
+    logging.info(f"registering {username} with {pubkeyhex}")
     userdata[username] = bytes.fromhex(pubkeyhex)
     return "OK"
 
@@ -38,7 +63,7 @@ async def challenge(username: Annotated[str, "user name"]) -> str:
     """
     Provide a challenge string for the authenticator to sign
     """
-    return CHALLENGE.format(username)
+    return _get_challenge(username)
 
 
 @app.get("/login")
@@ -50,24 +75,26 @@ async def login(username: Annotated[str, "user name"], token: Annotated[str, Hea
     # pretend we're not local (timestamp misalignment can cause auth failures)
     sleep(0.02)
 
-    logging.info(f"{username}: {token}")
-
     if username not in userdata:
         raise HTTPException(status_code=403, detail="user not found")
 
-    pubkey = userdata[username]
-    timestamp = datetime.now(tz=timezone.utc)
-    # check it verifies (using a 3rdparty library)
-    verifying_key = ecdsa.VerifyingKey.from_string(pubkey, curve=ecdsa.SECP256k1, hashfunc=sha256)
+    logging.info(f"{username}: {token}")
 
-    # append rounded timestamp to challenge
-    t = int(timestamp.timestamp() * 1000)
-    challenge = CHALLENGE.format(username).encode() + struct.pack("Q", t - t % 60000)
+    if not _verify_challenge(username, userdata[username], token):
+        raise HTTPException(status_code=401, detail="authentication failed")
 
-    try:
-        result = verifying_key.verify(b64decode(token), challenge, sigdecode=ecdsa.util.sigdecode_der)
-        logging.info(f"{HOST_ID} verified: {result}")
-    except ecdsa.keys.BadSignatureError:
-        raise HTTPException(status_code=401, detail="authentication failed") from None
+    # timestamp = datetime.now(tz=timezone.utc)
+    # # check it verifies (using a 3rdparty library)
+    # verifying_key = ecdsa.VerifyingKey.from_string(pubkey, curve=ecdsa.SECP256k1, hashfunc=sha256)
+
+    # # append rounded timestamp to challenge
+    # t = int(timestamp.timestamp() * 1000)
+    # challenge = CHALLENGE.format(username).encode() + struct.pack("Q", t - t % 60000)
+
+    # try:
+    #     result = verifying_key.verify(b64decode(token), challenge, sigdecode=ecdsa.util.sigdecode_der)
+    #     logging.info(f"{HOST_ID} verified: {result}")
+    # except ecdsa.keys.BadSignatureError:
+    #     raise HTTPException(status_code=401, detail="authentication failed") from None
 
     return "OK"

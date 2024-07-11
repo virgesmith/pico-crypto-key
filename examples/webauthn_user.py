@@ -12,29 +12,40 @@ def main() -> None:
         with CryptoKey() as key:
             version, timestamp = key.info()
             print(f"{version} @ {timestamp}")
-
             print(f"Interacting with {HOST}")
             while True:
+                _, timestamp = key.info()
+                now = datetime.now(tz=timezone.utc)
+                print(f"Host-device time diff: {(now - timestamp).total_seconds()}s")
                 try:
                     match cmd := input("\nRegister/Auth/List/Quit? (r/a/q) "):
                         case "r":
                             user = input("username: ")
-                            pubkey = key.register(f"{user}@{HOST}").hex()
+                            username = f"{user}@{HOST}"
+
+                            # first request challenge
+                            response = requests.get(f"{HOST}/challenge", params={"username": user})
+                            response.raise_for_status()
+                            challenge = response.json()
+
+                            # retrieve pubkey
+                            pubkey = key.register(username).hex()
+                            # generate token
+                            token = key.auth(username, challenge.encode()).decode()
+
                             print(f"Registering {user}@{HOST}: pubkey is {pubkey}")
-                            response = requests.get(f"{HOST}/register", params={"username": user, "pubkeyhex": pubkey})
+                            response = requests.get(f"{HOST}/register", params={"username": user, "pubkeyhex": pubkey}, headers={"token": token})
                             response.raise_for_status()
                             print(response.json())
                         case "a":
                             user = input("username: ")
-                            _, timestamp = key.info()
-                            now = datetime.now(tz=timezone.utc)
-                            print(f"Host-device time diff: {(now - timestamp).total_seconds()}s")
+                            username = f"{user}@{HOST}"
 
                             response = requests.get(f"{HOST}/challenge", params={"username": user})
                             response.raise_for_status()
-                            challenge = response.json().format(user)
-                            token = key.auth(f"{user}@{HOST}", challenge.encode()).decode()
-                            print(f"Authenticating {user}@{HOST} using challenge='{challenge}' at {now}")
+                            challenge = response.json()
+                            token = key.auth(username, challenge.encode()).decode()
+                            print(f"Authenticating {username} using challenge='{challenge}' at {now}")
                             print(f"Token: {token}")
                             response = requests.get(
                                 f"{HOST}/login", params={"username": user}, headers={"token": token}
