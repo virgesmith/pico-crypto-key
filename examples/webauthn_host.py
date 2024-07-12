@@ -1,9 +1,9 @@
 import logging
 import struct
-from time import sleep
 from base64 import b64decode
 from datetime import datetime, timezone
 from hashlib import sha256
+from time import sleep
 from typing import Annotated
 
 import ecdsa
@@ -16,6 +16,7 @@ userdata: dict[str, bytes] = {}
 HOST_ID = "localhost:8000"
 
 app = FastAPI()
+
 
 def _get_challenge(username: str) -> str:
     return f"sign this {username}@{HOST_ID}!"
@@ -41,8 +42,9 @@ def _verify_challenge(username: str, pubkey: bytes, token: str) -> bool:
 
 @app.get("/register")
 async def register(
-    username: Annotated[str, "user name"], pubkeyhex: Annotated[str, "short-form pulic key in hex"],
-    token: Annotated[str, Header()]
+    username: Annotated[str, "user name"],
+    pubkeyhex: Annotated[str, "short-form pulic key in hex"],
+    token: Annotated[str, Header()],
 ) -> None:
     """
     Register a new user and their public key. Will fail if:
@@ -51,7 +53,6 @@ async def register(
     """
     if username in userdata:
         raise HTTPException(status_code=403, detail="user exists")
-
 
     logging.info(f"registering {username} with {pubkeyhex}")
     userdata[username] = bytes.fromhex(pubkeyhex)

@@ -20,7 +20,7 @@ Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not
 ## Update v1.3.1
 
 - Adds support for Pimoroni [Tiny2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012300371).
-- The webauthn example has been improved.
+- The webauthn-style workflow example has been improved.
 
 ## Update v1.3
 
@@ -327,7 +327,7 @@ verifying took 0.79s
 
 ### Authenticate
 
-Step 1 generates registration keys for two receiving parties - these are short-form ECDSA public keys.
+Step 1 generates registration keys for two relying parties - these are short-form ECDSA public keys.
 
 Step 2 generates a time-based auth tokens for each receiving party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
 

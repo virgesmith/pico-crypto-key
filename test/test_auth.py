@@ -16,14 +16,15 @@ from pico_crypto_key import CryptoKey, timestamp
 @pytest.mark.parametrize("challenge", [b"testing", b""])
 def test_pubkey(crypto_key: CryptoKey, challenge: bytes) -> None:
     rp = "example.com"
+    user = "a.user"
 
-    pubkey = crypto_key.register(rp)
+    pubkey = crypto_key.register(rp, user)
 
     # check keygen is consistent
-    assert pubkey == crypto_key.register(rp)
-    assert pubkey != crypto_key.register("other.org")
+    assert pubkey == crypto_key.register(rp, user)
+    assert pubkey != crypto_key.register("other.org", user)
 
-    sig = b64decode(crypto_key.auth(rp, challenge))
+    sig = b64decode(crypto_key.auth(rp, user, challenge))
 
     # use 3rdparty lib to verify
     verifying_key = ecdsa.VerifyingKey.from_string(pubkey, curve=ecdsa.SECP256k1, hashfunc=sha256)

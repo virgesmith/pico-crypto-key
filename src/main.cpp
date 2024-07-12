@@ -101,7 +101,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       cdc::write(ecdsa::verify(hash, sig, pubkey));
       break;
     }
-    // webauthn register: generate keypair from receiving party id, return public key
+    // webauthn register: generate keypair from user and relying party ids, return public key
     case 'r': {
       bytes rp = cdc::read_with_length();
       wrap<mbedtls_ecp_keypair> webauthn_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);

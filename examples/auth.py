@@ -22,14 +22,14 @@ def auth() -> None:
             user = "auth_user"
             rps = ["example.com", "another.org"]
 
-            pubkeys = [crypto_key.register(f"{user}@{rp}") for rp in rps]
+            pubkeys = [crypto_key.register(rp, user) for rp in rps]
 
             for rp, pk in zip(rps, pubkeys, strict=True):
                 print(f"registered {user}@{rp}: {pk.hex()}")
 
             challenge = b"testing time-based auth"
             print(f"challenge is: {challenge}")
-            responses = [crypto_key.auth(f"{user}@{rp}", challenge) for rp in rps]
+            responses = [crypto_key.auth(rp, user, challenge) for rp in rps]
 
             for rp, token in zip(rps, responses, strict=True):
                 print(f"auth response {user}@{rp}: {token}")
