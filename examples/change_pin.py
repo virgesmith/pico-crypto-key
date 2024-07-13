@@ -2,7 +2,7 @@
 Example: change the device pin.
 """
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError
+from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
 
 
 def change_pin() -> None:
@@ -11,6 +11,8 @@ def change_pin() -> None:
             crypto_key.set_pin()
     except CryptoKeyNotFoundError:
         print("Key not connected")
+    except CryptoKeyPinError:
+        print("PIN incorrect")
 
 
 if __name__ == "__main__":

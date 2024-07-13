@@ -17,6 +17,10 @@ class CryptoKeyNotFoundError(ConnectionError):
     pass
 
 
+class CryptoKeyPinError(ConnectionRefusedError):
+    pass
+
+
 def _read_pin_from_stdin() -> str:
     return pwinput("PIN:")
 
@@ -349,7 +353,7 @@ class CryptoKey:
 
         error_code = self._read_uint32()
         if error_code:
-            raise ValueError("pin incorrect")
+            raise CryptoKeyPinError()
 
         # set time on device for TOTP/webauthn
         self._set_device_time()

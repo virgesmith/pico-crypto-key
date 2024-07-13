@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from pico_crypto_key.device import CryptoKey, CryptoKeyNotFoundError
+from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
 
 
 def get_challenge(host: str, user: str) -> str:
@@ -63,6 +63,8 @@ def main() -> None:
                     print(e)
     except CryptoKeyNotFoundError:
         print("Key not found, is it connected?")
+    except CryptoKeyPinError:
+        print("PIN error")
 
 
 if __name__ == "__main__":

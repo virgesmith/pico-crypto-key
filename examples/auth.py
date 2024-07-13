@@ -8,7 +8,7 @@ from hashlib import sha256
 
 import ecdsa
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, timestamp
+from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError, timestamp
 
 
 def auth() -> None:
@@ -57,6 +57,8 @@ def auth() -> None:
 
     except CryptoKeyNotFoundError:
         print("Key not connected")
+    except CryptoKeyPinError:
+        print("PIN error")
 
 
 if __name__ == "__main__":
