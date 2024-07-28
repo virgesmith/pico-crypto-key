@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb9853538e3a421d9715812f87f3269d)](https://www.codacy.com/gh/virgesmith/pico-crypto-key/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=virgesmith/pico-crypto-key&amp;utm_campaign=Badge_Grade)
 
-Using a Raspberry Pi [Pico](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
+Using a Raspberry Pi [RP2040](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
@@ -10,11 +10,17 @@ Using a Raspberry Pi [Pico](https://www.raspberrypi.org/products/raspberry-pi-pi
 
 I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
-- the device is pin protected. Only the sha256 hash of the (salted) pin is stored on the device.
-- the private key is only initialised once a correct pin has been entered, and is a sha256 hash of the (salted) unique device id of the Pico. So no two devices should have the same key.
+- the device is pin protected. Only the SHA256 hash of the (salted) pin is stored on the device.
+- the private key is only initialised once a correct pin has been entered, and is a SHA256 hash of the (salted) unique device id. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-NB This has been tested on both Pico and Pico W boards. The latter requires a bit of extra work for the onboard LED to work.
+Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
+
+
+## Update v1.3.1
+
+- Adds support for Pimoroni [Tiny2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012300371).
+- The webauthn-style workflow example has been improved.
 
 ## Update v1.3
 
@@ -42,14 +48,15 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 | encrypt |           23.9 |                334.2 |              43.5 |                  183.8 |       81.9 |
 | decrypt |           23.8 |                336.0 |              43.1 |                  185.7 |       81.0 |
 
-## Dependencies/prerequisites
 
-Both Pico and Pico W boards are supported. The latter requires the wifi driver purely for the LED (which is connected to the wifi chip) to function. However, neither wifi nor bluetooth are enabled.
+## Usage
 
 `pico-crypto-key` is a python (dev) package that provides:
 
 - a simplified build process
 - a python interface to the device.
+
+### Dependencies/prerequisites
 
 First, clone/fork this repo and install the package in development (editable) mode:
 
@@ -126,9 +133,27 @@ If using a fresh download of `mbedtls` - run the configuration script to customi
 
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
-## Build
+## Supported boards
 
-If using a Pico W you can use the additional option `--board pico_w` when running `check`, `build`, `install` or `reset-pin`. This will ensure the LED will work. (Images built for the Pico will work on a Pico W aside from the LED.)
+The target board can/should be specified using the `--board` option when running `check`, `clean`, `build`, `install` or `reset-pin`.
+
+- Pico: `--board pico` (default)
+- Pico W: `--board pico_w`
+- Pimoroni Tiny2040 2MB: `--board pimoroni_tiny2040_2mb`
+
+Using the correct board will ensure (amongst other things?) the LED will work. (NB Images built for one board may work on other boards, aside from the LED. YMMV...)
+
+### Board LED indicators
+
+Board    | Init        | Ready* | Busy | Invalid | [Fatal Error](#errors)
+---------|-------------|--------|------|---------|------------
+Pico     | Flash       | -      | On   | -       | Flashing
+Pico W   | Flash       | -      | On   | -       | Flashing
+Tiny2040 | White flash | Green  | Blue | Red     | Flashing Red
+
+&ast; "Ready" state required a valid pin to be supplied.
+
+## Build
 
 These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
 
@@ -152,13 +177,15 @@ The device is protected with a PIN, the salted hash of which is read from flash 
 picobuild reset-pin /path/to/RPI-RP2
 ```
 
-If the device LED is flashing after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed - see the [example](#change-pin).
+If the device LED is flashing (red if supported by the board) after this, the reset failed - the flash memory may be worn. Otherwise now reinstall the crypto key image as above. The pin will then be "pico", and it can be changed - see the [example](#change-pin).
 
 The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
 
 (NB for the tests to run, the env var *must* be set)
 
 ## Using the device
+
+On boards with multicoloured LEDs (e.g. tiny2040), initialisation is green, busy is blue and error states are red.
 
 The `CryptoKey` class provides the python interface and is context-managed to help ensure the device gets properly opened and closed. The correct pin must be provided to activate it. Methods available are:
 
@@ -177,7 +204,7 @@ See the examples for more details.
 
 ## Errors
 
-The device LED is normally off when the device is idle, and on when it's doing something. If there are low-level errors with any of the crypto algorithms then the device may enter an unrecoverable error state where the LED will flash. The error codes can be interpreted like so:
+If there are low-level errors with any of the crypto algorithms then the device may enter an unrecoverable error state where the LED will flash. The error codes can be interpreted like so:
 
 Long flashes | Short flashes | Algorithm | mbedtls error code
 ------------:|--------------:|-----------|-------------------
@@ -300,7 +327,7 @@ verifying took 0.79s
 
 ### Authenticate
 
-Step 1 generates registration keys for two receiving parties - these are short-form ECDSA public keys.
+Step 1 generates registration keys for two relying parties - these are short-form ECDSA public keys.
 
 Step 2 generates a time-based auth tokens for each receiving party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
 
@@ -311,52 +338,38 @@ python examples/auth.py
 ```
 
 ```txt
-PicoCryptoKey 1.3.0-pico 2024-05-06 09:01:39.648000+00:00
-Host-device time diff: 0.001054s
-registered example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
-registered another.org: 02614fa67aa3600af7a69031cb1d69f05a8c8fdf32d1ee9db7cee24a6c172b6998
+PicoCryptoKey 1.3.1-pimoroni_tiny2040_2mb 2024-07-09 18:00:41.382000+00:00
+Host-device time diff: 0.002865s
+registered auth_user@example.com: 0334195ea7cc307c5908bd5f80b5fd0513edf5e8bf0f49c544231e089b2ea6c682
+registered auth_user@another.org: 024f4f8fc6a8fca7069ffeb7122f545833ea82727fd3a8286e13f77bdbf6214dc9
 challenge is: b'testing time-based auth'
-auth response example.com: b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'
-auth response another.org: b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
+auth response auth_user@example.com: b'MEQCIG4Pp5o/wXMh6RY0Z2zvr1IOBWVhQcHoRyGeQQls8genAiBaJjKeM4R4kI3DD5s3xet4R/K/bQRncyWqBoO89QILkA=='
+auth response auth_user@another.org: b'MEYCIQDezWSAyNwvioDXbsO/xDMnDJLhZWWVGLhMLFNoNezRUwIhANC8gdkUtcfDcciGw9J2hbB2NdoqFP+o5RuyYQms30xk'
 example.com verified: True
 another.org verified: True
-example.com cannot verify b'MEYCIQDYROjJcsM261ogYPPG8RR8G0QETr5DiKxgJWPQsycveAIhANc6R8YVYpqZlPSwkeihaJWl/YLxCuRbzeMk9XRqs82/'
-another.org cannot verify b'MEYCIQD3QnVHSaq9x72PYL0HK/6+VNXBKnoe+zMiHS7nekae7AIhAPbWWIukcuvbe035Y7l00ErsSh5gjs7dgozbGcsAxRmH'```
+example.com cannot verify b'MEYCIQDezWSAyNwvioDXbsO/xDMnDJLhZWWVGLhMLFNoNezRUwIhANC8gdkUtcfDcciGw9J2hbB2NdoqFP+o5RuyYQms30xk'
+another.org cannot verify b'MEQCIG4Pp5o/wXMh6RY0Z2zvr1IOBWVhQcHoRyGeQQls8genAiBaJjKeM4R4kI3DD5s3xet4R/K/bQRncyWqBoO89QILkA=='
 ```
 
-### Authenticate (client-server)
+### Authenticate (host-user)
 
-As above, but using a webauthn-style workflow using a local python script as a proxy for a client (would normally be a website), connecting to the crypto key via a (local) socket to a server script connected to the crypto key.
+As above, but using a webauthn-style workflow using a local fastapi instance (would normally be a remote website).
 
-First run
+First start the host:
 
 ```sh
-$ python examples/webauthn_server.py
-PIN:****
-2024-05-27 22:05:41 INFO     1.3.0-pico @ 2024-05-27 21:05:41.165000+00:00
-2024-05-27 22:05:41 INFO     listening for requests on localhost:5000
+fastapi run examples/webauthn_host.py
 ```
 
-Then the client script will register and auth, like in the example above:
+When up and running, the API endpoints should be documented at [http://localhost:8000/docs](http://localhost:8000/docs)
+
+Then use the interactive client script to interact with the crypto key and allow you to register and authenticate with the host, like in the example above:
 
 ```sh
-$ python webauthn_client.py
-registered example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
-challenge is: b'auth me now!'
-auth response example.com: MEUCIQDftDi2LfYY8FMVP8d4gjVMJpyYArwWV1rYjWaMqaVrlQIgazKzgYjWxaFuCzpXdI3hByb3zn+k5xjZ47TqFHAZLFc=
-example.com verified: True
+python examples/webauthn_user.py
 ```
 
-Meanwhile, the server says:
-
-```sh
-...
-2024-05-27 22:05:46 INFO     127.0.0.1 requests register:{'host': 'example.com'}
-2024-05-27 22:05:46 INFO     registering with example.com: 02fb8816ea34387378179d046f814ec8efaa122f4bc84ad268880bcb9a2e44f6f9
-2024-05-27 22:05:46 INFO     127.0.0.1 requests auth:{'host': 'example.com', 'challenge': 'auth me now!'}
-2024-05-27 22:05:46 INFO     Host-device time diff: 0.001346s
-2024-05-27 22:05:46 INFO     authing with example.com challenge=auth me now! response=b'MEUCIQCk5o1n5CijdYFPiaGxFV0SfLRb5S8xdzUnZ1cIALYiLAIge7s8yBgjtEPPyV//3CbcUVRYj+fCi0ipqbfFurrVAv4='
-```
+Try playing around with different users and different keys...
 
 ### Change PIN
 

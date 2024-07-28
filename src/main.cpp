@@ -47,84 +47,70 @@ void append_timestamp(bytes& challenge) {
 void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key) {
   uint8_t cmd;
   for (;;) {
+    board::ready();
     cdc::read(cmd);
+    board::busy();
     switch (cmd) {
     // reset repl
     case 'x': {
+      board::clear();
       return;
     }
     // write pin
     case 'p': {
-      led::on();
       cdc::write(pin::set());
-      led::off();
       break;
     }
     // get ECDSA public key
     case 'k': {
-      led::on();
       cdc::write(ecdsa::pubkey(ec_key));
-      led::off();
       break;
     }
     // hash input
     case 'h': {
-      led::on();
       bytes hash = sha256::hash_in();
       cdc::write(hash);
-      led::off();
       break;
     }
     // decrypt input
     case 'd': {
-      led::on();
       aes::decrypt_in(aes_key);
-      led::off();
       break;
     }
     // encrypt input
     case 'e': {
-      led::on();
       aes::encrypt_in(aes_key);
-      led::off();
       break;
     }
     // hash input and sign
     case 's': {
-      led::on();
       bytes hash = sha256::hash_in();
       cdc::write(hash);
       bytes sig = ecdsa::sign(ec_key, hash);
       cdc::write_with_length(sig);
-      led::off();
       break;
     }
     // verify hash and signature
     case 'v': {
       // hash[32], len(sig)[4], sig, len(key)[4], key
-      led::on();
       bytes hash(sha256::LENGTH_BYTES);
       cdc::read(hash);
       bytes sig = cdc::read_with_length();
       bytes pubkey = cdc::read_with_length();
       // 4-byte int, 0 is success
       cdc::write(ecdsa::verify(hash, sig, pubkey));
-      led::off();
       break;
     }
-    // webauthn register: generate keypair from receiving party id, return public key
+    // webauthn register: generate keypair from user and relying party ids, return public key
     case 'r': {
-      led::on();
       bytes rp = cdc::read_with_length();
       wrap<mbedtls_ecp_keypair> webauthn_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
       ecdsa::key(genkey(rp), *webauthn_key);
       cdc::write(ecdsa::pubkey(*webauthn_key));
-      led::off();
       break;
     }
     // webauthn authenticate: read id, generate keypair, read challenge bytes, append timestamp, hash, sign
     case 'a': {
-      led::on();
       // generate keypair
       bytes rp = cdc::read_with_length();
       wrap<mbedtls_ecp_keypair> webauthn_key(mbedtls_ecp_keypair_init, mbedtls_ecp_keypair_free);
@@ -137,20 +123,19 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
       bytes sig = ecdsa::sign(*webauthn_key, hash);
       // write signature
       cdc::write_with_length(sig);
-      led::off();
       break;
     }
     // board info
     case 'i': {
-      led::on();
       cdc::write(VER.size() + sizeof(uint64_t));
       cdc::write(VER);
       cdc::write(get_time_ms());
-      led::off();
       break;
     }
     default: {
+      board::invalid();
       cdc::write(ErrorCode::INVALID_CMD);
+      sleep_ms(500);
     }
     }
   }
@@ -160,14 +145,15 @@ int main() {
   bi_decl(bi_program_name("PicoCryptoKey"));
 
   tusb_init();
-  led::init();
+  board::init();
 
   for (;;) {
     while (!pin::check()) {
-      led::off();
       cdc::write(ErrorCode::INVALID_PIN);
 
+      board::invalid();
       sleep_ms(3000);
+      board::clear();
     }
     cdc::write(ErrorCode::SUCCESS);
     // host will send timestamp on success

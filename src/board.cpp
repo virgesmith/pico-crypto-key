@@ -1,42 +1,167 @@
 #include "board.h"
 #include "pico/time.h"
 
-// Pico W LED is on the wifi chip and requires cyw43 driver and its dependencies
-// to function (wifi is not enabled)
-#if defined(BOARD_pico_w)
+namespace {
+constexpr int LONG_FLASH_MS = 500;
+constexpr int SHORT_FLASH_MS = 250;
+constexpr int PAUSE_MS = 250;
+} // namespace
 
-#include "pico/cyw43_arch.h"
+#if defined(BOARD_pimoroni_tiny2040_2mb)
 
-bool led::init() {
-  auto res = cyw43_arch_init();
-  led::on();
-  sleep_ms(100);
-  led::off();
-  return res == 0;
+namespace {
+
+enum Colour { RED = 1, GREEN = 2, BLUE = 4, WHITE = RED & GREEN & BLUE };
+
+void led_on(Colour c) {
+  if (c & RED)
+    gpio_put(TINY2040_LED_R_PIN, 0);
+  if (c & GREEN)
+    gpio_put(TINY2040_LED_G_PIN, 0);
+  if (c & BLUE)
+    gpio_put(TINY2040_LED_B_PIN, 0);
 }
 
-void led::on() { cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1); }
-void led::off() { cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0); }
+void led_off() {
+  gpio_put(TINY2040_LED_R_PIN, 1);
+  gpio_put(TINY2040_LED_G_PIN, 1);
+  gpio_put(TINY2040_LED_B_PIN, 1);
+}
 
-#elif defined(BOARD_pico)
+} // namespace
 
-#include "pico/stdlib.h"
-
-bool led::init() {
-  gpio_init(PICO_DEFAULT_LED_PIN);
-  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-  led::on();
+bool board::init() {
+  gpio_init(TINY2040_LED_R_PIN);
+  gpio_init(TINY2040_LED_G_PIN);
+  gpio_init(TINY2040_LED_B_PIN);
+  gpio_set_dir(TINY2040_LED_R_PIN, GPIO_OUT);
+  gpio_set_dir(TINY2040_LED_G_PIN, GPIO_OUT);
+  gpio_set_dir(TINY2040_LED_B_PIN, GPIO_OUT);
+  led_on(WHITE);
   sleep_ms(100);
-  led::off();
+  led_off();
   return true;
 }
 
-void led::on() { gpio_put(PICO_DEFAULT_LED_PIN, 1); }
-void led::off() { gpio_put(PICO_DEFAULT_LED_PIN, 0); }
+void board::ready() {
+  led_off();
+  led_on(GREEN);
+}
 
-#else
+void board::busy() {
+  led_off();
+  led_on(BLUE);
+}
 
-#error Board not specified, set PICO_BOARD to either pico or pico_w
+void board::invalid() {
+  led_off();
+  led_on(RED);
+}
+
+void board::error(int context, int code) {
+  for (int i = 0; i < (int)context; ++i) {
+    led_on(RED);
+    sleep_ms(LONG_FLASH_MS);
+    led_off();
+    sleep_ms(PAUSE_MS);
+  }
+  // code 0 is unknown error
+  for (int i = 0; i < code; ++i) {
+    led_on(RED);
+    sleep_ms(SHORT_FLASH_MS);
+    led_off();
+    sleep_ms(PAUSE_MS);
+  }
+}
+
+void board::clear() { led_off(); }
+
+// Pico W LED is on the wifi chip and requires cyw43 driver and its dependencies
+// to function (wifi is not enabled)
+#elif defined(BOARD_pico_w)
+
+#include "pico/cyw43_arch.h"
+
+namespace {
+// pico W only has geen LED
+void led_on() { cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1); }
+void led_off() { cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0); }
+} // namespace
+
+bool board::init() {
+  auto res = cyw43_arch_init();
+  led_on();
+  sleep_ms(100);
+  led_off();
+  return res == 0;
+}
+
+void board::ready() { led_off(); }
+
+void board::busy() { led_on(); }
+
+void board::invalid() { led_off(); }
+
+void board::error(int context, int code) {
+  for (int i = 0; i < (int)context; ++i) {
+    led_on();
+    sleep_ms(LONG_FLASH_MS);
+    led_off();
+    sleep_ms(PAUSE_MS);
+  }
+  // code 0 is unknown error
+  for (int i = 0; i < code; ++i) {
+    led_on();
+    sleep_ms(SHORT_FLASH_MS);
+    led_off();
+    sleep_ms(PAUSE_MS);
+  }
+}
+
+void board::clear() { led_off(); }
+
+#else // default to BOARD_pico
+
+#include "pico/stdlib.h"
+
+namespace {
+// pico only has geen LED
+void led_on() { gpio_put(PICO_DEFAULT_LED_PIN, 1); }
+void led_off() { gpio_put(PICO_DEFAULT_LED_PIN, 0); }
+} // namespace
+
+bool board::init() {
+  gpio_init(PICO_DEFAULT_LED_PIN);
+  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+  led_on();
+  sleep_ms(100);
+  led_off();
+  return true;
+}
+
+void board::ready() { led_off(); }
+
+void board::busy() { led_on(); }
+
+void board::invalid() { led_off(); }
+
+void board::error(int context, int code) {
+  for (int i = 0; i < (int)context; ++i) {
+    led_on();
+    sleep_ms(LONG_FLASH_MS);
+    led_off();
+    sleep_ms(PAUSE_MS);
+  }
+  // code 0 is unknown error
+  for (int i = 0; i < code; ++i) {
+    led_on();
+    sleep_ms(SHORT_FLASH_MS);
+    led_off();
+    sleep_ms(PAUSE_MS);
+  }
+}
+
+void board::clear() { led_off(); }
 
 #endif
 

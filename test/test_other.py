@@ -13,7 +13,6 @@ def test_info(crypto_key: CryptoKey) -> None:
     version, timestamp = crypto_key.info()
     now = datetime.now(tz=timezone.utc)
     assert __version__ in version
-    assert "pico" in version
     assert abs((timestamp - now).total_seconds()) < 0.01
 
 

@@ -8,7 +8,7 @@ from time import time
 
 import pandas as pd  # type: ignore
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError
+from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
 
 
 def read_encrypted_dataframe(ciphertext: Path) -> None:
@@ -35,6 +35,8 @@ def read_encrypted_dataframe(ciphertext: Path) -> None:
             print(df)
     except CryptoKeyNotFoundError:
         print("Key not connected")
+    except CryptoKeyPinError:
+        print("PIN incorrect")
 
 
 if __name__ == "__main__":

@@ -5,11 +5,6 @@
 
 #include <algorithm>
 
-namespace {
-constexpr int LONG_FLASH_MS = 500;
-constexpr int SHORT_FLASH_MS = 250;
-constexpr int PAUSE_MS = 250;
-}
 
 void ErrorMapper::check(int ret) {
   if (ret == 0)
@@ -20,19 +15,6 @@ void ErrorMapper::check(int ret) {
 
 void ErrorMapper::enter(int code) {
   for (;;) {
-    for (int i = 0; i < (int)context; ++i) {
-      led::on();
-      sleep_ms(LONG_FLASH_MS);
-      led::off();
-      sleep_ms(PAUSE_MS);
-    }
-
-    // code 0 is unknown error
-    for (int i = 0; i < code; ++i) {
-      led::on();
-      sleep_ms(SHORT_FLASH_MS);
-      led::off();
-      sleep_ms(PAUSE_MS);
-    }
+    board::error(context, code);
   }
 }

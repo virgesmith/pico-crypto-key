@@ -17,6 +17,10 @@ class CryptoKeyNotFoundError(ConnectionError):
     pass
 
 
+class CryptoKeyPinError(ConnectionRefusedError):
+    pass
+
+
 def _read_pin_from_stdin() -> str:
     return pwinput("PIN:")
 
@@ -32,7 +36,6 @@ class CryptoKey:
     def __init__(self) -> None:
         """Create device object for use in context manager."""
         self.have_repl = False  # tracks whether repl entered (i.e. pin was correct)
-        self.device_pin = (os.getenv("PICO_CRYPTO_KEY_PIN") or _read_pin_from_stdin()).encode("utf-8")
         self.device: Any = None
 
     def __enter__(self) -> CryptoKey:
@@ -223,27 +226,29 @@ class CryptoKey:
         pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
         return pubkey
 
-    def register(self, receiving_party: str) -> bytes:
+    def register(self, relying_party: str, user: str) -> bytes:
         """
         Returns dynamically generated ECDSA public key
         """
         assert self.have_repl
+        userdata = f"{user}@{relying_party}".encode()
         self._write(b"r")
-        self._write_uint32(len(receiving_party.encode()))
-        self._write(receiving_party.encode())
+        self._write_uint32(len(userdata))
+        self._write(userdata)
         pubkey = self._read(CryptoKey.ECDSA_PUBKEY_BYTES)
         return pubkey
 
-    def auth(self, receiving_party: str, challenge: bytes) -> bytes:
+    def auth(self, relying_party: str, user: str, challenge: bytes) -> bytes:
         """
         Time-limited authentication
         Appends challenge with current minute timestamp, hashes and signs
         Returns base64-encoded signature
         """
         assert self.have_repl
+        userdata = f"{user}@{relying_party}".encode()
         self._write(b"a")
-        self._write_uint32(len(receiving_party.encode()))
-        self._write(receiving_party.encode())
+        self._write_uint32(len(userdata))
+        self._write(userdata)
         self._write_uint32(len(challenge))
         self._write(challenge)
         length = self._read_uint32()
@@ -274,8 +279,11 @@ class CryptoKey:
         bool
             Whether PIN change was successful
         """
+        print("Resetting device (old PIN will need to be reentered)...")
+        if "PICO_CRYPTO_KEY_PIN" in os.environ:
+            # ensure pin is entered manually
+            del os.environ["PICO_CRYPTO_KEY_PIN"]
         self.reset()
-        self.device_pin = pwinput("OLD PIN:")
         self.init()
         new_pin = pwinput("NEW PIN:")
         if not 4 <= len(new_pin) <= 64:
@@ -294,7 +302,6 @@ class CryptoKey:
             return
         print("resetting device and reauthenticating")
         self.reset()
-        self.device_pin = new_pin
         self.init()
         print("new pin set, update your env as necessary")
 
@@ -324,6 +331,8 @@ class CryptoKey:
         if not self.device:
             raise CryptoKeyNotFoundError()
 
+        device_pin = (os.getenv("PICO_CRYPTO_KEY_PIN") or _read_pin_from_stdin()).encode("utf-8")
+
         cfg = self.device.get_active_configuration()
         # usb.core.USBError: [Errno 13] Access denied (insufficient permissions)
         # see https://stackoverflow.com/questions/53125118/why-is-python-pyusb-usb-core-access-denied-due-to-permissions-and-why-wont-the
@@ -339,18 +348,17 @@ class CryptoKey:
             self.reattach = True
             self.device.detach_kernel_driver(0)
 
-        self._write_uint32(len(self.device_pin))
-        self._write(self.device_pin)
+        self._write_uint32(len(device_pin))
+        self._write(device_pin)
 
         error_code = self._read_uint32()
         if error_code:
-            raise ValueError("pin incorrect")
+            raise CryptoKeyPinError()
 
         # set time on device for TOTP/webauthn
         self._set_device_time()
 
         self.have_repl = True
-        version, time = self.info()
 
     def _set_device_time(self) -> None:
         epoch_ms = int(datetime.now().timestamp() * 1000)
