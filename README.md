@@ -16,6 +16,19 @@ I'm not a security expert and the device/software is almost certainly not harden
 
 Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
+## Update v1.4.0 (WIP)
+
+- [X] Updates pico SDK to v2.0
+- [X] Adds support for pico 2
+- [ ] Fix pin flash read/write on pico 2
+- [ ] Use hardware SHA256 on pico 2
+- [ ] Get RISC-V build to work
+
+Notes:
+- build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
+- USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules
+- Pin authentication is not working. Probably to do with new secure stuff
+- RISC-V build doesn't install or resets board back into boolsel mode.
 
 ## Update v1.3.1
 
@@ -76,10 +89,10 @@ You will then need to:
 
 - download [pico-sdk](https://github.com/raspberrypi/pico-sdk), see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [1.5.1](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.5.1.tar.gz)
 
-- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.16.0). Replace the empty `pico-sdk-1.5.1/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.16.0). Replace the empty `pico-sdk-2.0.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
   ```sh
-  cd pico-sdk-1.5.1/lib
+  cd pico-sdk-2.0.0/lib
   rmdir tinyusb
   ln -s ../../tinyusb-0.16.0 tinyusb
   ```
@@ -91,7 +104,7 @@ You will then need to:
   create symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
-  ln -s ../pico-sdk-1.5.1 pico-sdk
+  ln -s ../pico-sdk-2.0.0 pico-sdk
   ln -s ../mbedtls-3.6.0 mbedtls
   ```
 
@@ -109,12 +122,12 @@ You should now have a structure something like this:
 │  │  ├──build.py
 │  │  ├──device.py
 │  │  └──__init__.py
-│  ├──pico-sdk -> ../pico-sdk-1.5.1
+│  ├──pico-sdk -> ../pico-sdk-2.0.0
 │  ├──pyproject.toml
 │  ├──README.md
 │  ├──src
 │  └──test
-├──pico-sdk-1.5.1
+├──pico-sdk-2.0.0
 │  └──lib
 │     ├──cyw43-driver -> ../../cyw43-driver-1.0.3 *
 │     └──tinyusb -> ../../tinyusb-0.16.0
@@ -329,7 +342,7 @@ verifying took 0.79s
 
 Step 1 generates registration keys for two relying parties - these are short-form ECDSA public keys.
 
-Step 2 generates a time-based auth tokens for each receiving party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
+Step 2 generates a time-based auth tokens for each relying party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
 
 Third-party code (the ecdsa python package) is then used to verify the public key-auth token pairs.
 

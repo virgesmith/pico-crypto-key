@@ -4,12 +4,13 @@ cmake_minimum_required(VERSION 3.13)
 message("Board is ${PICO_BOARD}")
 set(PICO_IMAGE "crypto-key")
 set(PICO_RESET_PIN "reset-pin")
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 include(pico_sdk_import.cmake)
 
 project(crypto)
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 20)
+
 pico_sdk_init()
 
 message("Target is ${PICO_IMAGE}")

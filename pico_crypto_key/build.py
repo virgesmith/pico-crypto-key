@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
+import tomllib
 import typer
 
 from pico_crypto_key import __version__
@@ -14,6 +15,13 @@ app = typer.Typer()
 
 def _build_dir(board: str) -> Path:
     return Path(f"build-{board}")
+
+
+def _get_config(board: str) -> dict[str, str]:
+    with open("config/boards.toml", "rb") as fd:
+        cfg = tomllib.load(fd)
+
+    return cfg["default"] | cfg[board]
 
 
 @app.command()
@@ -39,7 +47,8 @@ def check(board: str = typer.Option(default="pico", help="the target board")):
     print(f"Board: {board}")
     print(f"Software version: {__version__}")
     ok = True
-    ok &= _check_symlink("./pico-sdk")
+    # TODO... check config
+    # ok &= _check_symlink("./pico-sdk")
     ok &= _check_symlink("./pico-sdk/lib/tinyusb")
     ok &= _check_symlink("./mbedtls")
     if board == "pico_w":
@@ -70,16 +79,25 @@ def build(board: str = typer.Option(default="pico", help="the target board")) ->
     build_dir = _build_dir(board)
     build_dir.mkdir(exist_ok=True)
 
-    sdk_dir = Path("./pico-sdk")
-    print(f"Pico SDK points to {os.readlink(sdk_dir)}")
+    config = _get_config(board)
+
+    sdk_dir = build_dir / Path(config["PICO_SDK_PATH"])
     print(f"Mbed TLS points to {os.readlink('./mbedtls')}")
 
     # assumes SDK level with project dir and tinyusb present
-    cmake_args = [f"-DPICO_SDK_PATH={sdk_dir.resolve()}", f"-DPICO_BOARD={board}", f"-DPCK_VER={__version__}"]
+    cmake_args = [
+        f"-D{k}={v}" for k, v in config.items()
+    ] + [
+        f"-DPCK_VER={__version__}"
+    ]
 
-    # ensure we have the latest pico_sdk_import.cmake
+    print("cmake args:")
+    for arg in cmake_args:
+        print(f"  {arg}")
+
+    # # ensure we have the latest pico_sdk_import.cmake
     sdk_import = Path("./pico_sdk_import.cmake")
-    shutil.copy(Path(sdk_dir / "external" / sdk_import), sdk_import)
+    shutil.copy(sdk_dir / "external" / sdk_import, sdk_import)
 
     result = subprocess.run(["cmake", "..", *cmake_args], cwd=build_dir)
     assert result.returncode == 0
