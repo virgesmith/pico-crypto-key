@@ -1,6 +1,9 @@
 
 #include "flash.h"
 
+#include <hardware/flash.h>
+#include <hardware/sync.h> // for interrupts
+
 #include <algorithm>
 #include <pico/stdlib.h>
 

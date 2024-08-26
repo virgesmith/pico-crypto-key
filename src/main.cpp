@@ -17,7 +17,11 @@
 #define STR(s) STR_IMPL(s)
 #define STR_IMPL(s) #s
 
-const std::string VER(STR(PCK_VER) "-" PICO_BOARD);
+#ifndef PICO_RISCV
+const std::string VER(STR(PCK_VER) "-" PICO_BOARD "-arm");
+#else
+const std::string VER(STR(PCK_VER) "-" PICO_BOARD "-riscv");
+#endif
 
 enum class ErrorCode : uint32_t { SUCCESS = 0, INVALID_PIN = 1, INVALID_CMD = 2 };
 

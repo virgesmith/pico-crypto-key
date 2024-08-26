@@ -21,14 +21,29 @@ Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not
 - [X] Updates pico SDK to v2.0
 - [X] Adds support for pico 2
 - [ ] Fix pin flash read/write on pico 2
-- [ ] Use hardware SHA256 on pico 2
+- [X] Use hardware SHA256 on pico 2
 - [ ] Get RISC-V build to work
+- [ ] Compare performance (Cortex M0+ vs Cortex M33 vs Hazard3)
+
+### Performance comparison
+
+Using 1000kB input file with random binary data. Compiled with 10.3.1 ARM gcc toolchain.
+
+Performance improvement is modest. Using hardware SHA256 only seems to improve performance by about 6% for this (IO-bound) use case.
+
+|                     |   RP2040<br/>time_s |   RP2040<br/>bitrate_kbps |   RP2350(ARM)<br/>time_s |   RP2350(ARM)<br/>bitrate_kbps |   speedup_pct |
+|:--------------------|-----------------------:|-----------------------------:|----------------------------:|----------------------------------:|------------------------:|
+| hash    |                    2.6 |                       3099.2 |                         1.8 |                            4557.3 |                    47.0 |
+| sign    |                    2.7 |                       2996.8 |                         1.9 |                            4239.9 |                    41.5 |
+| verify  |                    0.5 |                              |                         0.2 |                                   |                   117.6 |
+| encrypt |                   23.8 |                        335.8 |                        11.2 |                             713.5 |                   112.5 |
+| decrypt |                   23.8 |                        336.6 |                        11.2 |                             714.5 |                   112.3 |
 
 Notes:
 - build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
-- USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules
-- Pin authentication is not working. Probably to do with new secure stuff
-- RISC-V build doesn't install or resets board back into boolsel mode.
+- USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
+- Pin authentication is not working. Probably to do with new secure stuff - data written to flash doesnt persist between boots
+- RISC-V builds ok but doesn't install - resets board back into boolsel mode.
 
 ## Update v1.3.1
 

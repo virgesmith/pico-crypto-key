@@ -39,12 +39,24 @@ if(${PICO_BOARD} STREQUAL pico_w)
   target_link_libraries(${PICO_IMAGE}
     pico_stdlib
     pico_unique_id
+    hardware_sha256
     hardware_flash
     hardware_sync
     tinyusb_device
     tinyusb_board
     mbedcrypto
     pico_cyw43_arch_none
+  )
+elseif(${PICO_BOARD} STREQUAL pico2)
+  target_link_libraries(${PICO_IMAGE}
+    pico_stdlib
+    pico_unique_id
+    pico_sha256
+    hardware_flash
+    hardware_sync
+    tinyusb_device
+    tinyusb_board
+    mbedcrypto
   )
 else()
   target_link_libraries(${PICO_IMAGE}
