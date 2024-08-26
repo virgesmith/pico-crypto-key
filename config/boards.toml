@@ -11,12 +11,13 @@ PICO_BOARD = "pico"
 [pico_w]
 PICO_BOARD = "pico_w"
 
-[pimoroni_tiny2040_2mb]
+[tiny2040]
 PICO_BOARD = "pimoroni_tiny2040_2mb"
 
 [pico2]
 PICO_BOARD = "pico2"
 PICO_PLATFORM = "rp2350-arm-s"
+PICO_TOOLCHAIN_PATH = "/opt/arm-gcc-13.2"
 # TinyUSB release 0.16 doesnt work, use latest SDK which points to a random commit on main
 PICO_SDK_PATH = "../../pico-sdk"
 

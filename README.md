@@ -31,7 +31,7 @@ Using 1000kB input file with random binary data. Compiled with 10.3.1 ARM gcc to
 
 Performance improvement is modest. Using hardware SHA256 only seems to improve performance by about 6% for this (IO-bound) use case.
 
-|                     |   RP2040<br/>time_s |   RP2040<br/>bitrate_kbps |   RP2350(ARM)<br/>time_s |   RP2350(ARM)<br/>bitrate_kbps |   speedup_pct |
+|                     |   RP2040<br/>time(s) |   RP2040<br/>bitrate(kbps) |   RP2350(ARM)<br/>time(s) |   RP2350(ARM)<br/>bitrate(kbps) |   speedup(%) |
 |:--------------------|-----------------------:|-----------------------------:|----------------------------:|----------------------------------:|------------------------:|
 | hash    |                    2.6 |                       3099.2 |                         1.8 |                            4557.3 |                    47.0 |
 | sign    |                    2.7 |                       2996.8 |                         1.9 |                            4239.9 |                    41.5 |
@@ -40,6 +40,7 @@ Performance improvement is modest. Using hardware SHA256 only seems to improve p
 | decrypt |                   23.8 |                        336.6 |                        11.2 |                             714.5 |                   112.3 |
 
 Notes:
+
 - build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
 - USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
 - Pin authentication is not working. Probably to do with new secure stuff - data written to flash doesnt persist between boots
@@ -96,13 +97,15 @@ If this step fails, try upgrading to a more recent version of pip.
 
 You will then need to:
 
-- install the compiler toolchain (arm cross-compiler) and cmake:
+- install the compiler toolchain(s) and cmake (ubuntu 22.04LTS is 10.3.1):
 
   ```sh
   sudo apt install gcc-arm-none-eabi cmake
   ```
 
-- download [pico-sdk](https://github.com/raspberrypi/pico-sdk), see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [1.5.1](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.5.1.tar.gz)
+  NB 13.2.0 is recommended. A prebuilt RISC-V toolchain can be found [here](https://www.embecosm.com/resources/tool-chain-downloads/#riscv-stable).
+
+- download [pico-sdk](https://github.com/raspberrypi/pico-sdk) >= 2, see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [2.0.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/2.0.0.tar.gz)
 
 - download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.16.0). Replace the empty `pico-sdk-2.0.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
@@ -114,12 +117,13 @@ You will then need to:
 
 - [**pico_w only**], repeat the above step for `cyw43-driver`, which can be found [here](https://github.com/georgerobotics/cyw43-driver)
 
+- [**pico2 only**] tinyUSB 0.16.0 doesn't work. I used a cloned SDK with submodules (rather than a release) for pico2 builds
+
 - download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag.
 
-  create symlinks in the project root to the pico SDK and mbedtls, e.g.:
+  create a symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
-  ln -s ../pico-sdk-2.0.0 pico-sdk
   ln -s ../mbedtls-3.6.0 mbedtls
   ```
 
@@ -131,13 +135,14 @@ You should now have a structure something like this:
 .
 ├──mbedtls-3.6.0
 ├──pico-crypto-key
+│  ├──config
+│  │  └──boards.toml
 │  ├──examples
 │  ├──mbedtls -> ../mbedtls-3.6.0
 │  ├──pico_crypto_key
 │  │  ├──build.py
 │  │  ├──device.py
 │  │  └──__init__.py
-│  ├──pico-sdk -> ../pico-sdk-2.0.0
 │  ├──pyproject.toml
 │  ├──README.md
 │  ├──src
@@ -151,6 +156,8 @@ You should now have a structure something like this:
 * required for pico_w only
 ```
 
+In the `config/boards.toml` file ensure settings for `PICO_TOOLCHAIN_PATH` and `PICO_SDK_PATH` are correct.
+
 ## Configure
 
 If using a fresh download of `mbedtls` - run the configuration script to customise the build for the Pico, e.g.:
@@ -163,13 +170,14 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Supported boards
 
-The target board can/should be specified using the `--board` option when running `check`, `clean`, `build`, `install` or `reset-pin`.
+The target board must be specified using the `--board` option when running `check`, `clean`, `build`, `install` or `reset-pin`.
 
-- Pico: `--board pico` (default)
+- Pico: `--board pico`
 - Pico W: `--board pico_w`
-- Pimoroni Tiny2040 2MB: `--board pimoroni_tiny2040_2mb`
+- Pimoroni Tiny2040 2MB: `--board tiny2040`
+- Pico 2: `--board pico2` or `--board pico2_riscv`
 
-Using the correct board will ensure (amongst other things?) the LED will work. (NB Images built for one board may work on other boards, aside from the LED. YMMV...)
+Using the correct board will ensure (amongst other things?) the LED will work. (NB images built for one RP2040 board may work on other RP2040 boards, aside from the LED. YMMV...
 
 ### Board LED indicators
 
@@ -178,22 +186,23 @@ Board    | Init        | Ready* | Busy | Invalid | [Fatal Error](#errors)
 Pico     | Flash       | -      | On   | -       | Flashing
 Pico W   | Flash       | -      | On   | -       | Flashing
 Tiny2040 | White flash | Green  | Blue | Red     | Flashing Red
+Pico 2   | Flash       | -      | On   | -       | Flashing
 
 &ast; "Ready" state required a valid pin to be supplied.
 
 ## Build
 
-These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
+These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration is correct then build, e.g for pico2 ARM:
 
 ```sh
-picobuild check
-picobuild build
+picobuild check --board pico2
+picobuild build --board pico2
 ```
 
 Ensure your device is connected and mounted ready to accept a new image (press `BOOTSEL` when connecting), then:
 
 ```sh
-picobuild install /path/to/RPI-RP2
+picobuild install  --board pico2 /path/to/RPI-RP2
 picobuild test
 ```
 
