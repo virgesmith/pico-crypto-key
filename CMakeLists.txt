@@ -70,8 +70,10 @@ else()
   )
 endif()
 
-pico_add_extra_outputs(${PICO_IMAGE})
+pico_set_program_name(${PICO_IMAGE} "PicoCryptoKey")
+pico_set_program_version(${PICO_IMAGE} ${PCK_VER})
 
+pico_add_extra_outputs(${PICO_IMAGE})
 
 message("Target is ${PICO_RESET_PIN}")
 
@@ -99,5 +101,8 @@ else()
     hardware_sync
   )
 endif()
+
+pico_set_program_name(${PICO_RESET_PIN} "PicoCryptoKeyPinReset")
+pico_set_program_version(${PICO_RESET_PIN} ${PCK_VER})
 
 pico_add_extra_outputs(${PICO_RESET_PIN})
