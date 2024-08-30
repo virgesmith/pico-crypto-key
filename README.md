@@ -39,12 +39,12 @@ Performance improvement is modest. Using hardware SHA256 only seems to improve p
 | encrypt |                   23.8 |                        335.8 |                        11.2 |                             713.5 |                   112.5 |
 | decrypt |                   23.8 |                        336.6 |                        11.2 |                             714.5 |                   112.3 |
 
-Notes:
+Notes/issues:
 
 - build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
 - USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
-- Pin authentication is not working. Probably to do with new secure stuff - data written to flash doesnt persist between boots
-- RISC-V builds ok but doesn't install - resets board back into boolsel mode.
+- Pin authentication is not working. Probably to do with new secure stuff - data written to flash doesnt persist between boots. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912)
+- RISC-V builds ok but doesn't install/run - board immediately resets back into bootsel mode. Possibly a compiler bug? See [here](https://forums.raspberrypi.com/viewtopic.php?t=375713)
 
 ## Update v1.3.1
 

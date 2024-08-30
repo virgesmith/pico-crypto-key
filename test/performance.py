@@ -53,7 +53,7 @@ if __name__ == "__main__":
     with CryptoKey() as crypto_key:
         board = crypto_key.info()[0]
         print(board)
-        for file_size in [10**i for i in range(2,4)]:
+        for file_size in [10**i for i in range(2, 4)]:
             print(f"{file_size}kB")
             _, filename = mkstemp()
             with open(filename, "wb") as fd:

@@ -51,6 +51,8 @@ def _check_symlink(path: str) -> bool:
 @app.command()
 def check(board: str = typer.Option(help="the target board")):
     """Check the project configuration."""
+
+    _get_config(board)  # load config just to check board name is valid
     print(f"Board: {board}")
     print(f"Software version: {__version__}")
     ok = True
@@ -85,6 +87,8 @@ def check(board: str = typer.Option(help="the target board")):
 @app.command()
 def clean(board: str = typer.Option(help="the target board")) -> None:
     """Clean intermediate build files."""
+    _get_config(board)  # load config just to check board name is valid
+
     if _build_dir(board).exists():
         shutil.rmtree(_build_dir(board))
 
@@ -103,11 +107,7 @@ def build(board: str = typer.Option(help="the target board")) -> None:
     print(f"Mbed TLS points to {os.readlink('./mbedtls')}")
 
     # assumes SDK level with project dir and tinyusb present
-    cmake_args = [
-        f"-D{k}={v}" for k, v in config.items()
-    ] + [
-        f"-DPCK_VER={__version__}"
-    ]
+    cmake_args = [f"-D{k}={v}" for k, v in config.items()] + [f"-DPCK_VER={__version__}"]
 
     print("cmake args:")
     for arg in cmake_args:
@@ -131,6 +131,8 @@ def install(
 ) -> None:
     """Install the pico-crypto-key image. The device must be mounted with BOOTSEL pressed."""
 
+    _get_config(board)  # load config just to check board name is valid
+
     build_dir = _build_dir(board)
 
     if not Path(device_path).exists():
@@ -152,6 +154,8 @@ def reset_pin(
     Installs a binary that resets the flash memory storing the pin hash.
     The device must be mounted with BOOTSEL pressed.
     """
+
+    _get_config(board)  # load config just to check board name is valid
 
     if not Path(device_path).exists():
         print(f"No device not mounted at {device_path}")

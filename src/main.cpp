@@ -48,7 +48,7 @@ void append_timestamp(bytes& challenge) {
   challenge.insert(challenge.end(), p, p + sizeof(timestamp));
 }
 
-void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key) {
+void repl(const wrap<mbedtls_ecp_keypair>& ec_key, const wrap<mbedtls_aes_context>& aes_key) {
   uint8_t cmd;
   for (;;) {
     board::ready();
@@ -67,7 +67,7 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // get ECDSA public key
     case 'k': {
-      cdc::write(ecdsa::pubkey(ec_key));
+      cdc::write(ecdsa::pubkey(*ec_key));
       break;
     }
     // hash input
@@ -78,19 +78,19 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
     }
     // decrypt input
     case 'd': {
-      aes::decrypt_in(aes_key);
+      aes::decrypt_in(*aes_key);
       break;
     }
     // encrypt input
     case 'e': {
-      aes::encrypt_in(aes_key);
+      aes::encrypt_in(*aes_key);
       break;
     }
     // hash input and sign
     case 's': {
       bytes hash = sha256::hash_in();
       cdc::write(hash);
-      bytes sig = ecdsa::sign(ec_key, hash);
+      bytes sig = ecdsa::sign(*ec_key, hash);
       cdc::write_with_length(sig);
       break;
     }
@@ -146,8 +146,6 @@ void repl(const mbedtls_ecp_keypair& ec_key, const mbedtls_aes_context& aes_key)
 }
 
 int main() {
-  bi_decl(bi_program_name("PicoCryptoKey"));
-
   tusb_init();
   board::init();
 
@@ -174,7 +172,7 @@ int main() {
     aes::key(key, *aes_key);
 
     // accept commands until reset
-    repl(*ec_key, *aes_key);
+    repl(ec_key, aes_key);
 
     sleep_ms(250);
   }
