@@ -20,7 +20,7 @@ Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not
 
 - [X] Updates pico SDK to v2.0
 - [X] Adds support for pico 2
-- [ ] Fix pin flash read/write on pico 2
+- [X] Fix pin flash read/write on pico 2
 - [X] Use hardware SHA256 on pico 2
 - [ ] Get RISC-V build to work
 - [ ] Compare performance (Cortex M0+ vs Cortex M33 vs Hazard3)
@@ -43,7 +43,7 @@ Notes/issues:
 
 - build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
 - USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
-- Pin authentication is not working. Probably to do with new secure stuff - data written to flash doesnt persist between boots. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912)
+- Writes to the final flash block do not persist. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
 - RISC-V builds ok but doesn't install/run - board immediately resets back into bootsel mode. Possibly a compiler bug? See [here](https://forums.raspberrypi.com/viewtopic.php?t=375713)
 
 ## Update v1.3.1

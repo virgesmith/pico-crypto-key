@@ -8,7 +8,15 @@
 #include <pico/stdlib.h>
 
 namespace {
-const uint32_t storage_offset = PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE; // last sector
+// bootrom bug workaround for RP2350 stops the use of the final flash sector, see here
+// https://datasheets.raspberrypi.com/rp2350/rp2350-datasheet.pdf#%5B%7B%22num%22%3A1341%2C%22gen%22%3A0%7D%2C%7B%22name%22%3A%22XYZ%22%7D%2C115%2C198.974%2Cnull%5D
+// workaround is to use the penultimate sector
+#ifdef PICO_RP2350
+const uint32_t sectors_from_end = 2;
+#else
+const uint32_t sectors_from_end = 1;
+#endif
+const uint32_t storage_offset = PICO_FLASH_SIZE_BYTES - sectors_from_end * FLASH_SECTOR_SIZE;
 const uint8_t* storage_address = reinterpret_cast<uint8_t*>(XIP_BASE + storage_offset);
 } // namespace
 

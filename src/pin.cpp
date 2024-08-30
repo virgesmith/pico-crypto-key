@@ -18,12 +18,7 @@ bool pin::check() {
   pin.insert(pin.end(), salt.begin(), salt.end());
   bytes h = sha256::hash(pin);
 
-// on pico2 flash content doesnt persist between boots, need a rethink...
-#ifdef PICO_RP2350
-  return true;
-#else
   return h == expected;
-#endif
 }
 
 uint32_t pin::set() {
