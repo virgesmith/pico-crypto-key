@@ -2,34 +2,28 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb9853538e3a421d9715812f87f3269d)](https://www.codacy.com/gh/virgesmith/pico-crypto-key/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=virgesmith/pico-crypto-key&amp;utm_campaign=Badge_Grade)
 
-Using a Raspberry Pi [RP2040](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
+Using Raspberry Pi RP2040/RP2350 microcontrollers as USB security devices that provide:
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
 - public key cryptography (ECDSA - secp256k1, as Bitcoin)
 
-I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
+I'm not a security expert and the device/software is almost certainly not hardened enough for serious use (perhaps RP2340 ARM-secure will fix that?). I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
 - the device is pin protected. Only the SHA256 hash of the (salted) pin is stored on the device.
 - the private key is only initialised once a correct pin has been entered, and is a SHA256 hash of the (salted) unique device id. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
+Pico, Pico W, Tiny2040 and Pico2 boards are known to work. Other RP2040/RP2350 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
-## Update v1.4.0 (WIP)
+## Update v1.4.0
 
-- [X] Updates pico SDK to v2.0
-- [X] Adds support for pico 2
-- [X] Fix pin flash read/write on pico 2
-- [X] Use hardware SHA256 on pico 2
-- [ ] Get RISC-V build to work
-- [ ] Compare performance (Cortex M0+ vs Cortex M33 vs Hazard3)
+- Updates pico SDK to v2.0
+- Adds support for Pico2 (both ARM and RISC-V)
 
 ### Performance comparison
 
-Using 1000kB input file with random binary data. Compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains.
-
-Performance improvement is modest. Using hardware SHA256 only seems to improve performance by about 6% for this (IO-bound) use case.
+Performance improvement is fairly modest - the bottleneck is USB comms. Note using hardware SHA256 only seems to improve hashing performance by about 6% for this (IO-bound) use case.
 
 |         | RP2040<br/>time(s) | <br/>bitrate(kbps) | RP2350(ARM)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) | RP2350(RISC-V)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) |
 |:--------|-------------------:|-------------------:|------------------------:|-------------------:|----------------:|---------------------------:|-------------------:|----------------:|
@@ -39,12 +33,14 @@ Performance improvement is modest. Using hardware SHA256 only seems to improve p
 | encrypt |               23.8 |              335.8 |                    11.2 |              713.5 |           112.5 |                       13.2 |              604.5 |            80.0 |
 | decrypt |               23.8 |              336.6 |                    11.2 |              714.5 |           112.3 |                       13.2 |              604.3 |            79.5 |
 
-Notes/issues:
+Tests use a 1000kB random binary data input. Binaries compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains.
+
+### Notes/issues:
 
 - build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
 - USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
 - Writes to the final flash block do not persist. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
-- RISC-V builds ok but doesn't install/run - board immediately resets back into bootsel mode. Possibly a compiler bug? See [here](https://forums.raspberrypi.com/viewtopic.php?t=375713)
+- Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
 
 ## Update v1.3.1
 
