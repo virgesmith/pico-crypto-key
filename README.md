@@ -19,11 +19,11 @@ Pico, Pico W, Tiny2040 and Pico2 boards are known to work. Other RP2040/RP2350 b
 ## Update v1.4.0
 
 - Updates pico SDK to v2.0
-- Adds support for Pico2 (both ARM and RISC-V)
+- Adds support for Pico2 (both ARM and RISC-V) and compare performance
 
 ### Performance comparison
 
-Performance improvement is fairly modest - the bottleneck is USB comms. Note using hardware SHA256 only seems to improve hashing performance by about 6% for this (IO-bound) use case.
+Performance improvement is fairly modest, Cortex M33 slightly outperforming the Hazard3 - but the bottleneck here is USB comms. Note that using hardware SHA256 only seems to improve hashing performance by about 6% for this (IO-bound) use case.
 
 |         | RP2040<br/>time(s) | <br/>bitrate(kbps) | RP2350(ARM)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) | RP2350(RISC-V)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) |
 |:--------|-------------------:|-------------------:|------------------------:|-------------------:|----------------:|---------------------------:|-------------------:|----------------:|
@@ -33,7 +33,7 @@ Performance improvement is fairly modest - the bottleneck is USB comms. Note usi
 | encrypt |               23.8 |              335.8 |                    11.2 |              713.5 |           112.5 |                       13.2 |              604.5 |            80.0 |
 | decrypt |               23.8 |              336.6 |                    11.2 |              714.5 |           112.3 |                       13.2 |              604.3 |            79.5 |
 
-Tests use a 1000kB random binary data input. Binaries compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains.
+Tests run on a single core and use a 1000kB random binary data input. Binaries compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains. 
 
 ### Notes/issues:
 
@@ -171,7 +171,7 @@ The target board must be specified using the `--board` option when running `chec
 - Pico: `--board pico`
 - Pico W: `--board pico_w`
 - Pimoroni Tiny2040 2MB: `--board tiny2040`
-- Pico 2: `--board pico2` or `--board pico2_riscv`
+- Pico 2: `--board pico2` or `--board pico2-riscv`
 
 Using the correct board will ensure (amongst other things?) the LED will work. (NB images built for one RP2040 board may work on other RP2040 boards, aside from the LED. YMMV...
 
@@ -184,7 +184,7 @@ Pico W   | Flash       | -      | On   | -       | Flashing
 Tiny2040 | White flash | Green  | Blue | Red     | Flashing Red
 Pico 2   | Flash       | -      | On   | -       | Flashing
 
-&ast; "Ready" state required a valid pin to be supplied.
+&ast; "Ready" state is only enetered after a valid pin is supplied.
 
 ## Build
 
@@ -214,7 +214,7 @@ If the device LED is flashing (red if supported by the board) after this, the re
 
 The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
 
-(NB for the tests to run, the env var *must* be set)
+(NB to run the tests, either use the `--pin` command line option or set the env var)
 
 ## Using the device
 

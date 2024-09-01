@@ -39,7 +39,6 @@ if(${PICO_BOARD} STREQUAL pico_w)
   target_link_libraries(${PICO_IMAGE}
     pico_stdlib
     pico_unique_id
-    hardware_sha256
     hardware_flash
     hardware_sync
     tinyusb_device
