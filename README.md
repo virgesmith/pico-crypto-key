@@ -8,7 +8,7 @@ Using Raspberry Pi RP2040/RP2350 microcontrollers as USB security devices that p
 - encryption and decryption (256 bit AES)
 - public key cryptography (ECDSA - secp256k1, as Bitcoin)
 
-I'm not a security expert and the device/software is almost certainly not hardened enough for serious use (perhaps RP2340 ARM-secure will fix that?). I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
+I'm not a security expert and the device/software is almost certainly not hardened enough for serious use (perhaps RP2350 ARM-secure will fix that?). I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
 - the device is pin protected. Only the SHA256 hash of the (salted) pin is stored on the device.
 - the private key is only initialised once a correct pin has been entered, and is a SHA256 hash of the (salted) unique device id. So no two devices should have the same key.
@@ -33,9 +33,9 @@ Performance improvement is fairly modest, Cortex M33 slightly outperforming the 
 | encrypt |               23.8 |              335.8 |                    11.2 |              713.5 |           112.5 |                       13.2 |              604.5 |            80.0 |
 | decrypt |               23.8 |              336.6 |                    11.2 |              714.5 |           112.3 |                       13.2 |              604.3 |            79.5 |
 
-Tests run on a single core and use a 1000kB random binary data input. Binaries compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains. 
+Tests run on a single core and use a 1000kB random binary data input. Binaries compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains.
 
-### Notes/issues:
+### Notes/issues
 
 - build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
 - USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
