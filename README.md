@@ -27,17 +27,17 @@ Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not
 
 ### Performance comparison
 
-Using 1000kB input file with random binary data. Compiled with 10.3.1 ARM gcc toolchain.
+Using 1000kB input file with random binary data. Compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains.
 
 Performance improvement is modest. Using hardware SHA256 only seems to improve performance by about 6% for this (IO-bound) use case.
 
-|                     |   RP2040<br/>time(s) |   RP2040<br/>bitrate(kbps) |   RP2350(ARM)<br/>time(s) |   RP2350(ARM)<br/>bitrate(kbps) |   speedup(%) |
-|:--------------------|-----------------------:|-----------------------------:|----------------------------:|----------------------------------:|------------------------:|
-| hash    |                    2.6 |                       3099.2 |                         1.8 |                            4557.3 |                    47.0 |
-| sign    |                    2.7 |                       2996.8 |                         1.9 |                            4239.9 |                    41.5 |
-| verify  |                    0.5 |                              |                         0.2 |                                   |                   117.6 |
-| encrypt |                   23.8 |                        335.8 |                        11.2 |                             713.5 |                   112.5 |
-| decrypt |                   23.8 |                        336.6 |                        11.2 |                             714.5 |                   112.3 |
+|         | RP2040<br/>time(s) | <br/>bitrate(kbps) | RP2350(ARM)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) | RP2350(RISC-V)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) |
+|:--------|-------------------:|-------------------:|------------------------:|-------------------:|----------------:|---------------------------:|-------------------:|----------------:|
+| hash    |                2.6 |             3099.2 |                     1.8 |             4557.3 |            47.0 |                        1.8 |             4503.0 |            45.3 |
+| sign    |                2.7 |             2996.8 |                     1.9 |             4239.9 |            41.5 |                        1.8 |             4384.3 |            46.3 |
+| verify  |                0.5 |                    |                     0.2 |                    |           117.6 |                        0.3 |                    |            81.0 |
+| encrypt |               23.8 |              335.8 |                    11.2 |              713.5 |           112.5 |                       13.2 |              604.5 |            80.0 |
+| decrypt |               23.8 |              336.6 |                    11.2 |              714.5 |           112.3 |                       13.2 |              604.3 |            79.5 |
 
 Notes/issues:
 

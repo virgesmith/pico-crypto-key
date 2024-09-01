@@ -24,6 +24,6 @@ PICO_SDK_PATH = "../../pico-sdk"
 [pico2_riscv]
 PICO_BOARD = "pico2"
 PICO_PLATFORM = "rp2350-riscv"
-PICO_TOOLCHAIN_PATH = "/opt/riscv32-embecosm-ubuntu2204-gcc13.2.0"
+PICO_TOOLCHAIN_PATH = "/opt/riscv-gcc-14"
 # TinyUSB release 0.16 doesnt work, use latest SDK which points to a random commit on main
 PICO_SDK_PATH = "../../pico-sdk"
