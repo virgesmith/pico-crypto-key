@@ -120,7 +120,7 @@ void board::error(int context, int code) {
 
 void board::clear() { led_off(); }
 
-#else // default to BOARD_pico
+#else // default to BOARD_pico (pico/pico2)
 
 #include "pico/stdlib.h"
 

@@ -84,18 +84,4 @@ async def login(username: Annotated[str, "user name"], token: Annotated[str, Hea
     if not _verify_challenge(username, userdata[username], token):
         raise HTTPException(status_code=401, detail="authentication failed")
 
-    # timestamp = datetime.now(tz=timezone.utc)
-    # # check it verifies (using a 3rdparty library)
-    # verifying_key = ecdsa.VerifyingKey.from_string(pubkey, curve=ecdsa.SECP256k1, hashfunc=sha256)
-
-    # # append rounded timestamp to challenge
-    # t = int(timestamp.timestamp() * 1000)
-    # challenge = CHALLENGE.format(username).encode() + struct.pack("Q", t - t % 60000)
-
-    # try:
-    #     result = verifying_key.verify(b64decode(token), challenge, sigdecode=ecdsa.util.sigdecode_der)
-    #     logging.info(f"{HOST_ID} verified: {result}")
-    # except ecdsa.keys.BadSignatureError:
-    #     raise HTTPException(status_code=401, detail="authentication failed") from None
-
     return "OK"

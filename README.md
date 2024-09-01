@@ -2,20 +2,48 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/fb9853538e3a421d9715812f87f3269d)](https://www.codacy.com/gh/virgesmith/pico-crypto-key/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=virgesmith/pico-crypto-key&amp;utm_campaign=Badge_Grade)
 
-Using a Raspberry Pi [RP2040](https://www.raspberrypi.org/products/raspberry-pi-pico/) microcontroller as a USB security device that provides:
+Using Raspberry Pi RP2040/RP2350 microcontrollers as USB security devices that provide:
 
 - cryptographic hashing (SHA256)
 - encryption and decryption (256 bit AES)
 - public key cryptography (ECDSA - secp256k1, as Bitcoin)
 
-I'm not a security expert and the device/software is almost certainly not hardened enough for serious use. I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
+I'm not a security expert and the device/software is almost certainly not hardened enough for serious use (perhaps RP2350 ARM-secure will fix that?). I just did it cos it was there, and I was bored. Also, it's not fast, but that might be ok depending on your current lockdown status. Most importantly, it works. Here's some steps I took towards making it securer:
 
 - the device is pin protected. Only the SHA256 hash of the (salted) pin is stored on the device.
 - the private key is only initialised once a correct pin has been entered, and is a SHA256 hash of the (salted) unique device id. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-Pico, Pico W and Tiny2040 boards are known to work. Other RP2040 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
+Pico, Pico W, Tiny2040 and Pico2 boards are known to work. Other RP2040/RP2350 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
+## Update v1.4.0
+
+- Updates pico SDK to v2.0
+- Adds support for Pico2 (both ARM and RISC-V) and compares performance
+- Board configurations are now set in [`config/boards.toml`](config/boards.toml) - this allows use of multiple/different SDKs and toolchains per board
+
+### Performance comparison
+
+Performance improvement is fairly modest, Cortex M33 slightly outperforming the Hazard3 - but the bottleneck here is USB comms. Note that using hardware SHA256 only seems to improve hashing performance by about 6% for this (IO-bound) use case.
+
+|         | RP2040<br/>time(s) | <br/>bitrate(kbps) | RP2350(ARM)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) | RP2350(RISC-V)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) |
+|:--------|-------------------:|-------------------:|------------------------:|-------------------:|----------------:|---------------------------:|-------------------:|----------------:|
+| hash    |                2.6 |             3099.2 |                     1.8 |             4557.3 |            47.0 |                        1.8 |             4503.0 |            45.3 |
+| sign    |                2.7 |             2996.8 |                     1.9 |             4239.9 |            41.5 |                        1.8 |             4384.3 |            46.3 |
+| verify  |                0.5 |                    |                     0.2 |                    |           117.6 |                        0.3 |                    |            81.0 |
+| encrypt |               23.8 |              335.8 |                    11.2 |              713.5 |           112.5 |                       13.2 |              604.5 |            80.0 |
+| decrypt |               23.8 |              336.6 |                    11.2 |              714.5 |           112.3 |                       13.2 |              604.3 |            79.5 |
+
+Tests run on a single core and use a 1000kB random binary data input. Binaries compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains.
+
+On thing not measured or considered here is the difference in power consumption between Cortex M33 vs Hazard3...
+
+### Notes/issues
+
+- build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
+- USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
+- Writes to the final flash block do not persist. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
+- Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
 
 ## Update v1.3.1
 
@@ -68,30 +96,33 @@ If this step fails, try upgrading to a more recent version of pip.
 
 You will then need to:
 
-- install the compiler toolchain (arm cross-compiler) and cmake:
+- install the compiler toolchain(s) and cmake (ubuntu 22.04LTS is 10.3.1):
 
   ```sh
   sudo apt install gcc-arm-none-eabi cmake
   ```
 
-- download [pico-sdk](https://github.com/raspberrypi/pico-sdk), see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [1.5.1](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/1.5.1.tar.gz)
+  NB 13.2.0 is recommended. A prebuilt RISC-V toolchain can be found [here](https://www.embecosm.com/resources/tool-chain-downloads/#riscv-stable).
 
-- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.16.0). Replace the empty `pico-sdk-1.5.1/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- download [pico-sdk](https://github.com/raspberrypi/pico-sdk) >= 2, see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [2.0.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/2.0.0.tar.gz)
+
+- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.16.0). Replace the empty `pico-sdk-2.0.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
 
   ```sh
-  cd pico-sdk-1.5.1/lib
+  cd pico-sdk-2.0.0/lib
   rmdir tinyusb
   ln -s ../../tinyusb-0.16.0 tinyusb
   ```
 
 - [**pico_w only**], repeat the above step for `cyw43-driver`, which can be found [here](https://github.com/georgerobotics/cyw43-driver)
 
+- [**pico2 only**] tinyUSB 0.16.0 doesn't work. I used a cloned SDK with submodules (rather than a release) for pico2 builds
+
 - download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag.
 
-  create symlinks in the project root to the pico SDK and mbedtls, e.g.:
+  create a symlinks in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
-  ln -s ../pico-sdk-1.5.1 pico-sdk
   ln -s ../mbedtls-3.6.0 mbedtls
   ```
 
@@ -103,18 +134,19 @@ You should now have a structure something like this:
 .
 ├──mbedtls-3.6.0
 ├──pico-crypto-key
+│  ├──config
+│  │  └──boards.toml
 │  ├──examples
 │  ├──mbedtls -> ../mbedtls-3.6.0
 │  ├──pico_crypto_key
 │  │  ├──build.py
 │  │  ├──device.py
 │  │  └──__init__.py
-│  ├──pico-sdk -> ../pico-sdk-1.5.1
 │  ├──pyproject.toml
 │  ├──README.md
 │  ├──src
 │  └──test
-├──pico-sdk-1.5.1
+├──pico-sdk-2.0.0
 │  └──lib
 │     ├──cyw43-driver -> ../../cyw43-driver-1.0.3 *
 │     └──tinyusb -> ../../tinyusb-0.16.0
@@ -122,6 +154,8 @@ You should now have a structure something like this:
 
 * required for pico_w only
 ```
+
+In the `config/boards.toml` file ensure settings for `PICO_TOOLCHAIN_PATH` and `PICO_SDK_PATH` are correct.
 
 ## Configure
 
@@ -135,13 +169,14 @@ More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
 
 ## Supported boards
 
-The target board can/should be specified using the `--board` option when running `check`, `clean`, `build`, `install` or `reset-pin`.
+The target board must be specified using the `--board` option when running `check`, `clean`, `build`, `install` or `reset-pin`.
 
-- Pico: `--board pico` (default)
+- Pico: `--board pico`
 - Pico W: `--board pico_w`
-- Pimoroni Tiny2040 2MB: `--board pimoroni_tiny2040_2mb`
+- Pimoroni Tiny2040 2MB: `--board tiny2040`
+- Pico 2: `--board pico2` or `--board pico2-riscv`
 
-Using the correct board will ensure (amongst other things?) the LED will work. (NB Images built for one board may work on other boards, aside from the LED. YMMV...)
+Using the correct board will ensure (amongst other things?) the LED will work. (NB images built for one RP2040 board may work on other RP2040 boards, aside from the LED. YMMV...
 
 ### Board LED indicators
 
@@ -150,22 +185,23 @@ Board    | Init        | Ready* | Busy | Invalid | [Fatal Error](#errors)
 Pico     | Flash       | -      | On   | -       | Flashing
 Pico W   | Flash       | -      | On   | -       | Flashing
 Tiny2040 | White flash | Green  | Blue | Red     | Flashing Red
+Pico 2   | Flash       | -      | On   | -       | Flashing
 
-&ast; "Ready" state required a valid pin to be supplied.
+&ast; "Ready" state is only enetered after a valid pin is supplied.
 
 ## Build
 
-These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration looks correct then build:
+These steps use the `picobuild` script. (See `picobuild --help`.) Optionally check your configuration is correct then build, e.g for pico2 ARM:
 
 ```sh
-picobuild check
-picobuild build
+picobuild check --board pico2
+picobuild build --board pico2
 ```
 
 Ensure your device is connected and mounted ready to accept a new image (press `BOOTSEL` when connecting), then:
 
 ```sh
-picobuild install /path/to/RPI-RP2
+picobuild install  --board pico2 /path/to/RPI-RP2
 picobuild test
 ```
 
@@ -181,7 +217,7 @@ If the device LED is flashing (red if supported by the board) after this, the re
 
 The python driver will first check for an env var `PICO_CRYPTO_KEY_PIN` and fall back to a prompt if this is not present.
 
-(NB for the tests to run, the env var *must* be set)
+(NB to run the tests, either use the `--pin` command line option or set the env var)
 
 ## Using the device
 
@@ -329,7 +365,7 @@ verifying took 0.79s
 
 Step 1 generates registration keys for two relying parties - these are short-form ECDSA public keys.
 
-Step 2 generates a time-based auth tokens for each receiving party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
+Step 2 generates a time-based auth tokens for each relying party from a challenge string. The tokens are base64-encoded ECDSA signatures of the SHA256 of the challenge appended with the timestamp rounded to the minute.
 
 Third-party code (the ecdsa python package) is then used to verify the public key-auth token pairs.
 

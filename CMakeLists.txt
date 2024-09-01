@@ -4,12 +4,13 @@ cmake_minimum_required(VERSION 3.13)
 message("Board is ${PICO_BOARD}")
 set(PICO_IMAGE "crypto-key")
 set(PICO_RESET_PIN "reset-pin")
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 include(pico_sdk_import.cmake)
 
 project(crypto)
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 20)
+
 pico_sdk_init()
 
 message("Target is ${PICO_IMAGE}")
@@ -45,6 +46,17 @@ if(${PICO_BOARD} STREQUAL pico_w)
     mbedcrypto
     pico_cyw43_arch_none
   )
+elseif(${PICO_BOARD} STREQUAL pico2)
+  target_link_libraries(${PICO_IMAGE}
+    pico_stdlib
+    pico_unique_id
+    pico_sha256
+    hardware_flash
+    hardware_sync
+    tinyusb_device
+    tinyusb_board
+    mbedcrypto
+  )
 else()
   target_link_libraries(${PICO_IMAGE}
     pico_stdlib
@@ -57,8 +69,10 @@ else()
   )
 endif()
 
-pico_add_extra_outputs(${PICO_IMAGE})
+pico_set_program_name(${PICO_IMAGE} "PicoCryptoKey")
+pico_set_program_version(${PICO_IMAGE} ${PCK_VER})
 
+pico_add_extra_outputs(${PICO_IMAGE})
 
 message("Target is ${PICO_RESET_PIN}")
 
@@ -86,5 +100,8 @@ else()
     hardware_sync
   )
 endif()
+
+pico_set_program_name(${PICO_RESET_PIN} "PicoCryptoKeyPinReset")
+pico_set_program_version(${PICO_RESET_PIN} ${PCK_VER})
 
 pico_add_extra_outputs(${PICO_RESET_PIN})
