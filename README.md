@@ -19,7 +19,8 @@ Pico, Pico W, Tiny2040 and Pico2 boards are known to work. Other RP2040/RP2350 b
 ## Update v1.4.0
 
 - Updates pico SDK to v2.0
-- Adds support for Pico2 (both ARM and RISC-V) and compare performance
+- Adds support for Pico2 (both ARM and RISC-V) and compares performance
+- Board configurations are now set in [`config/boards.toml`](config/boards.toml) - this allows use of multiple/different SDKs and toolchains per board
 
 ### Performance comparison
 
@@ -34,6 +35,8 @@ Performance improvement is fairly modest, Cortex M33 slightly outperforming the 
 | decrypt |               23.8 |              336.6 |                    11.2 |              714.5 |           112.3 |                       13.2 |              604.3 |            79.5 |
 
 Tests run on a single core and use a 1000kB random binary data input. Binaries compiled with 10.3.1 ARM and 14.2.1 RISC-V gcc toolchains.
+
+On thing not measured or considered here is the difference in power consumption between Cortex M33 vs Hazard3...
 
 ### Notes/issues
 
