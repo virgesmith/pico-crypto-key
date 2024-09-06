@@ -27,12 +27,6 @@ def _get_config(board: str) -> dict[str, str]:
     return cfg["default"] | cfg[board]
 
 
-@app.command()
-def configure():
-    """Configure the project."""
-    raise NotImplementedError("TODO...")
-
-
 def _check_symlink(path: str) -> bool:
     path = Path(path)
     print(f"Checking {path} ", end="")
@@ -42,13 +36,14 @@ def _check_symlink(path: str) -> bool:
         print(f"-> {link}")
         return True
     elif path.is_dir():
+        print("")
         return True
     else:
         print("NOT FOUND")
         return False
 
 
-@app.command()
+@app.command(no_args_is_help=True)
 def check(board: str = typer.Option(help="the target board")):
     """Check the project configuration."""
 
@@ -84,7 +79,7 @@ def check(board: str = typer.Option(help="the target board")):
     print("check ok" if ok else "configuration errors found")
 
 
-@app.command()
+@app.command(no_args_is_help=True)
 def clean(board: str = typer.Option(help="the target board")) -> None:
     """Clean intermediate build files."""
     _get_config(board)  # load config just to check board name is valid
@@ -93,7 +88,7 @@ def clean(board: str = typer.Option(help="the target board")) -> None:
         shutil.rmtree(_build_dir(board))
 
 
-@app.command()
+@app.command(no_args_is_help=True)
 def build(board: str = typer.Option(help="the target board")) -> None:
     """Build the pico-crypto-key image."""
 
@@ -124,7 +119,7 @@ def build(board: str = typer.Option(help="the target board")) -> None:
     assert result.returncode == 0
 
 
-@app.command()
+@app.command(no_args_is_help=True)
 def install(
     device_path: str = typer.Argument(..., help="the path to the device storage, e.g. /media/${USER}/RPI-RP2"),
     board: str = typer.Option(help="the target board"),
@@ -145,7 +140,7 @@ def install(
     assert result.returncode == 0
 
 
-@app.command()
+@app.command(no_args_is_help=True)
 def reset_pin(
     device_path: str = typer.Argument(..., help="the path to the device storage, e.g. /media/${USER}/RPI-RP2"),
     board: str = typer.Option(help="the target board"),
