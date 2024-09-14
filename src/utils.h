@@ -9,7 +9,7 @@ typedef std::vector<byte> bytes;
 
 namespace std
 {
-// force byte to print as character 
+// force byte to print as character
 inline std::string to_string(uint8_t c)
 {
   return std::string(1, c);
@@ -34,8 +34,8 @@ using namespace std::string_literals;
 template <typename T> class wrap final {
 public:
   typedef T value_type;
-  typedef void (*f_init_t)(T*);
-  typedef void (*f_free_t)(T*);
+  typedef void (*f_init_t)(value_type*);
+  typedef void (*f_free_t)(value_type*);
 
   wrap(f_init_t init, f_free_t free) : m_struct(), m_deleter(free) { init(&m_struct); }
 
@@ -58,6 +58,6 @@ public:
   const value_type& operator*() const { return m_struct; }
 
 private:
-  T m_struct;
+  value_type m_struct;
   f_free_t m_deleter;
 };

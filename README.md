@@ -102,7 +102,7 @@ You will then need to:
   sudo apt install gcc-arm-none-eabi cmake
   ```
 
-  NB 13.2.0 is recommended. A prebuilt RISC-V toolchain can be found [here](https://www.embecosm.com/resources/tool-chain-downloads/#riscv-stable).
+  NB 13.2.0 is recommended, but 10.3.1 and 14 seem to work too. A prebuilt RISC-V toolchain can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases/tag/v2.0.0-1).
 
 - download [pico-sdk](https://github.com/raspberrypi/pico-sdk) >= 2, see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [2.0.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/2.0.0.tar.gz)
 
