@@ -16,6 +16,11 @@ I'm not a security expert and the device/software is almost certainly not harden
 
 Pico, Pico W, Tiny2040 and Pico2 boards are known to work. Other RP2040/RP2350 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
+## Update v1.4.1
+
+- Use standard library implementation of `minstd_rand` and seed it with the TRNG from `pico_rand` (used by ECDSA).
+- Minor code improvements
+
 ## Update v1.4.0
 
 - Updates pico SDK to v2.0
@@ -102,7 +107,7 @@ You will then need to:
   sudo apt install gcc-arm-none-eabi cmake
   ```
 
-  NB 13.2.0 is recommended. A prebuilt RISC-V toolchain can be found [here](https://www.embecosm.com/resources/tool-chain-downloads/#riscv-stable).
+  NB 13.2.0 is recommended, but 10.3.1 and 14 seem to work too. A prebuilt RISC-V toolchain can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases/tag/v2.0.0-1).
 
 - download [pico-sdk](https://github.com/raspberrypi/pico-sdk) >= 2, see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [2.0.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/2.0.0.tar.gz)
 
@@ -118,15 +123,13 @@ You will then need to:
 
 - [**pico2 only**] tinyUSB 0.16.0 doesn't work. I used a cloned SDK with submodules (rather than a release) for pico2 builds
 
-- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag.
+- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag. This must be kept separate from the implementation in the SDK (which still on v2) and requires a custom configuration.
 
-  create a symlinks in the project root to the pico SDK and mbedtls, e.g.:
+  create a symlink in the project root to the pico SDK and mbedtls, e.g.:
 
   ```sh
   ln -s ../mbedtls-3.6.0 mbedtls
   ```
-
-  Not sure why, but I couldn't get it to work with the symlink inside pico-sdk like tinyusb.
 
 You should now have a structure something like this:
 

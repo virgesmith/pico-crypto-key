@@ -9,6 +9,10 @@
 #include "mbedtls/asn1write.h" // for local ecdsa_signature_to_asn1
 #include "mbedtls/error.h"     // for local ecdsa_signature_to_asn1
 
+#include "pico/rand.h"
+
+#include <random>
+
 #include <cstdint>
 #include <cstring>
 
@@ -38,12 +42,15 @@ int ecdsa_signature_to_asn1(const mbedtls_mpi* r, const mbedtls_mpi* s, unsigned
   return 0;
 }
 
-// int (*f_rng_blind)(void *, unsigned char *, size_t)
+#if !defined(PICO_RAND_SEED_ENTROPY_SRC_ROSC) | !defined(PICO_RAND_ENTROPY_SRC_TIME)
+#error Entropy sources not enabled
+#endif
+
+// ECDSA requires this signature
 extern "C" int minstd_rand(void*, byte* p, size_t n) {
-  static uint32_t r = 1;
+  static std::minstd_rand rng(get_rand_32());
   for (size_t i = 0; i < n; ++i) {
-    r = r * 48271 % 2147483647;
-    p[i] = static_cast<byte>(r); // % 256;
+    p[i] = static_cast<byte>(rng());
   }
   return 0;
 }

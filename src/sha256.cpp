@@ -2,9 +2,10 @@
 #include "error.h"
 #include "usb_cdc.h"
 
-#include "mbedtls/sha256.h"
 #ifdef PICO_RP2350
 #include "pico/sha256.h"
+#else
+#include "mbedtls/sha256.h"
 #endif
 
 namespace {
@@ -50,7 +51,6 @@ bytes sha256::hash_in() {
 
   pico_sha256_finish(&state, &result);
   bytes hash(result.bytes, result.bytes + SHA256_RESULT_BYTES);
-
 #else
   wrap<mbedtls_sha256_context> ctx(mbedtls_sha256_init, mbedtls_sha256_free);
   mbedtls_sha256_starts(&ctx, 0);
