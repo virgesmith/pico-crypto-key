@@ -11,6 +11,8 @@
 
 #include "pico/rand.h"
 
+#include <random>
+
 #include <cstdint>
 #include <cstring>
 
@@ -44,16 +46,14 @@ int ecdsa_signature_to_asn1(const mbedtls_mpi* r, const mbedtls_mpi* s, unsigned
 #error Entropy sources not enabled
 #endif
 
-// int (*f_rng_blind)(void *, unsigned char *, size_t)
+// ECDSA requires this signature
 extern "C" int minstd_rand(void*, byte* p, size_t n) {
-  static uint32_t r = get_rand_32();
+  static std::minstd_rand rng(get_rand_32());
   for (size_t i = 0; i < n; ++i) {
-    r = r * 48271 % 2147483647;
-    p[i] = static_cast<byte>(r); // % 256;
+    p[i] = static_cast<byte>(rng());
   }
   return 0;
 }
-
 
 } // namespace
 
