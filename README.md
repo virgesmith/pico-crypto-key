@@ -16,6 +16,12 @@ I'm not a security expert and the device/software is almost certainly not harden
 
 Pico, Pico W, Tiny2040 and Pico2 boards are known to work. Other RP2040/RP2350 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
+## Update v1.4.2
+
+- Updates pico SDK to v2.1
+- Simplify build dependencies
+- Adds support for Pico2 W (both ARM and RISC-V)
+
 ## Update v1.4.1
 
 - Use standard library implementation of `minstd_rand` and seed it with the TRNG from `pico_rand` (used by ECDSA).
@@ -109,21 +115,15 @@ You will then need to:
 
   NB 13.2.0 is recommended, but 10.3.1 and 14 seem to work too. A prebuilt RISC-V toolchain can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases/tag/v2.0.0-1).
 
-- download [pico-sdk](https://github.com/raspberrypi/pico-sdk) >= 2, see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [2.0.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/2.0.0.tar.gz)
-
-- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.16.0). Replace the empty `pico-sdk-2.0.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- clone [pico-sdk](https://github.com/raspberrypi/pico-sdk) >= 2, see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). Initialise submodules:
 
   ```sh
-  cd pico-sdk-2.0.0/lib
-  rmdir tinyusb
-  ln -s ../../tinyusb-0.16.0 tinyusb
+  git submodule update --init
   ```
 
-- [**pico_w only**], repeat the above step for `cyw43-driver`, which can be found [here](https://github.com/georgerobotics/cyw43-driver)
+- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag. **This is a different version to the one in the SDK.**
 
-- [**pico2 only**] tinyUSB 0.16.0 doesn't work. I used a cloned SDK with submodules (rather than a release) for pico2 builds
-
-- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag. This must be kept separate from the implementation in the SDK (which still on v2) and requires a custom configuration.
+This must be kept separate from the implementation in the SDK (which still on v2) and requires a custom configuration.
 
   create a symlink in the project root to the pico SDK and mbedtls, e.g.:
 
@@ -149,11 +149,10 @@ You should now have a structure something like this:
 │  ├──README.md
 │  ├──src
 │  └──test
-├──pico-sdk-2.0.0
-│  └──lib
-│     ├──cyw43-driver -> ../../cyw43-driver-1.0.3 *
-│     └──tinyusb -> ../../tinyusb-0.16.0
-└──tinyusb-0.16.0
+└──pico-sdk
+   └──lib
+      ├──cyw43-driver
+      └──tinyusb
 
 * required for pico_w only
 ```
@@ -177,7 +176,8 @@ The target board must be specified using the `--board` option when running `chec
 - Pico: `--board pico`
 - Pico W: `--board pico_w`
 - Pimoroni Tiny2040 2MB: `--board tiny2040`
-- Pico 2: `--board pico2` or `--board pico2-riscv`
+- Pico2: `--board pico2` or `--board pico2-riscv`
+- Pico2 W: `--board pico2_w` or `--board pico2_w-riscv`
 
 Using the correct board will ensure (amongst other things?) the LED will work. (NB images built for one RP2040 board may work on other RP2040 boards, aside from the LED. YMMV...
 
@@ -189,8 +189,9 @@ Pico     | Flash       | -      | On   | -       | Flashing
 Pico W   | Flash       | -      | On   | -       | Flashing
 Tiny2040 | White flash | Green  | Blue | Red     | Flashing Red
 Pico 2   | Flash       | -      | On   | -       | Flashing
+Pico 2 W | Flash       | -      | On   | -       | Flashing
 
-&ast; "Ready" state is only enetered after a valid pin is supplied.
+&ast; "Ready" state is only entered after a valid pin is supplied.
 
 ## Build
 

@@ -59,6 +59,19 @@ elseif(${PICO_BOARD} STREQUAL pico2)
     tinyusb_board
     mbedcrypto
   )
+elseif(${PICO_BOARD} STREQUAL pico2_w)
+  target_link_libraries(${PICO_IMAGE}
+    pico_stdlib
+    pico_unique_id
+    pico_rand
+    pico_sha256
+    hardware_flash
+    hardware_sync
+    tinyusb_device
+    tinyusb_board
+    mbedcrypto
+    pico_cyw43_arch_none
+  )
 else()
   target_link_libraries(${PICO_IMAGE}
     pico_stdlib
@@ -89,7 +102,7 @@ add_executable(${PICO_RESET_PIN}
 target_compile_definitions(${PICO_RESET_PIN} PRIVATE BOARD_${PICO_BOARD})
 target_compile_options(${PICO_RESET_PIN} PRIVATE -Wno-psabi -Werror -Wall)
 
-if(${PICO_BOARD} STREQUAL pico_w)
+if(${PICO_BOARD} STREQUAL pico_w OR ${PICO_BOARD} STREQUAL pico2_w)
   target_link_libraries(${PICO_RESET_PIN}
     pico_stdlib
     hardware_flash
