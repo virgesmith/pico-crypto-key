@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
+from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError
 
 
 def get_challenge(host: str, user: str) -> str:
@@ -61,7 +61,7 @@ def main() -> None:
                             print(f"Invalid input: {cmd}")
                 except requests.exceptions.HTTPError as e:
                     print(e)
-    except CryptoKeyNotFoundError:
+    except CryptoKeyConnectionError:
         print("Key not found, is it connected?")
     except CryptoKeyPinError:
         print("PIN error")

@@ -13,3 +13,4 @@ signature.json
 pico_sdk_import.cmake
 pico-sdk
 mbedtls
+relnotes.md

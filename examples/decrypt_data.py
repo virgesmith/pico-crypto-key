@@ -8,7 +8,7 @@ from time import time
 
 import pandas as pd  # type: ignore
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
+from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError
 
 
 def read_encrypted_dataframe(ciphertext: Path) -> None:
@@ -33,7 +33,7 @@ def read_encrypted_dataframe(ciphertext: Path) -> None:
                 df = pd.read_csv(BytesIO(crypto_key.decrypt(c.read())))
             print("decryption took %.2fs" % (time() - start))
             print(df)
-    except CryptoKeyNotFoundError:
+    except CryptoKeyConnectionError:
         print("Key not connected")
     except CryptoKeyPinError:
         print("PIN incorrect")

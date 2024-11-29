@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from time import time
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
+from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError
 
 
 def verify_data(signature_file: Path) -> None:
@@ -38,7 +38,7 @@ def verify_data(signature_file: Path) -> None:
             else:
                 print("signature is valid")
             print(f"verifying took {time()-start:.2f}s")
-    except CryptoKeyNotFoundError:
+    except CryptoKeyConnectionError:
         print("Key not connected")
     except CryptoKeyPinError:
         print("PIN incorrect")

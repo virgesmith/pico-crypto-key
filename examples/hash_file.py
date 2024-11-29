@@ -5,7 +5,7 @@ Example: compute SHA256 hash of a file.
 import sys
 from pathlib import Path
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
+from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError
 
 
 def hash_file(file: Path) -> None:
@@ -15,7 +15,7 @@ def hash_file(file: Path) -> None:
             print(f"PicoCryptoKey {version}")
             digest = crypto_key.hash(file)
         print(f"{file}: {digest.hex()}")
-    except CryptoKeyNotFoundError:
+    except CryptoKeyConnectionError:
         print("Key not connected")
     except CryptoKeyPinError:
         print("PIN incorrect")

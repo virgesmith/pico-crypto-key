@@ -61,7 +61,8 @@ testpaths = [
 where = ["."]
 
 [tool.ruff.lint]
-select = ["A", "B", "E", "F", "I", "UP", "SIM"]
+select = ["A", "B", "E", "F", "I", "S", "SIM", "UP"]
+ignore = ["S101", "S113", "S603", "S607"]
 
 [tool.ruff]
 line-length = 120
