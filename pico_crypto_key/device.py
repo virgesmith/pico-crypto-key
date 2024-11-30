@@ -13,7 +13,11 @@ import usb.util  # type: ignore[import-untyped]
 from pwinput import pwinput  # type: ignore[import-untyped]
 
 
-class CryptoKeyNotFoundError(ConnectionError):
+class CryptoKeyConnectionError(ConnectionError):
+    pass
+
+
+class CryptoKeyCommunicationError(ConnectionError):
     pass
 
 
@@ -329,7 +333,7 @@ class CryptoKey:
         self.device = usb.core.find(idVendor=0xAAFE, idProduct=0xC0FF)
 
         if not self.device:
-            raise CryptoKeyNotFoundError()
+            raise CryptoKeyConnectionError()
 
         device_pin = (os.getenv("PICO_CRYPTO_KEY_PIN") or _read_pin_from_stdin()).encode("utf-8")
 
@@ -384,7 +388,11 @@ class CryptoKey:
 
     def _write(self, b: bytes) -> int:
         bytes_written = self.__endpoint_in.write(b)
-        assert bytes_written == len(b)
+        if bytes_written != len(b):
+            raise CryptoKeyCommunicationError(
+                f"attempted to write {len(b)} bytes but device reports {bytes_written} received"
+            )
+
         return bytes_written
 
     def _write_uint32(self, n: int) -> bool:

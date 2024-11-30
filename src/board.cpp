@@ -78,7 +78,7 @@ void board::clear() { led_off(); }
 
 // Pico W LED is on the wifi chip and requires cyw43 driver and its dependencies
 // to function (wifi is not enabled)
-#elif defined(BOARD_pico_w)
+#elif defined(BOARD_pico_w) || defined(BOARD_pico2_w)
 
 #include "pico/cyw43_arch.h"
 

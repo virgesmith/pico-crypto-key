@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 
-from pico_crypto_key import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
+from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError
 
 
 def sign_data(filename: Path) -> None:
@@ -29,7 +29,7 @@ def sign_data(filename: Path) -> None:
             with open("signature.json", "w") as fd:
                 json.dump(result, fd, indent=2)
             print("signature written to signature.json")
-    except CryptoKeyNotFoundError:
+    except CryptoKeyConnectionError:
         print("Key not connected")
     except CryptoKeyPinError:
         print("PIN incorrect")

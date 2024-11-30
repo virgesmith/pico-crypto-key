@@ -48,8 +48,8 @@ def check(board: str = typer.Option(help="the target board")):
     """Check the project configuration."""
 
     _get_config(board)  # load config just to check board name is valid
+    print(f"picobuild {__version__}")
     print(f"Board: {board}")
-    print(f"Software version: {__version__}")
     ok = True
     config = _get_config(board)
 
@@ -70,7 +70,7 @@ def check(board: str = typer.Option(help="the target board")):
 
     ok &= _check_symlink("./mbedtls")
     ok &= _check_symlink(sdk / "lib/tinyusb")
-    if board == "pico_w":
+    if board in ["pico_w", "pico2_w"]:
         ok &= _check_symlink(sdk / "lib/cyw43-driver")
 
     if not os.getenv("PICO_CRYPTO_KEY_PIN"):

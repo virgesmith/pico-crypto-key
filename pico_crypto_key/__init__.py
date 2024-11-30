@@ -4,7 +4,7 @@ from struct import pack
 
 __version__ = importlib.metadata.version("pico-crypto-key")
 
-from .device import CryptoKey, CryptoKeyNotFoundError, CryptoKeyPinError
+from .device import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError
 
 TIMESTAMP_RESOLUTION_MS = 60_000  # 1 min
 

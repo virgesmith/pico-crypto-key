@@ -3,7 +3,8 @@
 [default]
 PICO_PLATFORM = "rp2040"
 PICO_TOOLCHAIN_PATH = "/usr"
-PICO_SDK_PATH = "../../pico-sdk-2.0.0"
+# use latest SDK (2.1.0) which has tinusb 0.17
+PICO_SDK_PATH = "../../pico-sdk"
 
 [pico]
 PICO_BOARD = "pico"
@@ -18,12 +19,19 @@ PICO_BOARD = "pimoroni_tiny2040_2mb"
 PICO_BOARD = "pico2"
 PICO_PLATFORM = "rp2350-arm-s"
 PICO_TOOLCHAIN_PATH = "/usr"
-# TinyUSB release 0.16 doesnt work, use latest SDK which points to a random commit on main
-PICO_SDK_PATH = "../../pico-sdk"
 
 [pico2-riscv]
 PICO_BOARD = "pico2"
 PICO_PLATFORM = "rp2350-riscv"
 PICO_TOOLCHAIN_PATH = "/opt/riscv-gcc-14"
-# TinyUSB release 0.16 doesnt work, use latest SDK which points to a random commit on main
-PICO_SDK_PATH = "../../pico-sdk"
+
+[pico2_w]
+PICO_BOARD = "pico2_w"
+PICO_PLATFORM = "rp2350-arm-s"
+PICO_TOOLCHAIN_PATH = "/usr"
+
+[pico2_w-riscv]
+PICO_BOARD = "pico2_w"
+PICO_PLATFORM = "rp2350-riscv"
+PICO_TOOLCHAIN_PATH = "/opt/riscv-gcc-14"
+

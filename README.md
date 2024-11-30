@@ -14,22 +14,19 @@ I'm not a security expert and the device/software is almost certainly not harden
 - the private key is only initialised once a correct pin has been entered, and is a SHA256 hash of the (salted) unique device id. So no two devices should have the same key.
 - the private key never leaves the device and is stored only in volatile memory.
 
-Pico, Pico W, Tiny2040 and Pico2 boards are known to work. Other RP2040/RP2350 boards have not been tested but are likely to (mostly) work. E.g. the Pico W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
+Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040/RP2350 boards have not been tested but are likely to (mostly) work. E.g. the Pico/Pico2 W requires the wifi driver purely for the LED (which is connected to the wifi chip) to function (though neither wifi nor bluetooth are enabled.)
 
-## Update v1.4.1
+## Notes/issues
 
-- Use standard library implementation of `minstd_rand` and seed it with the TRNG from `pico_rand` (used by ECDSA).
-- Minor code improvements
+- build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
+- Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
+- Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
 
-## Update v1.4.0
+## Performance
 
-- Updates pico SDK to v2.0
-- Adds support for Pico2 (both ARM and RISC-V) and compares performance
-- Board configurations are now set in [`config/boards.toml`](config/boards.toml) - this allows use of multiple/different SDKs and toolchains per board
+### RP2040 vs RP2350 ARM vs RP2350 RISC-V
 
-### Performance comparison
-
-Performance improvement is fairly modest, Cortex M33 slightly outperforming the Hazard3 - but the bottleneck here is USB comms. Note that using hardware SHA256 only seems to improve hashing performance by about 6% for this (IO-bound) use case.
+v1.4.0 introduced support for RP2350 boards. Performance improvement is fairly modest, Cortex M33 slightly outperforming the Hazard3 - but the bottleneck here is USB comms. Note that using hardware SHA256 only seems to improve hashing performance by about 6% for this (IO-bound) use case.
 
 |         | RP2040<br/>time(s) | <br/>bitrate(kbps) | RP2350(ARM)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) | RP2350(RISC-V)<br/>time(s) | <br/>bitrate(kbps) | <br/>speedup(%) |
 |:--------|-------------------:|-------------------:|------------------------:|-------------------:|----------------:|---------------------------:|-------------------:|----------------:|
@@ -43,35 +40,10 @@ Tests run on a single core and use a 1000kB random binary data input. Binaries c
 
 On thing not measured or considered here is the difference in power consumption between Cortex M33 vs Hazard3...
 
-### Notes/issues
 
-- build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
-- USB on pico 2 doesn't work with latest TinyUSB release (0.16). Workaround using latest Pico SDK + submodules. (I have the 2.0.0 release pointing to TinyUSB 0.16 for reproducibility)
-- Writes to the final flash block do not persist. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
-- Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
+### USB speed
 
-## Update v1.3.1
-
-- Adds support for Pimoroni [Tiny2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012300371).
-- The webauthn-style workflow example has been improved.
-
-## Update v1.3
-
-Adds:
-
-- Time synchronisation between host and device
-- Device info: firmware version, board type, current time
-- Generation of time-based authentication tokens (like Webauthn)
-- Multiple build targets: Pico and Pico W. LED now works on Pico W.
-- Switch to short-form public keys.
-
-## Update v1.2
-
-The device pin is now configurable. See [PIN protection](#pin-protection) and the [change pin](#change-pin) example.
-
-## Update v1.1
-
-The device now uses USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000kB input):
+v1.1.0 switched to USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000kB input on a RP2040):
 
 | task    | CDC<br>time(s) | CDC<br>bitrate(kbps) | serial<br>time(s) | serial<br>bitrate(kbps)| Speedup(%) |
 |:--------|---------------:|---------------------:|------------------:|-----------------------:|-----------:|
@@ -86,8 +58,8 @@ The device now uses USB CDC rather than serial to communicate with the host whic
 
 `pico-crypto-key` is a python (dev) package that provides:
 
-- a simplified build process
-- a python interface to the device.
+- a simplified build process supporting multiple configurations
+- a python interface to the devices.
 
 ### Dependencies/prerequisites
 
@@ -101,66 +73,29 @@ If this step fails, try upgrading to a more recent version of pip.
 
 You will then need to:
 
-- install the compiler toolchain(s) and cmake (ubuntu 22.04LTS is 10.3.1):
+- install the compiler toolchain(s) and cmake:
 
   ```sh
   sudo apt install gcc-arm-none-eabi cmake
   ```
 
-  NB 13.2.0 is recommended, but 10.3.1 and 14 seem to work too. A prebuilt RISC-V toolchain can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases/tag/v2.0.0-1).
+  For RISC-V, a prebuilt toolchain can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases/tag/v2.0.0-5).
 
-- download [pico-sdk](https://github.com/raspberrypi/pico-sdk) >= 2, see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). NB This project uses a tagged release of pico-sdk, so download and extract e.g. [2.0.0](hhttps://github.com/raspberrypi/pico-sdk/archive/refs/tags/2.0.0.tar.gz)
-
-- download and extract a release of [tinyusb](https://github.com/hathach/tinyusb/releases/tag/0.16.0). Replace the empty `pico-sdk-2.0.0/lib/tinyusb` directory with a symlink to where you extracted it, e.g.
+- clone [pico-sdk](https://github.com/raspberrypi/pico-sdk) see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). Initialise submodules:
 
   ```sh
-  cd pico-sdk-2.0.0/lib
-  rmdir tinyusb
-  ln -s ../../tinyusb-0.16.0 tinyusb
+  git submodule update --init
   ```
 
-- [**pico_w only**], repeat the above step for `cyw43-driver`, which can be found [here](https://github.com/georgerobotics/cyw43-driver)
-
-- [**pico2 only**] tinyUSB 0.16.0 doesn't work. I used a cloned SDK with submodules (rather than a release) for pico2 builds
-
-- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.0 release/tag. This must be kept separate from the implementation in the SDK (which still on v2) and requires a custom configuration.
-
-  create a symlink in the project root to the pico SDK and mbedtls, e.g.:
+- download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
 
   ```sh
-  ln -s ../mbedtls-3.6.0 mbedtls
+  ln -s ../mbedtls-3.6.2 mbedtls
   ```
-
-You should now have a structure something like this:
-
-```txt
-.
-├──mbedtls-3.6.0
-├──pico-crypto-key
-│  ├──config
-│  │  └──boards.toml
-│  ├──examples
-│  ├──mbedtls -> ../mbedtls-3.6.0
-│  ├──pico_crypto_key
-│  │  ├──build.py
-│  │  ├──device.py
-│  │  └──__init__.py
-│  ├──pyproject.toml
-│  ├──README.md
-│  ├──src
-│  └──test
-├──pico-sdk-2.0.0
-│  └──lib
-│     ├──cyw43-driver -> ../../cyw43-driver-1.0.3 *
-│     └──tinyusb -> ../../tinyusb-0.16.0
-└──tinyusb-0.16.0
-
-* required for pico_w only
-```
-
-In the `config/boards.toml` file ensure settings for `PICO_TOOLCHAIN_PATH` and `PICO_SDK_PATH` are correct.
 
 ## Configure
+
+In the `config/boards.toml` file ensure settings for `PICO_TOOLCHAIN_PATH` and `PICO_SDK_PATH` are correct.
 
 If using a fresh download of `mbedtls` - run the configuration script to customise the build for the Pico, e.g.:
 
@@ -177,7 +112,8 @@ The target board must be specified using the `--board` option when running `chec
 - Pico: `--board pico`
 - Pico W: `--board pico_w`
 - Pimoroni Tiny2040 2MB: `--board tiny2040`
-- Pico 2: `--board pico2` or `--board pico2-riscv`
+- Pico2: `--board pico2` or `--board pico2-riscv`
+- Pico2 W: `--board pico2_w` or `--board pico2_w-riscv`
 
 Using the correct board will ensure (amongst other things?) the LED will work. (NB images built for one RP2040 board may work on other RP2040 boards, aside from the LED. YMMV...
 
@@ -189,8 +125,9 @@ Pico     | Flash       | -      | On   | -       | Flashing
 Pico W   | Flash       | -      | On   | -       | Flashing
 Tiny2040 | White flash | Green  | Blue | Red     | Flashing Red
 Pico 2   | Flash       | -      | On   | -       | Flashing
+Pico 2 W | Flash       | -      | On   | -       | Flashing
 
-&ast; "Ready" state is only enetered after a valid pin is supplied.
+&ast; "Ready" state is only entered after a valid pin is supplied.
 
 ## Build
 

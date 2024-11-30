@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pico-crypto-key"
-version = "1.4.1"
+version = "1.4.2"
 authors = [
   { name="Andrew Smith", email="andrew@friarswood.net" },
 ]
@@ -16,9 +16,9 @@ description = "Raspberry Pi pico cryptography key and python driver"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "License :: OSI Approved :: MIT License",
   "Operating System :: linux",
   "Development Status :: 3 - Alpha",
@@ -31,7 +31,7 @@ dependencies = [
   "pyusb>=1.2.1",
   "pwinput>=1.0.3",
   "typer>=0.12.3",
-  "fastapi>=0.111.0",
+  "fastapi[standard]>=0.111.0",
   "requests>=2.32.3",
   "pandas",
   "ecdsa>=0.19.0"
@@ -61,7 +61,8 @@ testpaths = [
 where = ["."]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["A", "B", "E", "F", "I", "S", "SIM", "UP"]
+ignore = ["S101", "S113", "S603", "S607"]
 
 [tool.ruff]
 line-length = 120
