@@ -22,8 +22,9 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 - Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
 - Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
 
+## Performance
 
-## RP2040 vs RP2350 Performance comparison (v1.4.0)
+### RP2040 vs RP2350 ARM vs RP2350 RISC-V
 
 v1.4.0 introduced support for RP2350 boards. Performance improvement is fairly modest, Cortex M33 slightly outperforming the Hazard3 - but the bottleneck here is USB comms. Note that using hardware SHA256 only seems to improve hashing performance by about 6% for this (IO-bound) use case.
 
@@ -40,7 +41,7 @@ Tests run on a single core and use a 1000kB random binary data input. Binaries c
 On thing not measured or considered here is the difference in power consumption between Cortex M33 vs Hazard3...
 
 
-## USB improvements (v1.1.0)
+### USB speed
 
 v1.1.0 switched to USB CDC rather than serial to communicate with the host which allows much faster bitrates and avoids the need to encode binary data. Performance is improved, but varies considerably by task (results are for a 1000kB input on a RP2040):
 
@@ -57,8 +58,8 @@ v1.1.0 switched to USB CDC rather than serial to communicate with the host which
 
 `pico-crypto-key` is a python (dev) package that provides:
 
-- a simplified build process
-- a python interface to the device.
+- a simplified build process supporting multiple configurations
+- a python interface to the devices.
 
 ### Dependencies/prerequisites
 
@@ -86,43 +87,15 @@ You will then need to:
   git submodule update --init
   ```
 
-- download [mbedtls](https://tls.mbed.org/api/): see also their [repo](https://github.com/ARMmbed/mbedtls). Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** and must be kept separate and requires a custom configuration.
-
-  create a symlink in the project root to the pico SDK and mbedtls, e.g.:
+- download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
 
   ```sh
   ln -s ../mbedtls-3.6.2 mbedtls
   ```
 
-You should now have a structure something like this:
-
-```txt
-.
-├──mbedtls-3.6.2
-├──pico-crypto-key
-│  ├──config
-│  │  └──boards.toml
-│  ├──examples
-│  ├──mbedtls -> ../mbedtls-3.6.2
-│  ├──pico_crypto_key
-│  │  ├──build.py
-│  │  ├──device.py
-│  │  └──__init__.py
-│  ├──pyproject.toml
-│  ├──README.md
-│  ├──src
-│  └──test
-└──pico-sdk
-   └──lib
-      ├──cyw43-driver*
-      ├──tinyusb
-      └──...
-```
-* required for Pico/Pico2 W only
+## Configure
 
 In the `config/boards.toml` file ensure settings for `PICO_TOOLCHAIN_PATH` and `PICO_SDK_PATH` are correct.
-
-## Configure
 
 If using a fresh download of `mbedtls` - run the configuration script to customise the build for the Pico, e.g.:
 
