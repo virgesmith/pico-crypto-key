@@ -68,6 +68,10 @@ def check(board: str = typer.Option(help="the target board")):
     print(f'PICO_SDK_PATH={config["PICO_SDK_PATH"]}: {"exists" if sdk.is_dir() else "MISSING"}')
     ok &= sdk.is_dir()
 
+    picotool = shutil.which("picotool")
+    print(f"picotool: {picotool or 'NOT FOUND'}")
+    ok &= picotool is not None
+
     ok &= _check_symlink("./mbedtls")
     ok &= _check_symlink(sdk / "lib/tinyusb")
     if board in ["pico_w", "pico2_w"]:

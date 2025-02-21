@@ -18,7 +18,7 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 
 ## Notes/issues
 
-- build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
+- This project uses MbedTLS 3, which is not supported by the SDK (which still uses MbedTLS 2), so must be kept separate.
 - Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
 - Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
 
@@ -86,6 +86,8 @@ You will then need to:
   ```sh
   git submodule update --init
   ```
+
+- since v2.0.0 of the SDK you will also need to build and install [picotool](https://github.com/raspberrypi/picotool) corresponding to the SDK version
 
 - download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
 
