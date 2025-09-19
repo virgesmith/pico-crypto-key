@@ -7,7 +7,7 @@ from base64 import b64decode
 from datetime import datetime, timezone
 from hashlib import sha256
 
-import ecdsa
+import ecdsa  # type: ignore[import-untyped]
 import pytest
 
 from pico_crypto_key import CryptoKey, timestamp

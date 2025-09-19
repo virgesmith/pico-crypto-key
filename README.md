@@ -20,7 +20,7 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 
 - This project uses MbedTLS 3, which is not supported by the SDK (which still uses MbedTLS 2), so must be kept separate.
 - Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
-- Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
+- The prebuilt RISC-V toolchain can be downloaded from pico-sdk-tools](https://github.com/raspberrypi/pico-sdk-tools/releases/). YMMV if downloading from other sources, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713).
 
 ## Performance
 
@@ -66,7 +66,13 @@ v1.1.0 switched to USB CDC rather than serial to communicate with the host which
 First, clone/fork this repo and install the package in development (editable) mode:
 
 ```sh
-pip install -e .[dev]
+pip install --group dev -e .
+```
+
+or
+
+```sh
+uv sync --group dev
 ```
 
 If this step fails, try upgrading to a more recent version of pip.
@@ -87,9 +93,9 @@ You will then need to:
   git submodule update --init
   ```
 
-- since v2.0.0 of the SDK you will also need to build and install [picotool](https://github.com/raspberrypi/picotool) corresponding to the SDK version
+- since SDK v2.0.0, you will also need to build and install [picotool](https://github.com/raspberrypi/picotool) corresponding to the SDK version you're using.
 
-- download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
+- download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz2` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
 
   ```sh
   ln -s ../mbedtls-3.6.2 mbedtls

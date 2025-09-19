@@ -23,7 +23,7 @@ def main() -> None:
                 now = datetime.now(tz=timezone.utc)
                 print(f"Device time diff: {(now - timestamp).total_seconds()}s")
                 try:
-                    match cmd := input("\nRegister/Auth/List/Quit? (r/a/q) "):
+                    match cmd := input("\nRegister/Auth/Quit? (r/a/q) "):
                         case "r":
                             user = input("username: ")
                             challenge = get_challenge(HOST, user)

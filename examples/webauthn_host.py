@@ -6,7 +6,7 @@ from hashlib import sha256
 from time import sleep
 from typing import Annotated
 
-import ecdsa
+import ecdsa  # type: ignore[import-untyped]
 from fastapi import FastAPI, Header, HTTPException
 
 logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S")
@@ -45,7 +45,7 @@ async def register(
     username: Annotated[str, "user name"],
     pubkeyhex: Annotated[str, "short-form pulic key in hex"],
     token: Annotated[str, Header()],
-) -> None:
+) -> str:
     """
     Register a new user and their public key. Will fail if:
      - user already exists
