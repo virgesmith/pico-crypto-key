@@ -20,7 +20,8 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 
 - This project uses MbedTLS 3, which is not supported by the SDK (which still uses MbedTLS 2), so must be kept separate.
 - Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
-- The prebuilt RISC-V toolchain can be downloaded from pico-sdk-tools](https://github.com/raspberrypi/pico-sdk-tools/releases/). YMMV if downloading from other sources, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713).
+- Some prebuilt RISC-V toolchains do not work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). Using
+the binaries available at [pico-sdk-tools](https://github.com/raspberrypi/pico-sdk-tools/releases/) is recommended.
 
 ## Performance
 
@@ -85,7 +86,7 @@ You will then need to:
   sudo apt install gcc-arm-none-eabi cmake
   ```
 
-  For RISC-V, a prebuilt toolchain can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases/tag/v2.0.0-5).
+  For RISC-V, prebuilt toolchains can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases).
 
 - clone [pico-sdk](https://github.com/raspberrypi/pico-sdk) see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). Initialise submodules:
 

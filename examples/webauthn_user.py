@@ -23,16 +23,14 @@ def main() -> None:
                 now = datetime.now(tz=timezone.utc)
                 print(f"Device time diff: {(now - timestamp).total_seconds()}s")
                 try:
-                    match cmd := input("\nRegister/Auth/Quit? (r/a/q) "):
+                    match cmd := input("\nRegister/Key/Auth/Quit? (r/k/a/q) "):
                         case "r":
                             user = input("username: ")
                             challenge = get_challenge(HOST, user)
-
                             # retrieve pubkey
                             pubkey = key.register(HOST, user).hex()
                             # generate token
                             token = key.auth(HOST, user, challenge.encode()).decode()
-
                             print(f"Registering {user}@{HOST}: pubkey is {pubkey}")
                             response = requests.get(
                                 f"{HOST}/register",
@@ -41,13 +39,16 @@ def main() -> None:
                             )
                             response.raise_for_status()
                             print(response.json())
+
+                        case "k":
+                            user = input("username: ")
+                            pubkey = key.register(HOST, user).hex()
+                            print(f"Public key for {user}@{HOST} is {pubkey}")
+
                         case "a":
                             user = input("username: ")
-
                             challenge = get_challenge(HOST, user)
-
                             token = key.auth(HOST, user, challenge.encode()).decode()
-
                             print(f"Authenticating {user}@{HOST} using challenge='{challenge}' at {now}")
                             print(f"Token: {token}")
                             response = requests.get(
@@ -55,8 +56,10 @@ def main() -> None:
                             )
                             response.raise_for_status()
                             print(response.json())
+
                         case "q":
                             break
+
                         case _:
                             print(f"Invalid input: {cmd}")
                 except requests.exceptions.HTTPError as e:
