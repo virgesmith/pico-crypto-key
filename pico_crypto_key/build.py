@@ -2,7 +2,6 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 import pytest
 import tomllib
@@ -27,11 +26,11 @@ def _get_config(board: str) -> dict[str, str]:
     return cfg["default"] | cfg[board]
 
 
-def _check_symlink(path: str) -> bool:
+def _check_symlink(path: str | Path) -> bool:
     path = Path(path)
     print(f"Checking {path} ", end="")
     if path.is_symlink():
-        # doesnt check link points to something that exists
+        # doesn't check link points to something that exists
         link = os.readlink(path)
         print(f"-> {link}")
         return True
@@ -61,12 +60,16 @@ def check(board: str = typer.Option(help="the target board")):
     print(f"Build directory: {build_dir}")
 
     compiler = Path(config["PICO_TOOLCHAIN_PATH"]) / f"bin/{gcc}"
-    print(f'C++ Compiler={compiler}: {"exists" if compiler.is_file() else "MISSING"}')
+    print(f"C++ Compiler={compiler}: {'exists' if compiler.is_file() else 'MISSING'}")
     ok &= compiler.is_file()
 
     sdk = build_dir / config["PICO_SDK_PATH"]
-    print(f'PICO_SDK_PATH={config["PICO_SDK_PATH"]}: {"exists" if sdk.is_dir() else "MISSING"}')
+    print(f"PICO_SDK_PATH={config['PICO_SDK_PATH']}: {'exists' if sdk.is_dir() else 'MISSING'}")
     ok &= sdk.is_dir()
+
+    picotool = shutil.which("picotool")
+    print(f"picotool: {picotool or 'NOT FOUND'}")
+    ok &= picotool is not None
 
     ok &= _check_symlink("./mbedtls")
     ok &= _check_symlink(sdk / "lib/tinyusb")
@@ -163,12 +166,12 @@ def reset_pin(
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def test(
     ctx: typer.Context,
-    pin: Optional[str] = typer.Option(default=None, help="pin (optional, can use env var PICO_CRYPTO_KEY_PIN)"),  # noqa: UP007
+    pin: str | None = typer.Option(default=None, help="pin (optional, can use env var PICO_CRYPTO_KEY_PIN)"),  # noqa: UP007
 ) -> None:  # noqa: UP007
     """Run unit tests. PIN must either be passed as an option or set in PICO_CRYPTO_KEY_PIN env var"""
-    assert pin or os.getenv(
-        "PICO_CRYPTO_KEY_PIN"
-    ), "Tests require pin to be specified as option (--pin ...) or PICO_CRYPTO_KEY_PIN in env"
+    assert pin or os.getenv("PICO_CRYPTO_KEY_PIN"), (
+        "Tests require pin to be specified as option (--pin ...) or PICO_CRYPTO_KEY_PIN in env"
+    )
     if pin:
         os.environ["PICO_CRYPTO_KEY_PIN"] = pin
     assert pytest.main(ctx.args) == 0, "tests failed, see logs"

@@ -18,9 +18,10 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 
 ## Notes/issues
 
-- build and install picotool separately against head of sdk (which still uses mbedtls 2), otherwise the build will try building picotool against mbedtls 3, which won't work
+- This project uses MbedTLS 3, which is not supported by the SDK (which still uses MbedTLS 2), so must be kept separate.
 - Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
-- Not all prebuilt RISC-V toolchains seem to work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). [This one](https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.0.0-1/riscv-toolchain-14-aarch64-lin.tar.gz) worked for me.
+- Some prebuilt RISC-V toolchains do not work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). Using
+the binaries available at [pico-sdk-tools](https://github.com/raspberrypi/pico-sdk-tools/releases/) is recommended.
 
 ## Performance
 
@@ -66,7 +67,13 @@ v1.1.0 switched to USB CDC rather than serial to communicate with the host which
 First, clone/fork this repo and install the package in development (editable) mode:
 
 ```sh
-pip install -e .[dev]
+pip install --group dev -e .
+```
+
+or
+
+```sh
+uv sync --group dev
 ```
 
 If this step fails, try upgrading to a more recent version of pip.
@@ -79,7 +86,7 @@ You will then need to:
   sudo apt install gcc-arm-none-eabi cmake
   ```
 
-  For RISC-V, a prebuilt toolchain can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases/tag/v2.0.0-5).
+  For RISC-V, prebuilt toolchains can be found [here](https://github.com/raspberrypi/pico-sdk-tools/releases).
 
 - clone [pico-sdk](https://github.com/raspberrypi/pico-sdk) see [here](https://www.raspberrypi.org/documentation/pico/getting-started/). Initialise submodules:
 
@@ -87,7 +94,9 @@ You will then need to:
   git submodule update --init
   ```
 
-- download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
+- since SDK v2.0.0, you will also need to build and install [picotool](https://github.com/raspberrypi/picotool) corresponding to the SDK version you're using.
+
+- download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz2` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
 
   ```sh
   ln -s ../mbedtls-3.6.2 mbedtls

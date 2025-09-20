@@ -6,7 +6,7 @@ from base64 import b64decode
 from datetime import datetime, timezone
 from hashlib import sha256
 
-import ecdsa
+import ecdsa  # type: ignore[import-untyped]
 
 from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError, timestamp
 
@@ -28,11 +28,11 @@ def auth() -> None:
                 print(f"registered {user}@{rp}: {pk.hex()}")
 
             challenge = b"testing time-based auth"
-            print(f"challenge is: {challenge}")
+            print(f"challenge is: {challenge!r}")
             responses = [crypto_key.auth(rp, user, challenge) for rp in rps]
 
             for rp, token in zip(rps, responses, strict=True):
-                print(f"auth response {user}@{rp}: {token}")
+                print(f"auth response {user}@{rp}: {token!r}")
 
             # check it verifies using a 3rdparty library
             vks = [ecdsa.VerifyingKey.from_string(pk, curve=ecdsa.SECP256k1, hashfunc=sha256) for pk in pubkeys]
@@ -51,9 +51,9 @@ def auth() -> None:
                 try:
                     vks[i].verify(b64decode(responses[1 - i]), challenge, sigdecode=ecdsa.util.sigdecode_der)
                 except ecdsa.keys.BadSignatureError:
-                    print(f"{rps[i]} cannot verify {responses[i-1]}")
+                    print(f"{rps[i]} cannot verify {responses[i - 1]!r}")
                 else:
-                    raise RuntimeError(f"{rps[i]} verified {responses[i-1]}, this should not happen")
+                    raise RuntimeError(f"{rps[i]} verified {responses[i - 1]!r}, this should not happen")
 
     except CryptoKeyConnectionError:
         print("Key not connected")

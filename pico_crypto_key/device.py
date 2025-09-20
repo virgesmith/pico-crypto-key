@@ -66,7 +66,7 @@ class CryptoKey:
         except usb.core.USBError:
             pass
 
-    def hash(self, filename: Path) -> bytes:
+    def hash(self, filename: str | Path) -> bytes:
         """
         Computes the SHA256 hash of a file
 
@@ -151,7 +151,7 @@ class CryptoKey:
             output += chunk
         return bytes(output)
 
-    def sign(self, filename: str) -> tuple[bytes, bytes]:
+    def sign(self, filename: str | Path) -> tuple[bytes, bytes]:
         """
         Computes the hash of a file and its and ECDSA signature
 

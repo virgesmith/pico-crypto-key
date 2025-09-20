@@ -37,7 +37,7 @@ def verify_data(signature_file: Path) -> None:
                 print("signature is not valid")
             else:
                 print("signature is valid")
-            print(f"verifying took {time()-start:.2f}s")
+            print(f"verifying took {time() - start:.2f}s")
     except CryptoKeyConnectionError:
         print("Key not connected")
     except CryptoKeyPinError:
