@@ -62,8 +62,8 @@ def main() -> None:
 
                         case _:
                             print(f"Invalid input: {cmd}")
-                except requests.exceptions.HTTPError as e:
-                    print(e)
+                except (requests.exceptions.HTTPError, requests.ConnectionError):
+                    print(f"Cannot connect to {HOST}, is server running?")
     except CryptoKeyConnectionError:
         print("Key not found, is it connected?")
     except CryptoKeyPinError:
