@@ -18,7 +18,7 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 
 ## Notes/issues
 
-- This project uses MbedTLS 3, which is not supported by the SDK (which still uses MbedTLS 2), so must be kept separate.
+- This project currently requires a separate copy MbedTLS 3 (despite it also being a submodule of pico-sdk).
 - Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
 - Some prebuilt RISC-V toolchains do not work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). Using
 the binaries available at [pico-sdk-tools](https://github.com/raspberrypi/pico-sdk-tools/releases/) is recommended.
@@ -64,19 +64,17 @@ v1.1.0 switched to USB CDC rather than serial to communicate with the host which
 
 ### Dependencies/prerequisites
 
-First, clone/fork this repo and install the package in development (editable) mode:
+First, clone/fork this repo and install the package in development mode:
 
 ```sh
-pip install --group dev -e .
+uv sync --dev
 ```
 
 or
 
 ```sh
-uv sync --group dev
+pip install --group dev -e .
 ```
-
-If this step fails, try upgrading to a more recent version of pip.
 
 You will then need to:
 
@@ -94,12 +92,14 @@ You will then need to:
   git submodule update --init
   ```
 
-- since SDK v2.0.0, you will also need to build and install [picotool](https://github.com/raspberrypi/picotool) corresponding to the SDK version you're using.
+- since SDK v2.0.0, you will also need to either build and install [picotool](https://github.com/raspberrypi/picotool),
+or just install from [https://github.com/raspberrypi/pico-sdk-tools/releases](https://github.com/raspberrypi/pico-sdk-tools/releases)
+corresponding to the SDK version/platform you're using.
 
-- download a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz2` asset. Currently using the 3.6.2 release/tag. **This is a different version to the one in the SDK** (which still uses v2) so must be kept separate. It also requires a custom configuration. Create a symlink in the project root to mbedtls, e.g.:
+- download and extract a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz2` asset. Currently using the 3.6.6 release. **Despite SDK 2.2.0 now using 3.6.2, I've not managed to make it work through the pico_mbedtls/pico_mbedcrypto libs**. It also requires a custom configuration. Create a symlink in the project root to the mbedtls, e.g.:
 
   ```sh
-  ln -s ../mbedtls-3.6.2 mbedtls
+  ln -s ../mbedtls-3.6.6 mbedtls
   ```
 
 ## Configure

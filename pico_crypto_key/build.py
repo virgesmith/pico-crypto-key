@@ -1,10 +1,10 @@
 import os
 import shutil
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
-import tomllib
 import typer
 
 from pico_crypto_key import __version__
@@ -92,11 +92,18 @@ def clean(board: str = typer.Option(help="the target board")) -> None:
 
 
 @app.command(no_args_is_help=True)
-def build(board: str = typer.Option(help="the target board")) -> None:
+def build(
+    board: str = typer.Option(help="the target board"),
+    rebuild: bool = typer.Option(False, "-r", "--rebuild", help="Clean and rebuild"),
+) -> None:
     """Build the pico-crypto-key image."""
 
     # check build dir exists and create if necessary
     build_dir = _build_dir(board)
+
+    if rebuild and _build_dir(board).exists():
+        shutil.rmtree(_build_dir(board))
+
     build_dir.mkdir(exist_ok=True)
 
     config = _get_config(board)

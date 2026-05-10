@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import os
 from base64 import b64encode
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from struct import pack, unpack
 from types import TracebackType
 from typing import Any
 
-import usb.core  # type: ignore[import-untyped]
-import usb.util  # type: ignore[import-untyped]
-from pwinput import pwinput  # type: ignore[import-untyped]
+import usb.core
+import usb.util
+from pwinput import pwinput
 
 
 class CryptoKeyConnectionError(ConnectionError):
@@ -268,7 +268,7 @@ class CryptoKey:
         length = self._read_uint32()
         raw = self._read(length)
         version = raw[:-8].decode()
-        timestamp = datetime.fromtimestamp(unpack("Q", raw[-8:])[0] / 1000, tz=timezone.utc)
+        timestamp = datetime.fromtimestamp(unpack("Q", raw[-8:])[0] / 1000, tz=UTC)
         return version, timestamp
 
     def set_pin(self) -> None:
