@@ -6,7 +6,7 @@ from io import BytesIO
 from pathlib import Path
 from time import time
 
-import pandas as pd  # type: ignore
+import pandas as pd
 
 from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError
 

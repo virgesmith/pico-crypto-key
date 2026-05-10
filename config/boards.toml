@@ -3,7 +3,7 @@
 [default]
 PICO_PLATFORM = "rp2040"
 PICO_TOOLCHAIN_PATH = "/usr"
-# use latest SDK (2.1.0) which has tinusb 0.17
+# latest SDK (2.2.0) which has tinyusb 0.18 and mbedtls 3.6.2
 PICO_SDK_PATH = "../../pico-sdk"
 
 [pico]

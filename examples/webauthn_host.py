@@ -6,7 +6,7 @@ from hashlib import sha256
 from time import sleep
 from typing import Annotated
 
-import ecdsa  # type: ignore[import-untyped]
+import ecdsa.util
 from fastapi import FastAPI, Header, HTTPException
 
 logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S")
