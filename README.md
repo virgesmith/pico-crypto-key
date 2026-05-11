@@ -18,10 +18,11 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 
 ## Notes/issues
 
-- This project currently requires a separate copy MbedTLS 3 (despite it also being a submodule of pico-sdk).
-- Writes to the final flash block do not persist on RP2350. See [here](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
-- Some prebuilt RISC-V toolchains do not work, see [here](https://forums.raspberrypi.com/viewtopic.php?t=375713). Using
+- This project currently uses the MbedTLS shipped with the SDK, but not the `pico_mbedtls`/`pico_mbed_crypto` libraries.
+- Writes to the final flash block do not persist on RP2350. See [discussion](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
+- Some prebuilt RISC-V toolchains do not work, see [this post](https://forums.raspberrypi.com/viewtopic.php?t=375713). Using
 the binaries available at [pico-sdk-tools](https://github.com/raspberrypi/pico-sdk-tools/releases/) is recommended.
+- Support for Python 3.11 is retained for users on older Raspberry Pi (armv6) platforms.
 
 ## Performance
 
@@ -92,24 +93,25 @@ You will then need to:
   git submodule update --init
   ```
 
+- then navigate to the `lib/mbedtls` subdirectory of the SDK and repeat:
+
+  ```sh
+  git submodule update --init
+  ```
+
 - since SDK v2.0.0, you will also need to either build and install [picotool](https://github.com/raspberrypi/picotool),
 or just install from [https://github.com/raspberrypi/pico-sdk-tools/releases](https://github.com/raspberrypi/pico-sdk-tools/releases)
 corresponding to the SDK version/platform you're using.
 
-- download and extract a release of [mbedtls](https://tls.mbed.org/api/) - the `.tar.bz2` asset. Currently using the 3.6.6 release. **Despite SDK 2.2.0 now using 3.6.2, I've not managed to make it work through the pico_mbedtls/pico_mbedcrypto libs**. It also requires a custom configuration. Create a symlink in the project root to the mbedtls, e.g.:
-
-  ```sh
-  ln -s ../mbedtls-3.6.6 mbedtls
-  ```
 
 ## Configure
 
 In the `config/boards.toml` file ensure settings for `PICO_TOOLCHAIN_PATH` and `PICO_SDK_PATH` are correct.
 
-If using a fresh download of `mbedtls` - run the configuration script to customise the build for the Pico, e.g.:
+If using a fresh copy of the SDK - run the mbedtls configuration script to customise the build for the Pico, e.g.:
 
 ```sh
-./configure-mbedtls.sh
+PICO_SDK_PATH=../pico-sdk ./configure-mbedtls.sh
 ```
 
 More info [here](https://tls.mbed.org/discussions/generic/mbedtls-build-for-arm)
@@ -214,6 +216,13 @@ Long flashes | Short flashes | Algorithm | mbedtls error code
 - the device can get out of sync quite easily when something goes wrong. If so, turn it off and on again ;)
 
 ## Examples
+
+To run the examples, install the optional dependencies:
+
+```sh
+uv sync --extra examples
+# or pip install .[examples]
+```
 
 ### Hash file
 

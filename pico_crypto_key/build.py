@@ -26,7 +26,7 @@ def _get_config(board: str) -> dict[str, str]:
     return cfg["default"] | cfg[board]
 
 
-def _check_symlink(path: str | Path) -> bool:
+def _check_path(path: Path) -> bool:
     path = Path(path)
     print(f"Checking {path} ", end="")
     if path.is_symlink():
@@ -71,10 +71,10 @@ def check(board: str = typer.Option(help="the target board")):
     print(f"picotool: {picotool or 'NOT FOUND'}")
     ok &= picotool is not None
 
-    ok &= _check_symlink("./mbedtls")
-    ok &= _check_symlink(sdk / "lib/tinyusb")
+    ok &= _check_path(sdk / "lib/mbedtls")
+    ok &= _check_path(sdk / "lib/tinyusb")
     if board in ["pico_w", "pico2_w"]:
-        ok &= _check_symlink(sdk / "lib/cyw43-driver")
+        ok &= _check_path(sdk / "lib/cyw43-driver")
 
     if not os.getenv("PICO_CRYPTO_KEY_PIN"):
         print("PICO_CRYPTO_KEY_PIN not set in env, PIN will have to be entered manually")
@@ -109,7 +109,7 @@ def build(
     config = _get_config(board)
 
     sdk_dir = build_dir / Path(config["PICO_SDK_PATH"])
-    print(f"Mbed TLS points to {os.readlink('./mbedtls')}")
+    # print(f"Mbed TLS points to {os.readlink('./mbedtls')}")
 
     # assumes SDK level with project dir and tinyusb present
     cmake_args = [f"-D{k}={v}" for k, v in config.items()] + [f"-DPCK_VER={__version__}"]
