@@ -18,7 +18,7 @@ Pico, Pico W, Tiny2040, Pico2 and Pico2 W boards are known to work. Other RP2040
 
 ## Notes/issues
 
-- This project currently uses the MbedTLS shipped with the SDK, but not the `pico_mbedtls`/`pico_mbed_crypto` libraries.
+- As of SDK 2.2, this project now uses the MbedTLS shipped with the SDK, but not the `pico_mbedtls` library due to configuration/compilation issues.
 - Writes to the final flash block do not persist on RP2350. See [discussion](https://forums.raspberrypi.com/viewtopic.php?t=375912). Simple workaround is to use the penultimate block.
 - Some prebuilt RISC-V toolchains do not work, see [this post](https://forums.raspberrypi.com/viewtopic.php?t=375713). Using
 the binaries available at [pico-sdk-tools](https://github.com/raspberrypi/pico-sdk-tools/releases/) is recommended.
@@ -69,12 +69,7 @@ First, clone/fork this repo and install the package in development mode:
 
 ```sh
 uv sync --dev
-```
-
-or
-
-```sh
-pip install --group dev -e .
+# or pip install --group dev -e .
 ```
 
 You will then need to:

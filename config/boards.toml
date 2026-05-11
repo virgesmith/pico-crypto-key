@@ -18,7 +18,6 @@ PICO_BOARD = "pimoroni_tiny2040_2mb"
 [pico2]
 PICO_BOARD = "pico2"
 PICO_PLATFORM = "rp2350-arm-s"
-PICO_TOOLCHAIN_PATH = "/usr"
 
 [pico2-riscv]
 PICO_BOARD = "pico2"
@@ -28,10 +27,8 @@ PICO_TOOLCHAIN_PATH = "/opt/riscv-gcc-15"
 [pico2_w]
 PICO_BOARD = "pico2_w"
 PICO_PLATFORM = "rp2350-arm-s"
-PICO_TOOLCHAIN_PATH = "/usr"
 
 [pico2_w-riscv]
 PICO_BOARD = "pico2_w"
 PICO_PLATFORM = "rp2350-riscv"
 PICO_TOOLCHAIN_PATH = "/opt/riscv-gcc-15"
-

@@ -41,7 +41,7 @@ dev = [
   "ecdsa>=0.19.2",
   "pytest>=9.0.0",
   "ruff>=0.15.0",
-  "ty"
+  "ty",
 ]
 
 [project.optional-dependencies]

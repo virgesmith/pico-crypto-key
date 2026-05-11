@@ -6,7 +6,7 @@ import pandas as pd
 
 from pico_crypto_key import CryptoKey
 
-result = pd.DataFrame(columns=["task", "size_k", "time_s", "bitrate_kbps"]).set_index(["task", "size_k"])  # ty:ignore[invalid-argument-type]
+result = pd.DataFrame(columns=["task", "size_k", "time_s", "bitrate_kbps"]).set_index(["task", "size_k"])
 
 
 def hash_performance(crypto_key: CryptoKey, filename: str) -> None:
