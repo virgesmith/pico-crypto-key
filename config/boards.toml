@@ -3,7 +3,7 @@
 [default]
 PICO_PLATFORM = "rp2040"
 PICO_TOOLCHAIN_PATH = "/usr"
-# use latest SDK (2.1.0) which has tinusb 0.17
+# latest SDK (2.2.0) which has tinyusb 0.18 and mbedtls 3.6.2
 PICO_SDK_PATH = "../../pico-sdk"
 
 [pico]
@@ -18,7 +18,6 @@ PICO_BOARD = "pimoroni_tiny2040_2mb"
 [pico2]
 PICO_BOARD = "pico2"
 PICO_PLATFORM = "rp2350-arm-s"
-PICO_TOOLCHAIN_PATH = "/usr"
 
 [pico2-riscv]
 PICO_BOARD = "pico2"
@@ -28,10 +27,8 @@ PICO_TOOLCHAIN_PATH = "/opt/riscv-gcc-15"
 [pico2_w]
 PICO_BOARD = "pico2_w"
 PICO_PLATFORM = "rp2350-arm-s"
-PICO_TOOLCHAIN_PATH = "/usr"
 
 [pico2_w-riscv]
 PICO_BOARD = "pico2_w"
 PICO_PLATFORM = "rp2350-riscv"
 PICO_TOOLCHAIN_PATH = "/opt/riscv-gcc-15"
-

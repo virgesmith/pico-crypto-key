@@ -1,12 +1,12 @@
 import logging
 import struct
 from base64 import b64decode
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
 from time import sleep
 from typing import Annotated
 
-import ecdsa  # type: ignore[import-untyped]
+import ecdsa.util
 from fastapi import FastAPI, Header, HTTPException
 
 logging.basicConfig(format="%(asctime)s %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S")
@@ -23,7 +23,7 @@ def _get_challenge(username: str) -> str:
 
 
 def _verify_challenge(username: str, pubkey: bytes, token: str) -> bool:
-    timestamp = datetime.now(tz=timezone.utc)
+    timestamp = datetime.now(tz=UTC)
     # check it verifies (using a 3rdparty library)
     verifying_key = ecdsa.VerifyingKey.from_string(pubkey, curve=ecdsa.SECP256k1, hashfunc=sha256)
 

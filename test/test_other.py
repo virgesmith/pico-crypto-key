@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pico_crypto_key import CryptoKey, __version__
 
@@ -11,7 +11,7 @@ def test_pubkey(crypto_key: CryptoKey) -> None:
 
 def test_info(crypto_key: CryptoKey) -> None:
     version, timestamp = crypto_key.info()
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     assert __version__ in version
     assert abs((timestamp - now).total_seconds()) < 0.01
 

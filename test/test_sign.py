@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-import ecdsa  # type: ignore[import-untyped]
+import ecdsa.util
 import pytest
 
 from pico_crypto_key import CryptoKey

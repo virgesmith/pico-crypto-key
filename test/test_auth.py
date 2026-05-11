@@ -4,10 +4,10 @@ Example: change the device pin.
 
 import struct
 from base64 import b64decode
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
 
-import ecdsa  # type: ignore[import-untyped]
+import ecdsa.util
 import pytest
 
 from pico_crypto_key import CryptoKey, timestamp
@@ -37,7 +37,7 @@ def test_pubkey(crypto_key: CryptoKey, challenge: bytes) -> None:
     with pytest.raises(ecdsa.keys.BadSignatureError):
         wrong_key.verify(sig, timestamped_challenge, sigdecode=ecdsa.util.sigdecode_der)
 
-    t = int((datetime.now(tz=timezone.utc).timestamp() - 60) * 1000)
+    t = int((datetime.now(tz=UTC).timestamp() - 60) * 1000)
     expired_challenge = challenge + struct.pack("Q", t - 60000)
     with pytest.raises(ecdsa.keys.BadSignatureError):
         verifying_key.verify(sig, expired_challenge, sigdecode=ecdsa.util.sigdecode_der)

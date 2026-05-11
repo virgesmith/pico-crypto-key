@@ -3,10 +3,10 @@ Example: change the device pin.
 """
 
 from base64 import b64decode
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
 
-import ecdsa  # type: ignore[import-untyped]
+import ecdsa.util
 
 from pico_crypto_key import CryptoKey, CryptoKeyConnectionError, CryptoKeyPinError, timestamp
 
@@ -15,7 +15,7 @@ def auth() -> None:
     try:
         with CryptoKey() as crypto_key:
             version, time = crypto_key.info()
-            now = datetime.now(tz=timezone.utc)
+            now = datetime.now(tz=UTC)
             print(f"PicoCryptoKey {version} {time}")
             print(f"Host-device time diff: {(now - time).total_seconds()}s")
 

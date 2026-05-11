@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 
@@ -20,7 +20,7 @@ def main() -> None:
             print(f"Interacting with {HOST}")
             while True:
                 _, timestamp = key.info()
-                now = datetime.now(tz=timezone.utc)
+                now = datetime.now(tz=UTC)
                 print(f"Device time diff: {(now - timestamp).total_seconds()}s")
                 try:
                     match cmd := input("\nRegister/Key/Auth/Quit? (r/k/a/q) "):
