@@ -349,7 +349,7 @@ As above, but using a webauthn-*style* (it's not compatible) workflow using a lo
 First start the host:
 
 ```sh
-uv run --with fastapi[standard] fastapi run examples/webauthn_host.py
+uv run fastapi run examples/webauthn_host.py
 ```
 
 When up and running, the API endpoints should be documented at [http://localhost:8000/docs](http://localhost:8000/docs)
