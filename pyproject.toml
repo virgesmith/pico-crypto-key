@@ -7,16 +7,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pico-crypto-key"
-version = "1.4.4"
+version = "1.4.5"
 authors = [
   { name="Andrew Smith", email="andrew@friarswood.net" },
 ]
 license = {file = "LICENSE.md"}
 description = "Raspberry Pi pico cryptography key and python driver"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 classifiers = [
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -24,8 +23,8 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
-  "Programming Language :: C++ :: 20",
-  "Programming Language :: C :: 17"
+  "Programming Language :: C++ :: 23",
+  "Programming Language :: C :: 23"
 ]
 dependencies = [
   "pyusb>=1.3.1",
@@ -38,7 +37,6 @@ picobuild = "pico_crypto_key.build:app"
 
 [dependency-groups]
 dev = [
-  "ecdsa>=0.19.2",
   "pytest>=9.0.0",
   "ruff>=0.15.0",
   "ty",
@@ -46,9 +44,10 @@ dev = [
 
 [project.optional-dependencies]
 examples = [
+  "ecdsa>=0.19.2",
   "fastapi[standard]>=0.136",
-  "requests>=2.33.1",
   "pandas",
+  "requests>=2.33.1",
 ]
 
 [project.urls]
@@ -57,6 +56,10 @@ examples = [
 [tool.pytest.ini_options]
 testpaths = [
   "test"
+]
+filterwarnings = [
+  # pyusb 1.3.1 ctypes structures use _pack_ without _layout_ (python 3.14+)
+  "ignore:Due to '_pack_':DeprecationWarning:usb.backend",
 ]
 
 [tool.setuptools.packages.find]

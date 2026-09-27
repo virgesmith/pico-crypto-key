@@ -224,9 +224,11 @@ uv sync --extra examples
 This script just prints the hash of itself.
 
 ```sh
-$ python examples/hash_file.py examples/hash_file.py
-PicoCryptoKey 1.3.0-pico
-examples/hash_file.py: f99e202cdb1c7091f291a3361eac6b8d2230eef28bd165415e86ec235b03a938
+$ uv run examples/hash_file.py examples/hash_file.py
+PicoCryptoKey 1.4.5-pico2-arm
+b987672da55da3c5abedfc8c7f2e8a961fea1ae1bfef711ee23ab6391ddeb445  examples/hash_file.py
+$ sha256sum examples/hash_file.py
+b987672da55da3c5abedfc8c7f2e8a961fea1ae1bfef711ee23ab6391ddeb445  examples/hash_file.py
 ```
 
 ### Encrypt/decrypt data
@@ -236,7 +238,7 @@ This example will look for an encrypted version of the data (examples/dataframe.
 Then it decrypts the ciphertext and loads the data into a pandas dataframe (you may need to install pandas).
 
 ```sh
-python examples/decrypt_data.py
+uv run examples/decrypt_data.py
 ```
 
 If you are using the same device you used to encrypt the data, you should see something like this:
@@ -266,7 +268,7 @@ If you now switch to a different device, it won't be able to decrypt the ciphert
 This example will compute a hash (SHA256) of a file and sign it. It outputs a json object containing the filename, the hash, the signature, and the device's public key.
 
 ```sh
-python examples/sign_data.py
+uv run examples/sign_data.py
 ```
 
 gives you something like
@@ -293,7 +295,7 @@ where signature.json contains
 The signature data above should be verifiable by any ECDSA validation algorithm, but you can use the device for this. First it verifies the supplied hash corresponds to the file, then it verifies the signature against the hash and the given public key. It also prints whether the public key provided matches it's own public key.
 
 ```sh
-python examples/verify_data.py
+uv run examples/verify_data.py
 ```
 
 ```text
@@ -323,7 +325,7 @@ Step 2 generates a time-based auth tokens for each relying party from a challeng
 Third-party code (the ecdsa python package) is then used to verify the public key-auth token pairs.
 
 ```sh
-python examples/auth.py
+uv run examples/auth.py
 ```
 
 ```txt
@@ -342,12 +344,12 @@ another.org cannot verify b'MEQCIG4Pp5o/wXMh6RY0Z2zvr1IOBWVhQcHoRyGeQQls8genAiBa
 
 ### Authenticate (host-user)
 
-As above, but using a webauthn-style workflow using a local fastapi instance (would normally be a remote website).
+As above, but using a webauthn-*style* (it's not compatible) workflow using a local fastapi instance (would normally be a remote website).
 
 First start the host:
 
 ```sh
-fastapi run examples/webauthn_host.py
+uv run fastapi run examples/webauthn_host.py
 ```
 
 When up and running, the API endpoints should be documented at [http://localhost:8000/docs](http://localhost:8000/docs)
@@ -355,7 +357,7 @@ When up and running, the API endpoints should be documented at [http://localhost
 Then use the interactive client script to interact with the crypto key and allow you to register and authenticate with the host, like in the example above:
 
 ```sh
-python examples/webauthn_user.py
+uv run examples/webauthn_user.py
 ```
 
 Try playing around with different users and different keys...
@@ -363,7 +365,7 @@ Try playing around with different users and different keys...
 ### Change PIN
 
 ```sh
-python examples/change_pin.py
+uv run examples/change_pin.py
 ```
 
 This just runs the PIN reset process:
