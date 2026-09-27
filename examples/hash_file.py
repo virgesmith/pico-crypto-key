@@ -14,7 +14,7 @@ def hash_file(file: Path) -> None:
             version, _ = crypto_key.info()
             print(f"PicoCryptoKey {version}")
             digest = crypto_key.hash(file)
-        print(f"{file}: {digest.hex()}")
+        print(f"{digest.hex()}  {file}")
     except CryptoKeyConnectionError:
         print("Key not connected")
     except CryptoKeyPinError:
