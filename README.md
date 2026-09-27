@@ -344,7 +344,7 @@ another.org cannot verify b'MEQCIG4Pp5o/wXMh6RY0Z2zvr1IOBWVhQcHoRyGeQQls8genAiBa
 
 ### Authenticate (host-user)
 
-As above, but using a webauthn-style workflow using a local fastapi instance (would normally be a remote website).
+As above, but using a webauthn-*style* (it's not compatible) workflow using a local fastapi instance (would normally be a remote website).
 
 First start the host:
 
